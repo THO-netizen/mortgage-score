@@ -1,0 +1,166 @@
+/* ── Tailwind layers ──────────────────────────────── */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ── Base resets & global defaults ───────────────── */
+@layer base {
+  *, *::before, *::after {
+    box-sizing: border-box;
+  }
+
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    scroll-behavior: smooth;
+  }
+
+  body {
+    font-family: 'Inter', system-ui, sans-serif;
+    background-color: #F8FAFC;
+    color: #0F172A;
+    line-height: 1.6;
+  }
+
+  /* Scrollbar — subtle, institutional */
+  ::-webkit-scrollbar         { width: 5px; height: 5px; }
+  ::-webkit-scrollbar-track   { background: #F1F5F9; }
+  ::-webkit-scrollbar-thumb   { background: #CBD5E1; border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: #94A3B8; }
+}
+
+/* ── Reusable component layer ─────────────────────── */
+@layer components {
+
+  /* Premium input — 56 px, per spec */
+  .input-field {
+    @apply h-input w-full rounded-input border border-border bg-card
+           px-4 text-[15px] font-medium text-ink
+           placeholder-ink-subtle outline-none
+           transition-all duration-150
+           shadow-[0_1px_2px_rgba(0,0,0,.04)];
+  }
+  .input-field:hover  { @apply border-border-strong; }
+  .input-field:focus  { @apply border-brand-600 shadow-input-focus; }
+
+  /* Select — same height, custom chevron */
+  .select-field {
+    @apply input-field cursor-pointer appearance-none pr-10;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2364748B' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 14px center;
+  }
+
+  /* Range slider — premium blue thumb */
+  .slider-field {
+    @apply w-full cursor-pointer appearance-none rounded-full
+           bg-border outline-none;
+    height: 6px;
+  }
+  .slider-field::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: #2563EB;
+    border: 3px solid #fff;
+    box-shadow: 0 1px 4px rgba(37,99,235,.4);
+    cursor: pointer;
+    transition: box-shadow .15s;
+  }
+  .slider-field::-webkit-slider-thumb:hover {
+    box-shadow: 0 0 0 6px rgba(37,99,235,.14), 0 1px 4px rgba(37,99,235,.4);
+  }
+  .slider-field::-moz-range-thumb {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: #2563EB;
+    border: 3px solid #fff;
+    cursor: pointer;
+  }
+
+  /* Primary CTA button */
+  .btn-cta {
+    @apply inline-flex items-center justify-center gap-2
+           rounded-input bg-brand-600 px-7 font-display
+           text-[15px] font-bold text-white
+           shadow-cta transition-all duration-200 select-none;
+    height: 52px;
+  }
+  .btn-cta:hover   { @apply bg-brand-700 shadow-cta-hover -translate-y-px; }
+  .btn-cta:active  { @apply translate-y-0 shadow-cta; }
+  .btn-cta:disabled { @apply opacity-50 cursor-not-allowed transform-none; }
+
+  /* Ghost button */
+  .btn-ghost {
+    @apply inline-flex items-center justify-center gap-2
+           rounded-input border border-border bg-card px-6
+           text-[15px] font-medium text-ink-muted
+           transition-all duration-150 select-none;
+    height: 52px;
+  }
+  .btn-ghost:hover { @apply border-border-strong text-ink; }
+
+  /* White surface card */
+  .card-surface {
+    @apply rounded-card bg-card border border-border shadow-card;
+  }
+
+  /* Dark gradient card (hero, score, sidebar) */
+  .card-dark {
+    @apply rounded-card bg-hero;
+  }
+
+  /* Status badges */
+  .badge {
+    @apply inline-flex items-center gap-1.5 rounded-badge
+           px-2.5 py-1 text-label uppercase tracking-widest;
+  }
+  .badge-success { @apply badge bg-success-light text-success-text border border-success-border; }
+  .badge-warning { @apply badge bg-warning-light text-warning-text border border-warning-border; }
+  .badge-risk    { @apply badge bg-risk-light    text-risk-text    border border-risk-border;    }
+  .badge-neutral { @apply badge bg-neutral-light text-neutral-text border border-neutral-border; }
+
+  /* Section label */
+  .section-label {
+    @apply text-label uppercase tracking-widest text-ink-subtle;
+  }
+
+  /* Gauge glow ring */
+  .gauge-glow {
+    filter: drop-shadow(0 0 16px rgba(59,130,246,.45));
+  }
+}
+
+/* ── Utility overrides ────────────────────────────── */
+@layer utilities {
+  /* Prevent layout shift from font loading */
+  .font-display { font-family: 'Manrope', 'Inter', sans-serif; }
+
+  /* Progress bar shimmer */
+  .progress-shimmer {
+    background: linear-gradient(90deg, #2563EB 0%, #6366F1 50%, #2563EB 100%);
+    background-size: 200% auto;
+    animation: shimmer 2s linear infinite;
+  }
+
+  /* Glassmorphism header */
+  .glass-header {
+    background: rgba(255,255,255,.88);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-bottom: 1px solid rgba(226,232,240,.8);
+    box-shadow: 0 1px 6px rgba(0,0,0,.05);
+  }
+
+  /* Scan animation for bank statement preview */
+  .scan-line {
+    position: absolute;
+    left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, #3B82F6, transparent);
+    animation: scan 2s ease-in-out infinite;
+    box-shadow: 0 0 8px rgba(59,130,246,.7);
+  }
+}
