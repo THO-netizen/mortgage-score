@@ -1,13 +1,13 @@
 import { useState, useEffect } from 'react'
-import { analytics }      from './services/analytics.js'
-import Header             from './components/layout/Header.jsx'
-import TrustSidebar       from './components/funnel/TrustSidebar.jsx'
-import Step1EntityType    from './components/steps/Step1EntityType.jsx'
-import Step2Residence     from './components/steps/Step2Residence.jsx'
+import { analytics }       from './services/analytics.js'
+import Header              from './components/layout/Header.jsx'
+import TrustSidebar        from './components/funnel/TrustSidebar.jsx'
+import Step1EntityType     from './components/steps/Step1EntityType.jsx'
+import Step2Residence      from './components/steps/Step2Residence.jsx'
+import Step3Liabilities    from './components/steps/Step3Liabilities.jsx'
+import Step4Property       from './components/steps/Step4Property.jsx'
 
 // ─── Initial form state ───────────────────────────────
-// All funnel fields live here. Each step adds its fields
-// as we build them out in subsequent sessions.
 const INITIAL_FORM = {
   // Step 1
   entityType: '',
@@ -16,36 +16,32 @@ const INITIAL_FORM = {
   residenceStatus: '',
   yearsInCZ: '',
 
-  // Step 3 (coming next)
-  purchasePrice: 5_500_000,
-  ownFunds:      1_200_000,
+  // Step 3 — Liabilities
+  monthlyLoanPayments: 0,
+  creditCardLimits:    0,
+  monthlyLeasing:      0,
+  otherObligations:    0,
+
+  // Step 4 — Property & LTV
+  purchasePrice:    5_500_000,
+  ownFunds:         1_200_000,
   propertyPurpose:  '',
   purchaseTimeline: '',
 
-  // Step 4
-  monthlyNetIncome: 80_000,
-  yearsInBusiness:  3,
-  taxReturnYears:   2,
-  incomeType:       '',
-
-  // Step 5
-  monthlyLoanPayments: 0,
-  creditCardLimits:    0,
-  otherObligations:    0,
-
-  // Step 6
+  // Step 5 — Bank statement (client-side only)
   bankStatementFile:   null,
   bankAnalysisStatus:  '',
   bankAnalysisResults: null,
 
-  // Step 7
+  // Step 6 — Email gate
+  email: '',
+
+  // Step 7 — Results (derived fields stored for dashboard)
   creditHistory: '',
   primaryGoal:   '',
 }
 
 // ─── Landing page placeholder ─────────────────────────
-// The full hero section with animated gauge is built in a
-// later step. This minimal version lets the full flow work.
 function LandingPlaceholder({ onStart }) {
   return (
     <main className="min-h-screen bg-hero flex items-center justify-center px-4">
@@ -82,7 +78,6 @@ export default function App() {
   const [currentStep, setCurrentStep] = useState(0)
   const [formData,    setFormData]    = useState(INITIAL_FORM)
 
-  // Track initial page view once on mount
   useEffect(() => {
     analytics.track('landing_page_viewed', {
       referrer: document.referrer || 'direct',
@@ -104,7 +99,7 @@ export default function App() {
   const goNext = () => goToStep(currentStep + 1)
   const goBack = () => goToStep(Math.max(1, currentStep - 1))
 
-  // ── Per-step Continue handlers (track + advance) ─────
+  // ── Per-step Continue handlers ────────────────────────
   const handleStart = () => {
     analytics.track('funnel_started')
     goToStep(1)
@@ -129,6 +124,43 @@ export default function App() {
     goNext()
   }
 
+  const handleStep3Continue = () => {
+    const creditCard5pct = Math.round(formData.creditCardLimits * 0.05)
+    analytics.track('step_completed', {
+      stepIndex:           3,
+      stepName:            'Liabilities',
+      monthlyLoanPayments: formData.monthlyLoanPayments,
+      creditCardLimits:    formData.creditCardLimits,
+      creditCard5pct,
+      monthlyLeasing:      formData.monthlyLeasing,
+      otherObligations:    formData.otherObligations,
+      totalObligations:
+        formData.monthlyLoanPayments +
+        creditCard5pct +
+        formData.monthlyLeasing +
+        formData.otherObligations,
+    })
+    goNext()
+  }
+
+  const handleStep4Continue = () => {
+    const loanAmount = Math.max(0, formData.purchasePrice - formData.ownFunds)
+    const ltv = formData.purchasePrice > 0
+      ? Math.round((loanAmount / formData.purchasePrice) * 100)
+      : 0
+    analytics.track('step_completed', {
+      stepIndex:       4,
+      stepName:        'Property & LTV',
+      purchasePrice:   formData.purchasePrice,
+      ownFunds:        formData.ownFunds,
+      loanAmount,
+      ltv,
+      propertyPurpose: formData.propertyPurpose,
+      purchaseTimeline: formData.purchaseTimeline,
+    })
+    goNext()
+  }
+
   // ── Layout flags ─────────────────────────────────────
   const isLanding = currentStep === 0
   const isFunnel  = currentStep >= 1 && currentStep <= 7
@@ -138,17 +170,14 @@ export default function App() {
   return (
     <div className="min-h-screen bg-surface">
 
-      {/* Header — hidden on the dark landing hero */}
       {!isLanding && (
         <Header currentStep={currentStep} totalSteps={7} />
       )}
 
-      {/* ── Landing placeholder ─────────────────────── */}
       {isLanding && (
         <LandingPlaceholder onStart={handleStart} />
       )}
 
-      {/* ── Funnel layout (8 + 4 columns) ───────────── */}
       {isFunnel && (
         <main className="py-8 sm:py-12">
           <div className="max-w-6xl mx-auto px-4 sm:px-6">
@@ -156,10 +185,7 @@ export default function App() {
 
               {/* Main funnel area — 8 cols */}
               <div className="lg:col-span-8">
-                {/*
-                  key={currentStep} causes React to fully remount the step
-                  on each navigation, re-triggering the fade-up animation.
-                */}
+                {/* key re-mounts on each step, re-triggering fade-up */}
                 <div key={currentStep} className="animate-fade-up">
 
                   {currentStep === 1 && (
@@ -181,8 +207,36 @@ export default function App() {
                     />
                   )}
 
-                  {/* Steps 3–7 are added in subsequent sessions */}
-                  {currentStep > 2 && currentStep <= 7 && (
+                  {currentStep === 3 && (
+                    <Step3Liabilities
+                      data={{
+                        monthlyLoanPayments: formData.monthlyLoanPayments,
+                        creditCardLimits:    formData.creditCardLimits,
+                        monthlyLeasing:      formData.monthlyLeasing,
+                        otherObligations:    formData.otherObligations,
+                      }}
+                      onChange={setField}
+                      onBack={goBack}
+                      onContinue={handleStep3Continue}
+                    />
+                  )}
+
+                  {currentStep === 4 && (
+                    <Step4Property
+                      data={{
+                        purchasePrice:    formData.purchasePrice,
+                        ownFunds:         formData.ownFunds,
+                        propertyPurpose:  formData.propertyPurpose,
+                        purchaseTimeline: formData.purchaseTimeline,
+                      }}
+                      onChange={setField}
+                      onBack={goBack}
+                      onContinue={handleStep4Continue}
+                    />
+                  )}
+
+                  {/* Steps 5–7 added in next sessions */}
+                  {currentStep > 4 && currentStep <= 7 && (
                     <div className="card-surface px-8 py-12 text-center">
                       <p className="section-label mb-3">
                         Step {currentStep} of 7
@@ -213,7 +267,6 @@ export default function App() {
         </main>
       )}
 
-      {/* Results dashboard — added in a later session */}
       {isResults && (
         <main className="py-12">
           <div className="max-w-6xl mx-auto px-4 sm:px-6">
