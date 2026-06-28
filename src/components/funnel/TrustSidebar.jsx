@@ -69,17 +69,22 @@ export default function TrustSidebar() {
         </div>
 
         {/* Avatar + name block */}
-        <div className="flex items-center gap-3 mb-4">
-          <div className="w-10 h-10 rounded-full bg-brand-600 flex items-center justify-center flex-shrink-0 shadow-cta">
+        <a
+          href="https://www.facebook.com/p/Andy-Le-100079180972737/"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center gap-3 mb-4 cursor-pointer group"
+        >
+          <div className="w-10 h-10 rounded-full bg-brand-600 flex items-center justify-center flex-shrink-0 shadow-cta transition-opacity duration-150 group-hover:opacity-80">
             <span className="font-display text-sm font-extrabold text-white tracking-tight">AL</span>
           </div>
           <div>
-            <p className="font-display text-sm font-extrabold text-ink leading-tight">Andy Le</p>
+            <p className="font-display text-sm font-extrabold text-ink leading-tight group-hover:text-brand-600 transition-colors duration-150">Andy Le</p>
             <p className="text-[11px] text-ink-muted leading-snug mt-0.5">
               Mortgage &amp; Financial Intelligence Specialist
             </p>
           </div>
-        </div>
+        </a>
 
         {/* Tagline */}
         <p className="text-xs font-semibold text-brand-600 italic mb-4 leading-snug">
