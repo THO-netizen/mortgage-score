@@ -6,6 +6,16 @@ import ActionBar  from '../funnel/ActionBar.jsx'
 const EMAIL_RE      = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 const FORMSPREE_URL = 'https://formspree.io/f/maqgjlbn'
 
+// Google Forms — extracted entry IDs from FB_PUBLIC_LOAD_DATA_
+// Form: "Mortgage Score Leads"
+const GF_URL = 'https://docs.google.com/forms/d/e/1FAIpQLSddO9mI3_GJL4W4TzS2atu4vbKAIiI2TUEVRN__GaQJeqeogA/formResponse'
+const GF_FIELDS = {
+  name:    'entry.1796948790',
+  surname: 'entry.1494908840',
+  email:   'entry.80055551',
+  phone:   'entry.1807846036',
+}
+
 function InputRow({ id, label, icon: Icon, type = 'text', value, onChange, placeholder, required, disabled }) {
   return (
     <div>
@@ -47,64 +57,75 @@ export default function Step6LeadCapture({ data, formData, onChange, onBack, onC
     EMAIL_RE.test(email) &&
     gdprConsent
 
-  const handleSubmit = async () => {
+  const handleSubmit = () => {
     if (!canContinue || submitting) return
     setSubmitting(true)
 
-    const payload = {
-      // Contact
-      name:    leadName,
-      email,
-      phone:   leadPhone,
+    // Split "First Surname" → separate Name / Surname fields for Google Forms
+    const parts     = leadName.trim().split(/\s+/)
+    const gfName    = parts[0] ?? ''
+    const gfSurname = parts.length > 1 ? parts.slice(1).join(' ') : parts[0] ?? ''
 
-      // Business
-      entityType:        formData?.entityType        ?? '',
-      ico:               formData?.ico               ?? '',
-      businessName:      formData?.businessName      ?? '',
-      businessAgeMonths: formData?.businessAgeMonths ?? null,
-      datumVzniku:       formData?.datumVzniku       ?? '',
+    // ── Google Forms (fire and forget — no-cors returns opaque response) ──
+    const gfBody = new URLSearchParams({
+      [GF_FIELDS.name]:    gfName,
+      [GF_FIELDS.surname]: gfSurname,
+      [GF_FIELDS.email]:   email,
+      [GF_FIELDS.phone]:   leadPhone,
+    })
+    fetch(GF_URL, {
+      method:  'POST',
+      mode:    'no-cors',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body:    gfBody.toString(),
+    }).catch(() => {})
 
-      // Employee (if applicable)
-      contractType:    formData?.contractType    ?? '',
-      probationPeriod: formData?.probationPeriod ?? '',
-      netIncome:       formData?.netIncome       ?? 0,
+    // ── Formspree (full wizard payload — runs in parallel) ──
+    fetch(FORMSPREE_URL, {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({
+        name:  leadName,
+        email,
+        phone: leadPhone,
 
-      // Residence
-      residenceStatus: formData?.residenceStatus ?? '',
-      yearsInCZ:       formData?.yearsInCZ       ?? '',
+        entityType:        formData?.entityType        ?? '',
+        ico:               formData?.ico               ?? '',
+        businessName:      formData?.businessName      ?? '',
+        businessAgeMonths: formData?.businessAgeMonths ?? null,
+        datumVzniku:       formData?.datumVzniku       ?? '',
 
-      // Liabilities
-      monthlyLoanPayments: formData?.monthlyLoanPayments ?? 0,
-      creditCardLimits:    formData?.creditCardLimits    ?? 0,
-      monthlyLeasing:      formData?.monthlyLeasing      ?? 0,
-      otherObligations:    formData?.otherObligations    ?? 0,
+        contractType:    formData?.contractType    ?? '',
+        probationPeriod: formData?.probationPeriod ?? '',
+        netIncome:       formData?.netIncome       ?? 0,
 
-      // Property
-      purchasePrice:    formData?.purchasePrice    ?? 0,
-      ownFunds:         formData?.ownFunds         ?? 0,
-      propertyPurpose:  formData?.propertyPurpose  ?? '',
-      purchaseTimeline: formData?.purchaseTimeline ?? '',
+        residenceStatus: formData?.residenceStatus ?? '',
+        yearsInCZ:       formData?.yearsInCZ       ?? '',
 
-      // Bank scan
-      bankAnalysisStatus:  formData?.bankAnalysisStatus  ?? '',
-      bankHasRedFlags:     formData?.bankAnalysisResults?.hasRedFlags     ?? null,
-      bankRedFlagKeywords: formData?.bankAnalysisResults?.redFlagKeywords ?? [],
+        monthlyLoanPayments: formData?.monthlyLoanPayments ?? 0,
+        creditCardLimits:    formData?.creditCardLimits    ?? 0,
+        monthlyLeasing:      formData?.monthlyLeasing      ?? 0,
+        otherObligations:    formData?.otherObligations    ?? 0,
 
-      _subject: `Mortgage prescoring — ${leadName} (${email})`,
-    }
+        purchasePrice:    formData?.purchasePrice    ?? 0,
+        ownFunds:         formData?.ownFunds         ?? 0,
+        propertyPurpose:  formData?.propertyPurpose  ?? '',
+        purchaseTimeline: formData?.purchaseTimeline ?? '',
 
-    try {
-      await fetch(FORMSPREE_URL, {
-        method:  'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify(payload),
-      })
-    } catch {
-      // Silent fail — user still advances to results
-    } finally {
+        bankAnalysisStatus:  formData?.bankAnalysisStatus                    ?? '',
+        bankHasRedFlags:     formData?.bankAnalysisResults?.hasRedFlags       ?? null,
+        bankRedFlagKeywords: formData?.bankAnalysisResults?.redFlagKeywords   ?? [],
+
+        _subject: `Mortgage prescoring — ${leadName} (${email})`,
+      }),
+    }).catch(() => {})
+
+    // Advance immediately — both fetches run in background
+    // no-cors gives no readable response; Formspree captures full data async
+    setTimeout(() => {
       setSubmitting(false)
       onContinue()
-    }
+    }, 350)
   }
 
   return (
