@@ -94,7 +94,7 @@ function IcoLookup({ onResult }) {
   return (
     <div className="mb-7 pb-7 border-b border-border">
       <label htmlFor="ico" className="section-label mb-2 block">
-        Zadejte Vaše IČO
+        Czech Business ID (IČO)
       </label>
 
       <div className="relative">
@@ -104,7 +104,7 @@ function IcoLookup({ onResult }) {
           inputMode="numeric"
           value={ico}
           onChange={handleChange}
-          placeholder="Např. 12345678"
+          placeholder="e.g. 12345678"
           maxLength={8}
           className="input-field pr-11 tabular-nums tracking-widest"
         />
@@ -116,7 +116,7 @@ function IcoLookup({ onResult }) {
       </div>
 
       {status === 'loading' && (
-        <p className="text-xs text-ink-muted mt-2">Hledám v registru ARES…</p>
+        <p className="text-xs text-ink-muted mt-2">Looking up in ARES registry…</p>
       )}
 
       {status === 'found' && businessName && (
@@ -145,7 +145,7 @@ function IcoLookup({ onResult }) {
         <div className="flex items-center gap-1.5 mt-2">
           <XCircle size={12} className="text-risk-DEFAULT flex-shrink-0" />
           <p className="text-xs text-risk-text">
-            IČO nebylo nalezeno, prosím zadejte údaje ručně
+            IČO not found — please enter your details manually
           </p>
         </div>
       )}
@@ -243,14 +243,14 @@ function EntityCard({ option, selected, onSelect }) {
 // ── Employee detail fields ─────────────────────────────
 
 const CONTRACT_TYPES = [
-  { value: 'indefinite', label: 'Indefinite (HPP — smlouva na dobu neurčitou)' },
-  { value: 'definite',   label: 'Fixed-term (smlouva na dobu určitou)' },
+  { value: 'indefinite', label: 'Indefinite period contract' },
+  { value: 'definite',   label: 'Fixed-term contract'        },
 ]
 
 const SECTORS = [
-  { value: 'health',    label: 'Zdravotnictví',  desc: 'Doctors, nurses, medical staff' },
-  { value: 'education', label: 'Školství',        desc: 'Teachers, academics, university' },
-  { value: 'other',     label: 'Jiné odvětví',    desc: 'Private sector or other field'  },
+  { value: 'health',    label: 'Healthcare',     desc: 'Doctors, nurses, medical staff'  },
+  { value: 'education', label: 'Education',       desc: 'Teachers, academics, university' },
+  { value: 'other',     label: 'Other sector',    desc: 'Private sector or other field'   },
 ]
 
 function EmployeeDetails({ data, onChange }) {
@@ -262,19 +262,19 @@ function EmployeeDetails({ data, onChange }) {
       {/* Methodology explanation */}
       <div className="rounded-xl bg-brand-50 border border-brand-100 p-4">
         <p className="text-[11px] font-semibold text-brand-700 uppercase tracking-wide mb-2">
-          Jak banky hodnotí zaměstnance
+          How banks evaluate employees
         </p>
         <p className="text-xs text-brand-700 leading-relaxed">
-          Metodika pro poskytování hypoték představuje interní pravidla bank, podle kterých
-          posuzují schopnost žadatele splácet a hodnotu zajištěné nemovitosti. Tyto směrnice
-          určují, na jakou maximální částku a za jakých podmínek dosáhnete.
+          Mortgage underwriting guidelines represent the internal rules banks use to assess
+          an applicant's repayment capacity and property collateral value. These directives
+          determine your maximum borrowing power and approval conditions.
         </p>
       </div>
 
       {/* Net monthly income */}
       <div>
         <label htmlFor="netIncome" className="section-label mb-2 block">
-          Čistý měsíční příjem (Kč)
+          Net Monthly Income (CZK)
           <span className="text-risk-DEFAULT ml-1">*</span>
         </label>
         <div className="relative">
@@ -285,21 +285,21 @@ function EmployeeDetails({ data, onChange }) {
             min={0}
             value={netIncome}
             onChange={(e) => onChange('netIncome', Number(e.target.value))}
-            placeholder="např. 55 000"
+            placeholder="e.g. 55 000"
             className="input-field pr-16 tabular-nums"
           />
           <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs text-ink-subtle pointer-events-none font-medium">
-            Kč / měs
+            CZK / mo
           </span>
         </div>
         <p className="text-[11px] text-ink-subtle mt-1.5">
-          Použijte průměr za posledních 3–6 měsíců po zdanění a srážkách.
+          Use your average net income from the last 3–6 months after taxes and deductions.
         </p>
       </div>
 
       {/* Contract type */}
       <div>
-        <label className="section-label mb-2 block">Typ pracovní smlouvy</label>
+        <label className="section-label mb-2 block">Employment Contract Type</label>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           {CONTRACT_TYPES.map(({ value, label }) => (
             <button
@@ -327,11 +327,11 @@ function EmployeeDetails({ data, onChange }) {
 
       {/* Probation period */}
       <div>
-        <label className="section-label mb-2 block">Jste ve zkušební době?</label>
+        <label className="section-label mb-2 block">Are you currently in a probation period?</label>
         <div className="grid grid-cols-2 gap-3">
           {[
-            { value: 'no',  label: 'Ne — zkušební doba uplynula' },
-            { value: 'yes', label: 'Ano — stále ve zkušební době' },
+            { value: 'no',  label: 'No — probation period ended'    },
+            { value: 'yes', label: 'Yes — currently in probation'   },
           ].map(({ value, label }) => (
             <button
               key={value}
@@ -358,8 +358,9 @@ function EmployeeDetails({ data, onChange }) {
           <div className="mt-2 flex items-start gap-2 rounded-lg bg-warning-light border border-warning-border px-3 py-2.5">
             <ChevronDown size={13} className="text-warning-DEFAULT flex-shrink-0 mt-0.5 rotate-[-90deg]" />
             <p className="text-[11px] text-warning-text leading-relaxed">
-              Většina bank hypotéku ve zkušební době neschválí. Doporučujeme požádat po jejím ukončení.
-              Výjimka: ČSOB umožňuje pokračovat pro zdravotnictví a školství přes ruční posouzení ústředí.
+              Most banks will decline a mortgage application during a probation period. We recommend
+              applying after probation ends. Exception: ČSOB allows Healthcare and Education
+              employees to proceed via manual headquarters underwriting.
             </p>
           </div>
         )}
@@ -367,7 +368,7 @@ function EmployeeDetails({ data, onChange }) {
 
       {/* Employment sector — ČSOB exception applies to Health / Education */}
       <div>
-        <label className="section-label mb-2 block">Odvětví zaměstnání</label>
+        <label className="section-label mb-2 block">Employment Sector</label>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           {SECTORS.map(({ value, label, desc }) => (
             <button
@@ -398,8 +399,8 @@ function EmployeeDetails({ data, onChange }) {
           <div className="mt-2 flex items-start gap-2 rounded-lg bg-success-light border border-success-border px-3 py-2.5">
             <Check size={11} className="text-success-DEFAULT flex-shrink-0 mt-0.5" />
             <p className="text-[11px] text-success-text leading-relaxed">
-              ČSOB compensating strength rule: zdravotnictví a školství mohou pokračovat
-              i ve zkušební době přes ruční posouzení ústředí.
+              ČSOB compensating strength rule: Healthcare and Education employees may proceed
+              even during probation via manual headquarters underwriting review.
             </p>
           </div>
         )}

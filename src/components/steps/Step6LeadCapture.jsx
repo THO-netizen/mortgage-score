@@ -137,7 +137,7 @@ export default function Step6LeadCapture({ data, formData, onChange, onBack, onC
         <ActionBar
           canContinue={canContinue}
           loading={submitting}
-          loadingLabel="Odesílám…"
+          loadingLabel="Sending…"
           onBack={onBack}
           onContinue={handleSubmit}
         />

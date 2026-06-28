@@ -189,7 +189,7 @@ export default function Step2Residence({
             className="input-field pr-14 tabular-nums"
           />
           <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs text-ink-subtle pointer-events-none font-medium">
-            let
+            yrs
           </span>
         </div>
         <p className="text-[11px] text-ink-subtle mt-1.5 leading-relaxed">

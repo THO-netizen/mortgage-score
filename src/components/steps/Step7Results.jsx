@@ -96,7 +96,7 @@ function buildFactors(f, simNetIncome) {
       const parts = []
       if (probationPeriod === 'yes') {
         if (employmentSector === 'health' || employmentSector === 'education')
-          parts.push('Probation — ČSOB exception applies (zdravotnictví/školství); manual HQ underwriting route.')
+          parts.push('Probation — ČSOB exception applies (Healthcare/Education); manual HQ underwriting route.')
         else
           parts.push('In probation period — most banks will decline until probation ends.')
       } else {
@@ -104,7 +104,7 @@ function buildFactors(f, simNetIncome) {
       }
       if (contractType === 'definite') parts.push('Fixed-term: 20% income haircut applied per ČS/ČSOB/KB methodology.')
       if (contractType === 'indefinite') parts.push('Indefinite contract — preferred by all 19 covered banks.')
-      const sectorLabel = { health: 'Zdravotnictví', education: 'Školství', other: 'Private sector' }[employmentSector] ?? 'Not specified'
+      const sectorLabel = { health: 'Healthcare', education: 'Education', other: 'Private sector' }[employmentSector] ?? 'Not specified'
       parts.push(`Sector: ${sectorLabel}.`)
       return parts.join(' ')
     })(),
@@ -365,7 +365,7 @@ function RiskMatrix({ formData, simNetIncome }) {
             <MetricCell label="LTV" value={`${ltvPct.toFixed(0)}% / ${maxLTVPct}%`} warn={ltvBreached} />
             <MetricCell label="DTI" value={incomeForCalc > 0 ? `${dtiRatio.toFixed(1)}× / ${maxDTIVal}×` : '—'} warn={dtiBreached} />
             <MetricCell label="DSTI" value={`${dstiAtEX.toFixed(0)}% / 45%`} warn={dstiAtEX > 45} />
-            <MetricCell label="Max term" value={`${maturity.maxYears} let`} warn={maturity.maxYears < 15} />
+            <MetricCell label="Max term" value={`${maturity.maxYears} yrs`} warn={maturity.maxYears < 15} />
           </div>
         )}
 
