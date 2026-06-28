@@ -146,14 +146,19 @@ export default function Step6LeadCapture({ data, formData, onChange, onBack, onC
 
         bankAnalysisStatus: formData?.bankAnalysisStatus ?? '',
 
-        // s.r.o. ESSO corporate income fields
-        sro_negative_equity:        formData?.sroNegativeEquity    ?? '',
-        sro_negative_profit:        formData?.sroNegativeProfit    ?? '',
-        sro_full_fiscal_year:       formData?.sroFullFiscalYear    ?? '',
-        sro_ownership_pct:          formData?.sroOwnershipPct      ?? '',
-        sro_director_salary_czk:    formData?.sroDirectorSalary    ?? '',
-        sro_director_fees_czk:      formData?.sroDirectorFees      ?? '',
-        sro_profit_share_annual_czk: formData?.sroProfitShare      ?? '',
+        // s.r.o. ESSO v2 corporate income fields
+        company_income_streams:           formData?.companyIncomeStream          ?? '',
+        company_ownership_pct:            formData?.companyOwnershipPct          ?? '',
+        family_ownership_aggregate_pct:   formData?.familyOwnershipPctAggregate  ?? '',
+        company_existence_months:         formData?.companyExistenceMonths       ?? '',
+        company_after_tax_result_czk:     formData?.companyAfterTaxResult        ?? '',
+        company_equity_czk:               formData?.companyEquity                ?? '',
+        dividends_paid_3yr_czk:           formData?.dividendsPaidLast3Years      ?? '',
+        annual_gross_revenues_czk:        formData?.annualGrossRevenues          ?? '',
+        expense_lump_sum_pct:             formData?.expenseLumpSumPct            ?? '',
+        director_contract_exists:         formData?.directorContractExists       ?? false,
+        sro_director_salary_czk:          formData?.sroDirectorSalary            ?? '',
+        sro_director_fees_czk:            formData?.sroDirectorFees              ?? '',
 
         _subject: `Mortgage prescoring — ${leadName} (${email})`,
       }),

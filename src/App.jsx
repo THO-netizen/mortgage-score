@@ -49,14 +49,28 @@ const INITIAL_FORM = {
   probationPeriod:   '',        // 'yes' | 'no'  (synced from isProbation)
   employmentSector:  '',        // 'health' | 'education' | 'other'
 
-  // Step 1 — s.r.o. director corporate income assessment (ESSO)
+  // Step 1 — s.r.o. director corporate income assessment (ESSO v2)
+  // Income stream classification
+  companyIncomeStream:         '',     // 'A' | 'B' | 'C' | 'AB' | 'AC'
+  companyOwnershipPct:         null,   // integer 0-100
+  familyOwnershipPctAggregate: null,   // integer 0-100
+  // Corporate financials (actual values — replace boolean flags)
+  companyExistenceMonths:      null,   // integer months
+  companyAfterTaxResult:       null,   // CZK — positive = profit, negative = hard block
+  companyEquity:               null,   // CZK — positive = healthy, negative = hard block
+  dividendsPaidLast3Years:     null,   // CZK total over last 3 fiscal years (Stream B)
+  annualGrossRevenues:         null,   // CZK/year
+  expenseLumpSumPct:           null,   // 30 | 40 | 60 | 80
+  directorContractExists:      false,
+  // Stream income fields (legacy names kept; Stream A = salary, Stream C = fees)
+  sroDirectorSalary:           null,   // CZK/mo — Stream A (odměna jednatele)
+  sroDirectorFees:             null,   // CZK/mo — Stream C (Smlouva o výkonu funkce)
+  // Deprecated boolean flags (kept for backward compat — engine uses numeric fields above)
   sroNegativeEquity: false,
   sroNegativeProfit: false,
   sroFullFiscalYear: true,
   sroOwnershipPct:   null,
-  sroDirectorSalary: null,    // CZK/mo — director salary (odměna jednatele)
-  sroDirectorFees:   null,    // CZK/mo — Smlouva o výkonu funkce
-  sroProfitShare:    null,    // CZK/year — dividends / podíl na zisku
+  sroProfitShare:    null,
 
   // Step 2 — residence + applicant age (for maturity model)
   applicantAge:      35,
@@ -256,16 +270,22 @@ export default function App() {
                       }}
                       onEmployeeChange={handleEmployeeChange}
                       businessData={{
-                        taxRegime:                formData.taxRegime,
-                        annualTurnover:           formData.annualTurnover,
-                        avgMonthlyCreditTurnover: formData.avgMonthlyCreditTurnover,
-                        sroNegativeEquity:        formData.sroNegativeEquity,
-                        sroNegativeProfit:        formData.sroNegativeProfit,
-                        sroFullFiscalYear:        formData.sroFullFiscalYear,
-                        sroOwnershipPct:          formData.sroOwnershipPct,
-                        sroDirectorSalary:        formData.sroDirectorSalary,
-                        sroDirectorFees:          formData.sroDirectorFees,
-                        sroProfitShare:           formData.sroProfitShare,
+                        taxRegime:                   formData.taxRegime,
+                        annualTurnover:              formData.annualTurnover,
+                        avgMonthlyCreditTurnover:    formData.avgMonthlyCreditTurnover,
+                        // ESSO v2 fields
+                        companyIncomeStream:         formData.companyIncomeStream,
+                        companyOwnershipPct:         formData.companyOwnershipPct,
+                        familyOwnershipPctAggregate: formData.familyOwnershipPctAggregate,
+                        companyExistenceMonths:      formData.companyExistenceMonths,
+                        companyAfterTaxResult:       formData.companyAfterTaxResult,
+                        companyEquity:               formData.companyEquity,
+                        dividendsPaidLast3Years:     formData.dividendsPaidLast3Years,
+                        annualGrossRevenues:         formData.annualGrossRevenues,
+                        expenseLumpSumPct:           formData.expenseLumpSumPct,
+                        directorContractExists:      formData.directorContractExists,
+                        sroDirectorSalary:           formData.sroDirectorSalary,
+                        sroDirectorFees:             formData.sroDirectorFees,
                       }}
                       onBusinessChange={setField}
                       onContinue={handleStep1Continue}

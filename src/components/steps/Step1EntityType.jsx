@@ -511,215 +511,539 @@ function Toggle({ on, onToggle, danger = false }) {
   )
 }
 
-// ── s.r.o. Director — ESSO corporate income assessment ──
+// ── s.r.o. Director — ESSO corporate income assessment (v2) ──
+
+const STREAM_OPTIONS = [
+  {
+    value:   'A',
+    title:   'Stream A — Director Salary',
+    subtitle: 'Odměna jednatele',
+    desc:    'Regular monthly salary paid by the company, net after personal income tax and social contributions.',
+    varNote: '+10–20% Var(X) by stake',
+  },
+  {
+    value:   'B',
+    title:   'Stream B — Profit Share',
+    subtitle: 'Podíl na zisku / Dividendy',
+    desc:    'Annual profit distributions based on company after-tax result and ownership stake. Requires 3-year dividend history.',
+    varNote: '+35% Var(X) penalty',
+  },
+  {
+    value:   'C',
+    title:   'Stream C — Director Fees',
+    subtitle: 'Smlouva o výkonu funkce',
+    desc:    "Fees under a signed Director's Service Agreement. Verified contract document required by all lenders.",
+    varNote: '+15% Var(X) penalty',
+  },
+]
+
+const EXPENSE_LUMP_OPTIONS = [
+  { value: 80, label: '80%', desc: 'Agricultural / retail (řemeslné/zemědělství)' },
+  { value: 60, label: '60%', desc: 'Craft trades (řemeslné živnosti)' },
+  { value: 40, label: '40%', desc: 'Capital income / rentals' },
+  { value: 30, label: '30%', desc: 'Liberal professions / IT consulting' },
+]
 
 function SroIncomeSection({ data, onChange }) {
   const {
-    sroNegativeEquity = false,
-    sroNegativeProfit = false,
-    sroFullFiscalYear = true,
-    sroOwnershipPct   = null,
-    sroDirectorSalary = null,
-    sroDirectorFees   = null,
-    sroProfitShare    = null,
+    companyIncomeStream          = '',
+    companyOwnershipPct          = null,
+    familyOwnershipPctAggregate  = null,
+    companyExistenceMonths       = null,
+    companyAfterTaxResult        = null,
+    companyEquity                = null,
+    dividendsPaidLast3Years      = null,
+    annualGrossRevenues          = null,
+    expenseLumpSumPct            = null,
+    directorContractExists       = false,
+    sroDirectorSalary            = null,
+    sroDirectorFees              = null,
+    avgMonthlyCreditTurnover     = null,
+    taxRegime                    = '',
   } = data
 
-  const hardBlock = sroNegativeEquity || sroNegativeProfit || sroFullFiscalYear === false
-  const ownerPct  = Number(sroOwnershipPct || 0)
-  const fullAudit = ownerPct > 50
+  // ── Parse active streams ──────────────────────────────
+  const hasA = companyIncomeStream.includes('A')
+  const hasB = companyIncomeStream.includes('B')
+  const hasC = companyIncomeStream.includes('C')
+
+  const toggleStream = (s) => {
+    const active = new Set([...companyIncomeStream].filter(c => ['A', 'B', 'C'].includes(c)))
+    if (active.has(s)) active.delete(s)
+    else               active.add(s)
+    onChange('companyIncomeStream', ['A', 'B', 'C'].filter(c => active.has(c)).join(''))
+  }
+
+  // ── Eligibility ───────────────────────────────────────
+  const equityVal  = companyEquity          !== null ? Number(companyEquity)          : null
+  const afterTaxV  = companyAfterTaxResult  !== null ? Number(companyAfterTaxResult)  : null
+  const existMoV   = companyExistenceMonths !== null ? Number(companyExistenceMonths) : null
+
+  const negEquity  = equityVal !== null && equityVal < 0
+  const negPnL     = afterTaxV !== null && afterTaxV < 0
+  const noHistory  = existMoV  !== null && existMoV < 12
+  const hardBlock  = negEquity || negPnL || noHistory
+  const mediumRisk = !hardBlock && existMoV !== null && existMoV >= 12 && existMoV < 24
+
+  // ── Ownership ─────────────────────────────────────────
+  const ownPct     = Number(companyOwnershipPct          ?? 0)
+  const famPct     = Number(familyOwnershipPctAggregate  ?? 0)
+  const totalPct   = ownPct + famPct
+  const fullAudit  = ownPct > 50
 
   return (
-    <div className="mt-7 pt-7 border-t border-border space-y-5 animate-fade-up">
+    <div className="mt-7 pt-7 border-t border-border space-y-6 animate-fade-up">
 
-      {/* Section header */}
-      <div className="flex items-center gap-2">
-        <Building2 size={14} className="text-brand-600 flex-shrink-0" />
-        <p className="font-display text-sm font-extrabold text-ink">Corporate Income Assessment</p>
-      </div>
-
-      {/* ESSO methodology note */}
-      <div className="rounded-xl bg-brand-50 border border-brand-100 p-4">
-        <p className="text-[11px] font-semibold text-brand-700 uppercase tracking-wide mb-1">
-          ESSO — Economically Self-related Subject Owner
-        </p>
-        <p className="text-xs text-brand-700 leading-relaxed">
-          Czech banks assess Company Director income under ESSO methodology — a stricter audit
-          path requiring corporate financial statements, ownership verification, and profitability
-          evidence across 2 full fiscal years.
-        </p>
-      </div>
-
-      {/* ── Corporate financial health ─────────────────── */}
+      {/* ── ESSO banner ───────────────────────────────── */}
       <div>
-        <label className="section-label mb-2 block">Corporate Financial Health</label>
-        <div className="space-y-2">
-          <div className={`flex items-center justify-between rounded-xl border px-4 py-3 ${sroNegativeEquity ? 'bg-risk-light border-risk-border' : 'border-border bg-card'}`}>
-            <div>
-              <p className={`text-xs font-medium ${sroNegativeEquity ? 'text-risk-text' : 'text-ink'}`}>
-                Company has negative equity (vlastní kapitál &lt; 0)
-              </p>
-              <p className="text-[10px] text-ink-subtle mt-0.5">Negative net equity on the company balance sheet</p>
-            </div>
-            <Toggle on={sroNegativeEquity} onToggle={() => onChange('sroNegativeEquity', !sroNegativeEquity)} danger />
-          </div>
-          <div className={`flex items-center justify-between rounded-xl border px-4 py-3 ${sroNegativeProfit ? 'bg-risk-light border-risk-border' : 'border-border bg-card'}`}>
-            <div>
-              <p className={`text-xs font-medium ${sroNegativeProfit ? 'text-risk-text' : 'text-ink'}`}>
-                Company shows a net loss (hospodářský výsledek &lt; 0)
-              </p>
-              <p className="text-[10px] text-ink-subtle mt-0.5">Negative net profit in the last filed fiscal year</p>
-            </div>
-            <Toggle on={sroNegativeProfit} onToggle={() => onChange('sroNegativeProfit', !sroNegativeProfit)} danger />
-          </div>
+        <div className="flex items-center gap-2 mb-3">
+          <Building2 size={14} className="text-brand-600 flex-shrink-0" />
+          <p className="font-display text-sm font-extrabold text-ink">Corporate Income Assessment</p>
+        </div>
+        <div className="rounded-xl bg-brand-50 border border-brand-100 p-4">
+          <p className="text-[11px] font-semibold text-brand-700 uppercase tracking-wide mb-1">
+            ESSO — Economically Self-related Subject Owner
+          </p>
+          <p className="text-xs text-brand-700 leading-relaxed">
+            Czech banks assess Company Director income via ESSO methodology — a stricter audit path
+            requiring corporate financial statements, ownership verification, and profitability evidence.
+            Select your income streams and enter the required financial data below.
+          </p>
         </div>
       </div>
 
-      {/* ── Fiscal year gate ──────────────────────────── */}
+      {/* ── 1. Corporate Financial Health ─────────────── */}
       <div>
-        <label className="section-label mb-2 block">Company History</label>
-        <div className={`flex items-center justify-between rounded-xl border px-4 py-3 ${!sroFullFiscalYear ? 'bg-risk-light border-risk-border' : 'bg-success-light border-success-border'}`}>
+        <p className="section-label mb-3 block">1. Corporate Financial Health</p>
+        <div className="space-y-3">
+
           <div>
-            <p className={`text-xs font-medium ${!sroFullFiscalYear ? 'text-risk-text' : 'text-success-text'}`}>
-              Company has completed at least one full fiscal year (12+ months)
-            </p>
-            <p className="text-[10px] text-ink-subtle mt-0.5">Required by all Czech banks under ESSO assessment</p>
+            <label htmlFor="companyEquity" className="text-[11px] font-semibold text-ink-muted uppercase tracking-wide mb-1.5 block">
+              Company Net Equity — Vlastní kapitál (CZK)
+            </label>
+            <div className="relative">
+              <input
+                id="companyEquity"
+                type="number"
+                inputMode="numeric"
+                value={companyEquity ?? ''}
+                onChange={(e) => onChange('companyEquity', e.target.value === '' ? null : Number(e.target.value))}
+                placeholder="e.g. 2 500 000"
+                className={`input-field pr-28 tabular-nums${negEquity ? ' input-error' : ''}`}
+              />
+              <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs text-ink-subtle pointer-events-none font-medium whitespace-nowrap">CZK / yr-end</span>
+            </div>
+            {negEquity
+              ? <p className="text-xs text-risk-text mt-1">Hard Block — negative equity prevents ESSO income recognition.</p>
+              : equityVal !== null && <p className="text-[11px] text-success-text mt-1">Positive equity — ESSO financial health gate passed.</p>
+            }
           </div>
-          <Toggle on={sroFullFiscalYear} onToggle={() => onChange('sroFullFiscalYear', !sroFullFiscalYear)} />
+
+          <div>
+            <label htmlFor="companyAfterTaxResult" className="text-[11px] font-semibold text-ink-muted uppercase tracking-wide mb-1.5 block">
+              After-Tax Net Result — Hospodářský výsledek (CZK)
+            </label>
+            <div className="relative">
+              <input
+                id="companyAfterTaxResult"
+                type="number"
+                inputMode="numeric"
+                value={companyAfterTaxResult ?? ''}
+                onChange={(e) => onChange('companyAfterTaxResult', e.target.value === '' ? null : Number(e.target.value))}
+                placeholder="e.g. 800 000"
+                className={`input-field pr-24 tabular-nums${negPnL ? ' input-error' : ''}`}
+              />
+              <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs text-ink-subtle pointer-events-none font-medium whitespace-nowrap">CZK / yr</span>
+            </div>
+            {negPnL
+              ? <p className="text-xs text-risk-text mt-1">Hard Block — net loss prevents ESSO income recognition.</p>
+              : <p className="text-[11px] text-ink-subtle mt-1">Net profit after DPPO. Used directly in Stream B (ČSOB formula).</p>
+            }
+          </div>
+
         </div>
       </div>
 
-      {/* ── ESSO hard block warning ───────────────────── */}
+      {/* ── 2. Company History ────────────────────────── */}
+      <div>
+        <label htmlFor="companyExistenceMonths" className="section-label mb-1.5 block">
+          2. Company Existence — Total Months in Operation
+        </label>
+        <div className="relative">
+          <input
+            id="companyExistenceMonths"
+            type="number"
+            inputMode="numeric"
+            min={0}
+            value={companyExistenceMonths ?? ''}
+            onChange={(e) => onChange('companyExistenceMonths', e.target.value === '' ? null : Math.round(Number(e.target.value)))}
+            placeholder="e.g. 36"
+            className={`input-field pr-20 tabular-nums${noHistory ? ' input-error' : ''}`}
+          />
+          <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs text-ink-subtle pointer-events-none font-medium">months</span>
+        </div>
+        {noHistory && (
+          <p className="text-xs text-risk-text mt-1.5">
+            Hard Block — minimum 12 months required. All Czech banks require at least one complete fiscal year under ESSO.
+          </p>
+        )}
+        {mediumRisk && (
+          <p className="text-[11px] text-warning-text mt-1.5">
+            Medium Risk — 1–2 fiscal years. Income capped at 50% across all banks until 2nd full fiscal year completes.
+          </p>
+        )}
+        {existMoV !== null && existMoV >= 24 && (
+          <p className="text-[11px] text-success-text mt-1.5">Low Risk — 2+ fiscal years. Full ESSO income recognition available.</p>
+        )}
+      </div>
+
+      {/* Eligibility callouts */}
       {hardBlock && (
-        <div className="rounded-xl bg-risk-light border border-risk-border px-4 py-3 animate-fade-up">
+        <div className="rounded-xl bg-risk-light border border-risk-border px-4 py-3">
           <div className="flex items-start gap-2">
             <AlertTriangle size={14} className="text-risk-DEFAULT flex-shrink-0 mt-0.5" />
             <div>
               <p className="text-xs font-semibold text-risk-text mb-1">Hard Block — ESSO Assessment Failed</p>
               <p className="text-[11px] text-risk-text leading-relaxed">
                 Your corporate financials do not currently meet the standard underwriting criteria
-                for an owned-company income assessment. Continue to see your full pre-score report
-                and discuss alternative pathways with your advisor.
+                for an owned-company income assessment. Continue to see your pre-score report and
+                explore alternative pathways with your advisor.
               </p>
             </div>
           </div>
         </div>
       )}
-
-      {/* ── Ownership stake ───────────────────────────── */}
-      <div>
-        <label htmlFor="sroOwnershipPct" className="section-label mb-2 block">
-          Your Ownership Stake in the Company
-          <span className="text-risk-DEFAULT ml-1">*</span>
-        </label>
-        <div className="relative">
-          <input
-            id="sroOwnershipPct"
-            type="number"
-            inputMode="numeric"
-            min={1}
-            max={100}
-            value={sroOwnershipPct ?? ''}
-            onChange={(e) => onChange('sroOwnershipPct', e.target.value === '' ? null : Math.min(100, Math.max(0, Number(e.target.value))))}
-            placeholder="e.g. 100"
-            className="input-field pr-10 tabular-nums"
-          />
-          <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs text-ink-subtle pointer-events-none font-medium">%</span>
-        </div>
-        {fullAudit && (
-          <div className="mt-2 flex items-start gap-2 rounded-lg bg-warning-light border border-warning-border px-3 py-2.5">
-            <AlertTriangle size={12} className="text-warning-DEFAULT flex-shrink-0 mt-0.5" />
+      {mediumRisk && (
+        <div className="rounded-xl bg-warning-light border border-warning-border px-4 py-3">
+          <div className="flex items-start gap-2">
+            <AlertTriangle size={14} className="text-warning-DEFAULT flex-shrink-0 mt-0.5" />
             <p className="text-[11px] text-warning-text leading-relaxed">
-              <strong>Full Audit Mode — &gt;50% ownership.</strong> Banks apply ESSO
-              classification and require full corporate financial statements, including
-              audited accounts where available.
+              <strong>50% Income Cap applies.</strong> Due to current company risk rating, this income
+              source is recognised up to 50% of your total borrowing capacity under Czech bank ESSO methodology.
             </p>
           </div>
-        )}
-        {ownerPct > 25 && ownerPct <= 50 && (
-          <p className="text-[11px] text-warning-text mt-1.5">
-            Significant influence — banks assess both salary and dividend income. Full DPPO audit trail required.
-          </p>
-        )}
-        {ownerPct > 0 && ownerPct <= 25 && (
-          <p className="text-[11px] text-ink-subtle mt-1.5">
-            Minority stake — standard co-owner methodology; DPPO required alongside personal returns.
-          </p>
+        </div>
+      )}
+
+      {/* ── 3. Ownership Structure ────────────────────── */}
+      <div>
+        <p className="section-label mb-3">3. Ownership Structure</p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-2">
+          <div>
+            <label htmlFor="companyOwnershipPct" className="text-[11px] font-semibold text-ink-muted uppercase tracking-wide mb-1.5 block">
+              Your Direct Ownership
+              <span className="text-risk-DEFAULT ml-1">*</span>
+            </label>
+            <div className="relative">
+              <input
+                id="companyOwnershipPct"
+                type="number"
+                inputMode="numeric"
+                min={0}
+                max={100}
+                value={companyOwnershipPct ?? ''}
+                onChange={(e) => onChange('companyOwnershipPct', e.target.value === '' ? null : Math.min(100, Math.max(0, Number(e.target.value))))}
+                placeholder="e.g. 100"
+                className="input-field pr-8 tabular-nums"
+              />
+              <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs text-ink-subtle pointer-events-none font-medium">%</span>
+            </div>
+          </div>
+          <div>
+            <label htmlFor="familyOwnershipPctAggregate" className="text-[11px] font-semibold text-ink-muted uppercase tracking-wide mb-1.5 block">
+              Family Aggregate Ownership
+            </label>
+            <div className="relative">
+              <input
+                id="familyOwnershipPctAggregate"
+                type="number"
+                inputMode="numeric"
+                min={0}
+                max={100}
+                value={familyOwnershipPctAggregate ?? ''}
+                onChange={(e) => onChange('familyOwnershipPctAggregate', e.target.value === '' ? null : Math.min(100, Math.max(0, Number(e.target.value))))}
+                placeholder="e.g. 0"
+                className="input-field pr-8 tabular-nums"
+              />
+              <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs text-ink-subtle pointer-events-none font-medium">%</span>
+            </div>
+          </div>
+        </div>
+        <p className="text-[10px] text-ink-subtle mb-2 leading-relaxed">
+          Family aggregate includes spouse, parents, and related-party holdings. Combined ≥ 20% triggers ESSO classification.
+        </p>
+        {ownPct > 0 && (
+          <div className="flex flex-wrap gap-1.5">
+            {totalPct >= 20  && <span className="badge-warning text-[10px]">ESSO Classification ({totalPct}% combined)</span>}
+            {fullAudit       && <span className="badge-risk text-[10px]">Full Audit &gt;50%</span>}
+            {ownPct > 25 && ownPct <= 33 && <span className="badge-warning text-[10px]">ČSOB: 15% salary haircut (&gt;25%)</span>}
+            {ownPct > 33     && <span className="badge-risk text-[10px]">UCB: 45 000 CZK salary cap (&gt;33%)</span>}
+          </div>
         )}
       </div>
 
-      {/* ── Income components — only shown when not hard-blocked ─── */}
-      {!hardBlock && (
-        <>
-          {/* Director salary */}
-          <div>
-            <label htmlFor="sroDirectorSalary" className="section-label mb-2 block">
-              Monthly Director Salary — Odměna jednatele (CZK)
-            </label>
-            <div className="relative">
-              <input
-                id="sroDirectorSalary"
-                type="number"
-                inputMode="numeric"
-                min={0}
-                value={sroDirectorSalary ?? ''}
-                onChange={(e) => onChange('sroDirectorSalary', e.target.value === '' ? null : Number(e.target.value))}
-                placeholder="e.g. 60 000"
-                className="input-field pr-20 tabular-nums"
-              />
-              <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs text-ink-subtle pointer-events-none font-medium whitespace-nowrap">CZK / mo</span>
-            </div>
-            <p className="text-[11px] text-ink-subtle mt-1.5">
-              Net monthly salary paid by the company to you as director — after taxes and social deductions.
-            </p>
-          </div>
+      {/* ── 4. Income Streams ─────────────────────────── */}
+      <div>
+        <p className="section-label mb-1">4. Income Streams</p>
+        <p className="text-[11px] text-ink-muted mb-3">
+          Select all income sources you receive from the company — each is scored per Czech bank methodology.
+        </p>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          {STREAM_OPTIONS.map(({ value: s, title, subtitle, desc, varNote }) => {
+            const active = companyIncomeStream.includes(s)
+            return (
+              <button
+                key={s}
+                type="button"
+                onClick={() => toggleStream(s)}
+                className={[
+                  'relative text-left rounded-xl border-2 px-4 py-3.5 transition-all duration-150',
+                  'focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-600/40',
+                  active ? 'border-brand-600 bg-brand-50' : 'border-border bg-card hover:border-border-strong',
+                ].join(' ')}
+              >
+                {active && (
+                  <span className="absolute top-2.5 right-2.5 w-4 h-4 rounded-full bg-brand-600 flex items-center justify-center">
+                    <Check size={9} className="text-white" strokeWidth={3} />
+                  </span>
+                )}
+                <p className={`text-xs font-bold mb-0.5 ${active ? 'text-brand-700' : 'text-ink'}`}>{title}</p>
+                <p className={`text-[10px] font-semibold mb-1.5 ${active ? 'text-brand-600' : 'text-ink-muted'}`}>{subtitle}</p>
+                <p className="text-[10px] text-ink-subtle leading-relaxed mb-2">{desc}</p>
+                <span className={`inline-block text-[10px] font-semibold px-1.5 py-0.5 rounded ${active ? 'bg-brand-100 text-brand-700' : 'bg-surface text-ink-subtle'}`}>
+                  {varNote}
+                </span>
+              </button>
+            )
+          })}
+        </div>
+        {!hasA && hasB && hasC && (
+          <p className="text-[11px] text-warning-text mt-2">Stream B + C without Stream A is non-standard under Czech ESSO methodology — consider adding Stream A.</p>
+        )}
+      </div>
 
-          {/* Director service fees */}
-          <div>
-            <label htmlFor="sroDirectorFees" className="section-label mb-2 block">
-              Monthly Director Service Fees (CZK)
-            </label>
-            <div className="relative">
-              <input
-                id="sroDirectorFees"
-                type="number"
-                inputMode="numeric"
-                min={0}
-                value={sroDirectorFees ?? ''}
-                onChange={(e) => onChange('sroDirectorFees', e.target.value === '' ? null : Number(e.target.value))}
-                placeholder="e.g. 0"
-                className="input-field pr-20 tabular-nums"
-              />
-              <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs text-ink-subtle pointer-events-none font-medium whitespace-nowrap">CZK / mo</span>
-            </div>
-            <p className="text-[11px] text-ink-subtle mt-1.5">
-              Fees under Director's Service Agreement (Smlouva o výkonu funkce jednatele), if applicable. Enter 0 if none.
-            </p>
-          </div>
+      {/* ── 5. Stream-specific income details ─────────── */}
+      {(hasA || hasB || hasC) && (
+        <div className="space-y-4">
+          <p className="section-label">5. Income Details by Stream</p>
 
-          {/* Annual profit share / dividends */}
+          {/* Stream A */}
+          {hasA && (
+            <div className="rounded-xl border-2 border-brand-200 bg-brand-50/60 p-4 space-y-3">
+              <p className="text-xs font-bold text-brand-700">Stream A — Director Salary</p>
+              <div>
+                <label htmlFor="sroDirectorSalary" className="text-[11px] font-semibold text-ink-muted uppercase tracking-wide mb-1.5 block">
+                  Net Monthly Salary — Odměna jednatele (CZK)
+                </label>
+                <div className="relative">
+                  <input
+                    id="sroDirectorSalary"
+                    type="number"
+                    inputMode="numeric"
+                    min={0}
+                    value={sroDirectorSalary ?? ''}
+                    onChange={(e) => onChange('sroDirectorSalary', e.target.value === '' ? null : Number(e.target.value))}
+                    placeholder="e.g. 60 000"
+                    className="input-field pr-20 tabular-nums"
+                  />
+                  <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs text-ink-subtle pointer-events-none font-medium whitespace-nowrap">CZK / mo</span>
+                </div>
+                {ownPct > 33
+                  ? <p className="text-[11px] text-risk-text mt-1.5">UCB caps owner salary at <strong>45 000 CZK / mo</strong> for &gt;33% shareholders — income above this threshold is excluded.</p>
+                  : ownPct > 25
+                  ? <p className="text-[11px] text-ink-subtle mt-1.5">ČSOB applies a 15% haircut to director salary for &gt;25% ownership.</p>
+                  : <p className="text-[11px] text-ink-subtle mt-1.5">Net take-home after personal income tax and social contributions.</p>
+                }
+              </div>
+            </div>
+          )}
+
+          {/* Stream B */}
+          {hasB && (
+            <div className="rounded-xl border-2 border-brand-200 bg-brand-50/60 p-4 space-y-3">
+              <p className="text-xs font-bold text-brand-700">Stream B — Profit Share / Dividends</p>
+              <div>
+                <label htmlFor="dividendsPaidLast3Years" className="text-[11px] font-semibold text-ink-muted uppercase tracking-wide mb-1.5 block">
+                  Total Dividends Paid — Last 3 Fiscal Years (CZK)
+                </label>
+                <div className="relative">
+                  <input
+                    id="dividendsPaidLast3Years"
+                    type="number"
+                    inputMode="numeric"
+                    min={0}
+                    value={dividendsPaidLast3Years ?? ''}
+                    onChange={(e) => onChange('dividendsPaidLast3Years', e.target.value === '' ? null : Number(e.target.value))}
+                    placeholder="e.g. 1 800 000"
+                    className="input-field pr-24 tabular-nums"
+                  />
+                  <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs text-ink-subtle pointer-events-none font-medium whitespace-nowrap">CZK / 3 yrs</span>
+                </div>
+                <p className="text-[11px] text-ink-subtle mt-1.5">Gross dividends distributed over 3 fiscal years. Used by UCB (÷36) and mBank (net 15% withholding, ÷36).</p>
+              </div>
+              {/* Per-bank methodology breakdown */}
+              <div className="rounded-lg bg-white border border-brand-100 px-3 py-2.5">
+                <p className="text-[10px] font-semibold text-ink-muted uppercase tracking-wide mb-1.5">Per-bank Stream B methodology</p>
+                <div className="space-y-1">
+                  <p className="text-[11px] text-ink-muted"><span className="font-semibold text-ink">ČSOB:</span> (After-tax result × ownership%) ÷ 12 × 0.85</p>
+                  <p className="text-[11px] text-ink-muted"><span className="font-semibold text-ink">mBank:</span> Dividends paid × 0.85 ÷ 36 mo (15% withholding deducted)</p>
+                  <p className="text-[11px] text-ink-muted"><span className="font-semibold text-ink">UCB:</span> Dividends paid ÷ 36 mo (gross)</p>
+                  <p className="text-[11px] text-ink-muted"><span className="font-semibold text-ink">ČS:</span> (After-tax result × ownership%) ÷ 12 × 0.80 (conservative)</p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Stream C */}
+          {hasC && (
+            <div className="rounded-xl border-2 border-brand-200 bg-brand-50/60 p-4 space-y-3">
+              <p className="text-xs font-bold text-brand-700">Stream C — Director Fees</p>
+              <div className={`flex items-center justify-between rounded-xl border px-4 py-3 ${directorContractExists ? 'bg-success-light border-success-border' : 'border-border bg-card'}`}>
+                <div>
+                  <p className={`text-xs font-medium ${directorContractExists ? 'text-success-text' : 'text-ink'}`}>
+                    Signed Director's Service Agreement exists
+                  </p>
+                  <p className="text-[10px] text-ink-subtle mt-0.5">Smlouva o výkonu funkce jednatele — required by all banks</p>
+                </div>
+                <Toggle on={directorContractExists} onToggle={() => onChange('directorContractExists', !directorContractExists)} />
+              </div>
+              {!directorContractExists && (
+                <p className="text-xs text-risk-text">Stream C income cannot be recognised without a signed Director's Service Agreement — all banks will exclude this source.</p>
+              )}
+              {directorContractExists && (
+                <div>
+                  <label htmlFor="sroDirectorFees" className="text-[11px] font-semibold text-ink-muted uppercase tracking-wide mb-1.5 block">
+                    Monthly Director Fees (CZK)
+                  </label>
+                  <div className="relative">
+                    <input
+                      id="sroDirectorFees"
+                      type="number"
+                      inputMode="numeric"
+                      min={0}
+                      value={sroDirectorFees ?? ''}
+                      onChange={(e) => onChange('sroDirectorFees', e.target.value === '' ? null : Number(e.target.value))}
+                      placeholder="e.g. 30 000"
+                      className="input-field pr-20 tabular-nums"
+                    />
+                    <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs text-ink-subtle pointer-events-none font-medium whitespace-nowrap">CZK / mo</span>
+                  </div>
+                  <p className="text-[11px] text-ink-subtle mt-1.5">Same bank haircuts apply as Stream A (ČSOB 15% for &gt;25%, UCB 45k cap for &gt;33%).</p>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ── 6. Company Revenue & Tax Details ─────────── */}
+      <div>
+        <p className="section-label mb-3">6. Company Revenue &amp; Tax Details</p>
+        <div className="space-y-4">
+
           <div>
-            <label htmlFor="sroProfitShare" className="section-label mb-2 block">
-              Annual Profit Share / Dividends (CZK)
+            <label htmlFor="annualGrossRevenues" className="text-[11px] font-semibold text-ink-muted uppercase tracking-wide mb-1.5 block">
+              Annual Gross Revenues — Obrat (CZK)
             </label>
             <div className="relative">
               <input
-                id="sroProfitShare"
+                id="annualGrossRevenues"
                 type="number"
                 inputMode="numeric"
                 min={0}
-                value={sroProfitShare ?? ''}
-                onChange={(e) => onChange('sroProfitShare', e.target.value === '' ? null : Number(e.target.value))}
-                placeholder="e.g. 500 000"
+                value={annualGrossRevenues ?? ''}
+                onChange={(e) => onChange('annualGrossRevenues', e.target.value === '' ? null : Number(e.target.value))}
+                placeholder="e.g. 6 000 000"
                 className="input-field pr-24 tabular-nums"
               />
               <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs text-ink-subtle pointer-events-none font-medium whitespace-nowrap">CZK / year</span>
             </div>
-            <p className="text-[11px] text-ink-subtle mt-1.5">
-              Dividends or profit share (podíl na zisku) received in the last fiscal year. Enter 0 if none.
-            </p>
           </div>
-        </>
-      )}
+
+          <div>
+            <label htmlFor="avgMonthlyCreditTurnover_sro" className="text-[11px] font-semibold text-ink-muted uppercase tracking-wide mb-1.5 block">
+              Avg. Monthly Credit Turnover — Kreditní obrat (CZK)
+            </label>
+            <div className="relative">
+              <input
+                id="avgMonthlyCreditTurnover_sro"
+                type="number"
+                inputMode="numeric"
+                min={0}
+                value={avgMonthlyCreditTurnover ?? ''}
+                onChange={(e) => onChange('avgMonthlyCreditTurnover', e.target.value === '' ? null : Number(e.target.value))}
+                placeholder="e.g. 500 000"
+                className="input-field pr-28 tabular-nums"
+              />
+              <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs text-ink-subtle pointer-events-none font-medium whitespace-nowrap">CZK / month</span>
+            </div>
+            <p className="text-[11px] text-ink-subtle mt-1">Average inbound business payments to the company account (last 6 months).</p>
+          </div>
+
+          {/* Tax regime */}
+          <div>
+            <p className="text-[11px] font-semibold text-ink-muted uppercase tracking-wide mb-2">Tax Filing Regime</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {[
+                { value: 'tax_return', label: 'Standard Tax Return',   sublabel: 'DPPO / DAP — corporate or personal tax return' },
+                { value: 'flat_tax',   label: 'Flat Tax Regime',       sublabel: 'Paušální daň — fixed quarterly flat-tax' },
+              ].map(({ value: v, label, sublabel }) => (
+                <button
+                  key={v}
+                  type="button"
+                  onClick={() => onChange('taxRegime', v)}
+                  className={[
+                    'relative text-left rounded-xl border-2 px-4 py-3 transition-all duration-150',
+                    'focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-600/40',
+                    taxRegime === v ? 'border-brand-600 bg-brand-50' : 'border-border bg-card hover:border-border-strong',
+                  ].join(' ')}
+                >
+                  {taxRegime === v && (
+                    <span className="absolute top-2.5 right-2.5 w-4 h-4 rounded-full bg-brand-600 flex items-center justify-center">
+                      <Check size={9} className="text-white" strokeWidth={3} />
+                    </span>
+                  )}
+                  <p className={`text-xs font-bold mb-0.5 ${taxRegime === v ? 'text-brand-700' : 'text-ink'}`}>{label}</p>
+                  <p className="text-[10px] text-ink-subtle">{sublabel}</p>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Expense lump sum — tax_return only */}
+          {taxRegime === 'tax_return' && (
+            <div className="animate-fade-up">
+              <p className="text-[11px] font-semibold text-ink-muted uppercase tracking-wide mb-2">
+                Expense Lump Sum — Paušální výdaje (%)
+              </p>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                {EXPENSE_LUMP_OPTIONS.map(({ value: v, label, desc }) => (
+                  <button
+                    key={v}
+                    type="button"
+                    onClick={() => onChange('expenseLumpSumPct', v)}
+                    className={[
+                      'relative text-left rounded-xl border-2 px-3 py-3 transition-all duration-150',
+                      'focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-600/40',
+                      expenseLumpSumPct === v ? 'border-brand-600 bg-brand-50' : 'border-border bg-card hover:border-border-strong',
+                    ].join(' ')}
+                  >
+                    {expenseLumpSumPct === v && (
+                      <span className="absolute top-1.5 right-1.5 w-3.5 h-3.5 rounded-full bg-brand-600 flex items-center justify-center">
+                        <Check size={8} className="text-white" strokeWidth={3} />
+                      </span>
+                    )}
+                    <p className={`text-sm font-bold mb-0.5 ${expenseLumpSumPct === v ? 'text-brand-700' : 'text-ink'}`}>{label}</p>
+                    <p className="text-[9px] text-ink-subtle leading-tight">{desc}</p>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+        </div>
+      </div>
+
     </div>
   )
 }
@@ -766,10 +1090,10 @@ function EmployeeDetails({ data, onChange }) {
           How banks evaluate employees
         </p>
         <p className="text-xs text-brand-700 leading-relaxed">
-          Underwriting guidelines from ČS, ČSOB, mBank, and UCB are applied to your net
+          Current market-leading mortgage underwriting guidelines are applied to your net
           monthly take-home pay (after taxes and social deductions), contract type, tenure,
-          and supplemental income components to compute your borrowing capacity across all
-          four banks simultaneously.
+          and supplemental income components to compute your borrowing capacity across
+          leading lending institutions simultaneously.
         </p>
       </div>
 
@@ -1098,7 +1422,9 @@ export default function Step1EntityType({ value, onChange, onIcoResult, employee
     )
   ) && (
     !isSRODir || (
-      businessData?.sroOwnershipPct !== null && businessData?.sroOwnershipPct !== ''
+      businessData?.companyOwnershipPct !== null &&
+      businessData?.companyOwnershipPct !== '' &&
+      !!businessData?.companyIncomeStream
     )
   )
 

@@ -171,13 +171,21 @@ export function computeEffectiveIncome(formData) {
     taxRegime                = '',
     annualTurnover           = null,
     avgMonthlyCreditTurnover = null,
-    // s.r.o. ESSO fields
+    // s.r.o. ESSO v2 fields (numeric)
+    companyIncomeStream      = '',
+    companyOwnershipPct      = null,
+    companyExistenceMonths   = null,
+    companyAfterTaxResult    = null,
+    companyEquity            = null,
+    dividendsPaidLast3Years  = null,
+    directorContractExists   = false,
+    sroDirectorSalary        = null,
+    sroDirectorFees          = null,
+    // v1 boolean fallbacks
     sroNegativeEquity        = false,
     sroNegativeProfit        = false,
     sroFullFiscalYear        = true,
     sroOwnershipPct          = null,
-    sroDirectorSalary        = null,
-    sroDirectorFees          = null,
     sroProfitShare           = null,
   } = formData
 
@@ -296,53 +304,90 @@ export function computeEffectiveIncome(formData) {
     }
   }
 
-  // ── s.r.o. Director — ESSO (Economically Self-related Subject Owner) ────
+  // ── s.r.o. Director — ESSO v2 (per-bank Stream A/B/C methodology) ──────
   if (entityType === 'sro') {
 
-    // ESSO hard blocks: negative financials or no full fiscal year
-    if (sroNegativeEquity || sroNegativeProfit) {
+    // Resolve numeric fields with boolean fallbacks for backward compat
+    const equity   = Number(companyEquity         ?? NaN)
+    const afterTax = Number(companyAfterTaxResult ?? NaN)
+    const existMo  = Number(companyExistenceMonths ?? NaN)
+    const ownPct   = Number(companyOwnershipPct   ?? sroOwnershipPct ?? 0)
+
+    const negEquity = !isNaN(equity)   ? equity   < 0 : sroNegativeEquity
+    const negProfit = !isNaN(afterTax) ? afterTax < 0 : sroNegativeProfit
+    const noHistory = !isNaN(existMo)  ? existMo  < 12 : (sroFullFiscalYear === false)
+
+    if (negEquity || negProfit) {
       redFlags.push('sro_negative_financials')
-      return { baseIncome: 0, effectiveIncome: 0, haircut: 0, flags, redFlags }
+      return { baseIncome: 0, effectiveIncome: 0, haircut: 0, flags, redFlags, perBankIncome: {} }
     }
-    if (sroFullFiscalYear === false) {
+    if (noHistory) {
       redFlags.push('sro_insufficient_history')
-      return { baseIncome: 0, effectiveIncome: 0, haircut: 0, flags, redFlags }
+      return { baseIncome: 0, effectiveIncome: 0, haircut: 0, flags, redFlags, perBankIncome: {} }
     }
 
-    // Full audit mode (>50% ownership)
-    if (Number(sroOwnershipPct || 0) > 50) {
-      flags.push('sro_full_audit_required')
+    if (ownPct > 50) flags.push('sro_full_audit_required')
+
+    // ESSO risk tier: medium risk applies 50% cap
+    const effectiveExistMo = !isNaN(existMo) ? existMo : (businessAgeMonths ?? null)
+    if (effectiveExistMo !== null && effectiveExistMo >= 12 && effectiveExistMo < 24) {
+      haircut = 0.50
+      flags.push('sro_medium_risk_50pct_cap')
     }
 
-    // ESSO income base: salary + director fees + profit share (monthly)
-    const salary   = Number(sroDirectorSalary ?? netIncome ?? 0)
-    const fees     = Number(sroDirectorFees   ?? 0)
-    const profitMo = Math.round(Number(sroProfitShare ?? 0) / 12)
-    income = salary + fees + profitMo
+    // ── Parse active income streams ───────────────────────
+    const streams = String(companyIncomeStream || '')
+    const hasA = streams.includes('A')
+    const hasB = streams.includes('B')
+    const hasC = streams.includes('C') && directorContractExists
 
-    // Business age → ESSO risk tier
-    if (businessAgeMonths !== null) {
-      if (businessAgeMonths < 3) {
-        redFlags.push('business_too_new')
-        return { baseIncome: 0, effectiveIncome: 0, haircut: 0, flags, redFlags }
-      }
-      if (businessAgeMonths < 12) {
-        flags.push('transition_path_required')
-        haircut = 0.70
-      } else if (businessAgeMonths < 24) {
-        // Medium risk: 1–2 fiscal years — 50% recognition cap
-        haircut = 0.50
-        flags.push('sro_medium_risk_50pct_cap')
-      }
-      // Low risk (≥24 months): haircut = 1.0
+    // ── Per-bank per-stream incomes ───────────────────────
+    const salary  = Number(sroDirectorSalary ?? netIncome ?? 0)
+    const fees    = Number(sroDirectorFees   ?? 0)
+    const divPaid = Number(dividendsPaidLast3Years ?? sroProfitShare ?? 0)
+
+    // Stream A: director salary
+    const aCS   = hasA ? salary : 0
+    const aCSoB = hasA ? (ownPct > 25 ? salary * 0.85 : salary) : 0
+    const aMB   = hasA ? salary : 0
+    const aUCB  = hasA ? (ownPct > 33 ? Math.min(salary, 45_000) : salary) : 0
+
+    // Stream B: profit share / dividends
+    const profitShare = !isNaN(afterTax) ? afterTax * (ownPct / 100) : 0
+    const bCS   = hasB ? Math.round(profitShare / 12 * 0.80) : 0
+    const bCSoB = hasB ? Math.round(profitShare / 12 * 0.85) : 0
+    const bMB   = hasB ? Math.round(divPaid * 0.85 / 36)     : 0  // 15% withholding
+    const bUCB  = hasB ? Math.round(divPaid / 36)             : 0
+
+    // Stream C: director fees (contract required)
+    const cCS   = hasC ? fees : 0
+    const cCSoB = hasC ? (ownPct > 25 ? fees * 0.85 : fees) : 0
+    const cMB   = hasC ? fees : 0
+    const cUCB  = hasC ? (ownPct > 33 ? Math.min(fees, 45_000) : fees) : 0
+
+    // Sum all streams per bank then apply medium-risk haircut
+    const perBankIncome = {
+      cs:   Math.round((aCS   + bCS   + cCS)   * haircut),
+      csob: Math.round((aCSoB + bCSoB + cCSoB) * haircut),
+      mbank: Math.round((aMB  + bMB   + cMB)   * haircut),
+      ucb:  Math.round((aUCB  + bUCB  + cUCB)  * haircut),
     }
+
+    // Cross-bank E[X] = mean of eligible (non-zero) banks
+    const eligible = Object.values(perBankIncome).filter(v => v > 0)
+    const effectiveIncome = eligible.length > 0
+      ? Math.round(eligible.reduce((a, b) => a + b, 0) / eligible.length)
+      : 0
+
+    const baseIncome = Math.round((aCS + bCS + cCS) / (haircut > 0 ? haircut : 1)) // ČS pre-haircut as reference
 
     return {
-      baseIncome:      income,
-      effectiveIncome: Math.round(income * haircut),
+      baseIncome,
+      effectiveIncome,
       haircut,
       flags,
       redFlags,
+      perBankIncome,
     }
   }
 
@@ -353,15 +398,18 @@ export function computeEffectiveIncome(formData) {
 
 export function computeVarianceCoeff(formData) {
   const {
-    entityType            = '',
-    contractType          = '',
-    probationPeriod       = '',
-    isProbation           = false,
-    employmentSector      = '',
-    hasFxIncome           = false,
-    foreignSalaryAmount   = null,
-    businessAgeMonths     = null,
-    taxRegime             = '',
+    entityType              = '',
+    contractType            = '',
+    probationPeriod         = '',
+    isProbation             = false,
+    employmentSector        = '',
+    hasFxIncome             = false,
+    foreignSalaryAmount     = null,
+    businessAgeMonths       = null,
+    taxRegime               = '',
+    companyIncomeStream     = '',
+    companyOwnershipPct     = null,
+    companyExistenceMonths  = null,
   } = formData
 
   if (entityType === 'zamestnanec') {
@@ -381,9 +429,24 @@ export function computeVarianceCoeff(formData) {
   }
 
   if (entityType === 'sro') {
-    // ESSO: 20% base variance — owner-directed income is inherently more volatile
+    const streams  = String(companyIncomeStream || '')
+    const hasA     = streams.includes('A')
+    const hasB     = streams.includes('B')
+    const hasC     = streams.includes('C')
+    const ownPct   = Number(companyOwnershipPct ?? 0)
+    const existMo  = companyExistenceMonths !== null ? Number(companyExistenceMonths) : businessAgeMonths
+
+    // Base: 0.20. Stream-specific additions (take dominant stream's penalty)
     let v = 0.20
-    if (businessAgeMonths !== null && businessAgeMonths < 24) v = Math.max(v, 0.27)
+    if (hasB) v = Math.max(v, 0.20 + 0.35)   // Stream B: +35% — highest penalty
+    else if (hasC) v = Math.max(v, 0.20 + 0.15) // Stream C: +15%
+    else if (hasA) {
+      // Stream A: +10–20% by ownership stake
+      const aAdd = ownPct > 50 ? 0.20 : ownPct > 25 ? 0.15 : 0.10
+      v = Math.max(v, 0.20 + aAdd)
+    }
+    // Young company floor
+    if (existMo !== null && existMo < 24) v = Math.max(v, 0.27)
     return Math.min(0.35, v)
   }
 
@@ -430,7 +493,7 @@ export function computeMortgageProfile(formData) {
 
   // ── Income with haircuts ─────────────────────────────────────────────────
   const incomeResult    = computeEffectiveIncome(formData)
-  const { effectiveIncome, baseIncome, haircut, flags, redFlags } = incomeResult
+  const { effectiveIncome, baseIncome, haircut, flags, redFlags, perBankIncome = {} } = incomeResult
 
   // ── LTV ─────────────────────────────────────────────────────────────────
   const loanAmount  = Math.max(0, Number(purchasePrice) - Number(ownFunds))
@@ -513,7 +576,7 @@ export function computeMortgageProfile(formData) {
 
   return {
     // Income
-    baseIncome, effectiveIncome, haircut, flags, redFlags,
+    baseIncome, effectiveIncome, haircut, flags, redFlags, perBankIncome,
     existingDebt, cc5,
     // Loan structure
     loanAmount, ltvPct, maxLTVPct, ltvBreached,

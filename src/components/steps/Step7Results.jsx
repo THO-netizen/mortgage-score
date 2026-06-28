@@ -65,8 +65,13 @@ function buildFactors(f, simNetIncome) {
     businessName = '', businessAgeMonths = null,
     contractType = '', probationPeriod = '', isProbation = false, employmentSector = '',
     applicantAge = 35,
+    // ESSO v2 fields
+    companyIncomeStream = '', companyOwnershipPct = null, companyExistenceMonths = null,
+    companyAfterTaxResult = null, companyEquity = null, directorContractExists = false,
+    sroDirectorSalary = null, sroDirectorFees = null,
+    // v1 boolean fallbacks
     sroNegativeEquity = false, sroNegativeProfit = false, sroFullFiscalYear = true,
-    sroOwnershipPct = null, sroDirectorSalary = null, sroDirectorFees = null, sroProfitShare = null,
+    sroOwnershipPct = null,
   } = f
 
   // Use sim income if formData has none (non-employee path)
@@ -127,10 +132,12 @@ function buildFactors(f, simNetIncome) {
     detail: (() => {
       if (entityType === 'osvc') return 'Self-employed (OSVČ)'
       if (entityType === 'sro') {
-        if (sroNegativeEquity || sroNegativeProfit || sroFullFiscalYear === false) return 's.r.o. Director — ESSO Hard Block'
+        const essoBlock = redFlags.includes('sro_negative_financials') || redFlags.includes('sro_insufficient_history')
+        if (essoBlock) return 's.r.o. Director — ESSO Hard Block'
         if (flags.includes('sro_medium_risk_50pct_cap')) return 's.r.o. Director — Medium Risk (50% cap)'
         if (flags.includes('sro_full_audit_required'))   return 's.r.o. Director — Full Audit Mode'
-        return 's.r.o. Director — ESSO Low Risk'
+        const streams = companyIncomeStream || '—'
+        return `s.r.o. Director — ESSO Low Risk (Stream ${streams})`
       }
       return '—'
     })(),
@@ -149,24 +156,29 @@ function buildFactors(f, simNetIncome) {
         return `${base} ${ageNote}${businessName ? ` Registered: ${businessName}.` : ''}`
       }
       if (entityType === 'sro') {
-        const essoHardBlock = sroNegativeEquity || sroNegativeProfit || sroFullFiscalYear === false
+        const essoHardBlock = redFlags.includes('sro_negative_financials') || redFlags.includes('sro_insufficient_history')
         if (essoHardBlock) {
           return 'ESSO hard block: negative equity, net loss, or insufficient fiscal history prevents income recognition. Continue with your advisor to explore alternative pathways.'
         }
-        const ownerPct = Number(sroOwnershipPct || 0)
-        const salary = Number(sroDirectorSalary || 0)
-        const fees   = Number(sroDirectorFees   || 0)
-        const profit = Number(sroProfitShare    || 0)
-        const baseParts = [`ESSO assessment — ownership ${ownerPct > 0 ? ownerPct + '%' : 'not specified'}.`]
-        if (salary > 0)  baseParts.push(`Director salary: ${formatCZK(salary)}/mo.`)
-        if (fees > 0)    baseParts.push(`Service fees: ${formatCZK(fees)}/mo.`)
-        if (profit > 0)  baseParts.push(`Profit share: ${formatCZK(profit)}/yr.`)
+        const ownerPct = Number(companyOwnershipPct ?? sroOwnershipPct ?? 0)
+        const salary   = Number(sroDirectorSalary   || 0)
+        const fees     = Number(sroDirectorFees     || 0)
+        const streams  = companyIncomeStream || '—'
+        const existMo  = companyExistenceMonths !== null ? Number(companyExistenceMonths) : businessAgeMonths
+
+        const baseParts = [
+          `ESSO assessment — ownership ${ownerPct > 0 ? ownerPct + '%' : 'not specified'}.`,
+          `Active streams: ${streams}.`,
+        ]
+        if (salary > 0)  baseParts.push(`Stream A salary: ${formatCZK(salary)}/mo.`)
+        if (fees > 0 && directorContractExists) baseParts.push(`Stream C fees: ${formatCZK(fees)}/mo.`)
+        if (companyAfterTaxResult !== null) baseParts.push(`After-tax result: ${formatCZK(Number(companyAfterTaxResult))}.`)
         if (flags.includes('sro_medium_risk_50pct_cap'))
-          baseParts.push('Medium risk tier: income recognised at 50% pending 2nd full fiscal year.')
+          baseParts.push('Medium risk tier — income recognised at 50% pending 2nd full fiscal year.')
         if (flags.includes('sro_full_audit_required'))
-          baseParts.push('Full audit mode: all corporate statements and UBO declaration required.')
-        if (businessAgeMonths !== null && businessAgeMonths >= 24)
-          baseParts.push('24-month requirement met — Low Risk ESSO tier.')
+          baseParts.push('Full audit mode — all corporate statements and UBO declaration required.')
+        if (existMo !== null && existMo >= 24)
+          baseParts.push(`24-month requirement met (${existMo} months) — Low Risk ESSO tier.`)
         return baseParts.join(' ')
       }
       return 'Not specified.'
@@ -174,10 +186,9 @@ function buildFactors(f, simNetIncome) {
     status: (() => {
       if (!entityType) return 'review'
       if (entityType === 'sro') {
-        if (sroNegativeEquity || sroNegativeProfit || sroFullFiscalYear === false) return 'risk'
+        if (redFlags.includes('sro_negative_financials') || redFlags.includes('sro_insufficient_history')) return 'risk'
         if (flags.includes('sro_medium_risk_50pct_cap')) return 'review'
         if (flags.includes('sro_full_audit_required'))   return 'review'
-        if (businessAgeMonths !== null && businessAgeMonths < 12) return 'risk'
         return 'strong'
       }
       if (businessAgeMonths !== null) {
@@ -734,45 +745,47 @@ export default function Step7Results({ formData, onBack, onRestart }) {
         </section>
 
         {/* ── ESSO callouts (s.r.o. directors only) ─── */}
-        {formData.entityType === 'sro' && (
-          formData.sroNegativeEquity || formData.sroNegativeProfit || formData.sroFullFiscalYear === false
-        ) && (
-          <div className="flex items-start gap-4 rounded-card border-2 border-risk-border bg-risk-light p-5">
-            <AlertTriangle size={18} className="text-risk-DEFAULT flex-shrink-0 mt-0.5" />
-            <div>
-              <p className="font-display text-base font-bold text-risk-text mb-1">
-                ESSO Assessment — Hard Block
-              </p>
-              <p className="text-sm text-risk-text leading-relaxed">
-                Your corporate financials do not currently meet the standard underwriting criteria
-                for an owned-company income assessment. No income from this source can be
-                recognised under current ESSO methodology. Your advisor will walk you through
-                alternative income pathways during your strategy session.
-              </p>
-            </div>
-          </div>
-        )}
-
-        {formData.entityType === 'sro' &&
-          !formData.sroNegativeEquity && !formData.sroNegativeProfit &&
-          formData.sroFullFiscalYear !== false &&
-          formData.businessAgeMonths !== null &&
-          formData.businessAgeMonths >= 12 && formData.businessAgeMonths < 24 && (
-          <div className="flex items-start gap-4 rounded-card border-2 border-warning-border bg-warning-light p-5">
-            <AlertTriangle size={18} className="text-warning-DEFAULT flex-shrink-0 mt-0.5" />
-            <div>
-              <p className="font-display text-base font-bold text-warning-text mb-1">
-                ESSO Medium Risk — 50% Income Recognition Cap
-              </p>
-              <p className="text-sm text-warning-text leading-relaxed">
-                Due to current company risk rating (1–2 completed fiscal years), this income
-                source is recognised at <strong>50%</strong> of the declared base under Czech
-                bank ESSO methodology. Full recognition becomes available once the company
-                completes its second full fiscal year.
-              </p>
-            </div>
-          </div>
-        )}
+        {formData.entityType === 'sro' && (() => {
+          const p = computeMortgageProfile(formData)
+          const hardBlock = p.redFlags.includes('sro_negative_financials') || p.redFlags.includes('sro_insufficient_history')
+          const medRisk   = !hardBlock && p.flags.includes('sro_medium_risk_50pct_cap')
+          return (
+            <>
+              {hardBlock && (
+                <div className="flex items-start gap-4 rounded-card border-2 border-risk-border bg-risk-light p-5">
+                  <AlertTriangle size={18} className="text-risk-DEFAULT flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="font-display text-base font-bold text-risk-text mb-1">
+                      ESSO Assessment — Hard Block
+                    </p>
+                    <p className="text-sm text-risk-text leading-relaxed">
+                      Your corporate financials do not currently meet the standard underwriting criteria
+                      for an owned-company income assessment. No income from this source can be
+                      recognised under current ESSO methodology. Your advisor will walk you through
+                      alternative income pathways during your strategy session.
+                    </p>
+                  </div>
+                </div>
+              )}
+              {medRisk && (
+                <div className="flex items-start gap-4 rounded-card border-2 border-warning-border bg-warning-light p-5">
+                  <AlertTriangle size={18} className="text-warning-DEFAULT flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="font-display text-base font-bold text-warning-text mb-1">
+                      ESSO Medium Risk — 50% Income Recognition Cap
+                    </p>
+                    <p className="text-sm text-warning-text leading-relaxed">
+                      Due to current company risk rating (1–2 completed fiscal years), this income
+                      source is recognised at <strong>50%</strong> of the declared base under Czech
+                      bank ESSO methodology. Full recognition becomes available once the company
+                      completes its second full fiscal year.
+                    </p>
+                  </div>
+                </div>
+              )}
+            </>
+          )
+        })()}
 
         {/* ── 10-Factor Readiness Cards ─────────────── */}
         <section>
