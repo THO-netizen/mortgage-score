@@ -4,9 +4,49 @@ import ActionBar  from '../funnel/ActionBar.jsx'
 
 const CALENDLY_URL = 'https://calendly.com/andy-le/15min'
 
-export default function Step5BankStatement({ onChange, onBack, onContinue }) {
+// Google Forms endpoint (same form as Step 6 lead capture)
+const GF_URL = 'https://docs.google.com/forms/d/e/1FAIpQLSddO9mI3_GJL4W4TzS2atu4vbKAIiI2TUEVRN__GaQJeqeogA/formResponse'
+
+// Entry IDs for business data fields — add these fields to the Google Form
+// and update the entry IDs here to match.
+const GF_BUSINESS_FIELDS = {
+  ico:           'entry.2001000001',  // "ICO" field
+  annualTurnover: 'entry.2001000002', // "Annual Turnover" field
+  taxRegime:     'entry.2001000003',  // "Tax Regime" field
+  companyName:   'entry.2001000004',  // "Company Name" field
+  businessAge:   'entry.2001000005',  // "Business Age (months)" field
+}
+
+function submitDataToGoogleForms(applicantState) {
+  const body = new URLSearchParams({
+    [GF_BUSINESS_FIELDS.ico]:
+      applicantState.ico ?? '',
+    [GF_BUSINESS_FIELDS.annualTurnover]:
+      String(applicantState.annualTurnover || applicantState.avgMonthlyCreditTurnover || ''),
+    [GF_BUSINESS_FIELDS.taxRegime]:
+      applicantState.taxRegime ?? '',
+    [GF_BUSINESS_FIELDS.companyName]:
+      applicantState.businessName ?? '',
+    [GF_BUSINESS_FIELDS.businessAge]:
+      String(applicantState.companyExistenceMonths ?? ''),
+  })
+
+  // Fire-and-forget — no-cors returns an opaque response; we never block on it
+  fetch(GF_URL, {
+    method:  'POST',
+    mode:    'no-cors',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body:    body.toString(),
+  }).catch(() => {})
+}
+
+export default function Step5BankStatement({ formData, onChange, onBack, onContinue }) {
   const handleBook = () => {
+    // 1. Submit business data to Google Forms (async, fire-and-forget)
+    submitDataToGoogleForms(formData ?? {})
+    // 2. Open Calendly booking page in a new tab
     window.open(CALENDLY_URL, '_blank', 'noopener,noreferrer')
+    // 3. Mark step complete and advance to Step 6
     onChange('bankAnalysisStatus', 'skipped')
     onContinue()
   }
@@ -53,7 +93,7 @@ export default function Step5BankStatement({ onChange, onBack, onContinue }) {
             </div>
           </div>
 
-          {/* Primary CTA — opens Calendly in new tab AND advances to Step 6 */}
+          {/* Primary CTA — submits data, opens Calendly, advances to Step 6 */}
           <button
             type="button"
             onClick={handleBook}

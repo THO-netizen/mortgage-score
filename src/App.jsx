@@ -345,6 +345,7 @@ export default function App() {
 
                   {currentStep === 5 && (
                     <Step5BankStatement
+                      formData={formData}
                       onChange={setField}
                       onBack={goBack}
                       onContinue={handleStep5Continue}
