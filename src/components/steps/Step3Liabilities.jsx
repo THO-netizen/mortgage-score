@@ -27,7 +27,7 @@ export default function Step3Liabilities({ data, onChange, onBack, onContinue })
     <FunnelCard
       stepLabel="Step 3 of 7 · Financial Obligations"
       title="What are your existing monthly obligations?"
-      subtitle="Czech banks aggregate every fixed commitment before assessing borrowing capacity. Enter 0 Kč if a category doesn't apply to you."
+      subtitle="Czech banks aggregate every fixed financial commitment before assessing borrowing capacity. Enter 0 if a category doesn't apply to you."
       footer={
         <ActionBar
           canContinue
@@ -60,8 +60,8 @@ export default function Step3Liabilities({ data, onChange, onBack, onContinue })
 
         <CurrencyInput
           id="creditCardLimits"
-          label="Total Credit Card Limits"
-          sublabel="all cards combined — not the balance"
+          label="Total Credit Card Limits (KK)"
+          sublabel="combined credit card limits (KK) — not the current balance"
           value={creditCardLimits}
           onChange={(v) => onChange('creditCardLimits', v)}
           max={2_000_000}
@@ -75,7 +75,7 @@ export default function Step3Liabilities({ data, onChange, onBack, onContinue })
         <CurrencyInput
           id="otherObligations"
           label="Other Monthly Obligations"
-          sublabel="alimony · guarantees · maintenance"
+          sublabel="alimony · co-signed liabilities (Ručení) · maintenance"
           value={otherObligations}
           onChange={(v) => onChange('otherObligations', v)}
           max={200_000}

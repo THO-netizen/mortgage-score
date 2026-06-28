@@ -46,7 +46,7 @@ export default function ActionBar({
           </>
         ) : (
           <>
-            {isLast ? 'See My Results' : 'Continue'}
+            {isLast ? 'Calculate My Mortgage Potential & See Results' : 'Continue Assessment'}
             <ArrowRight size={15} />
           </>
         )}

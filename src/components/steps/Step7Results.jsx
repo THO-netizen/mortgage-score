@@ -18,16 +18,16 @@ const GAUGE_R    = 60
 const GAUGE_CIRC = 2 * Math.PI * GAUGE_R
 
 const TIMELINE_STEPS = [
-  { label: 'Pre-scoring Check',        desc: 'Free eligibility assessment complete — you are here.',                                  done: true,  current: true  },
-  { label: 'Property Search & Offer',  desc: 'Locate your property and agree a purchase price with the seller.',                     done: false, current: false },
-  { label: 'Reservation Contract',     desc: 'Rezervační smlouva — secure the property with a 3–5% deposit.',                        done: false, current: false },
-  { label: 'Bank Pre-approval',        desc: 'Submit indicative application to selected lenders for competing offers.',              done: false, current: false },
-  { label: 'Property Appraisal',       desc: 'Odhad nemovitosti — bank-commissioned valuer confirms market value.',                  done: false, current: false },
-  { label: 'Full Mortgage Application',desc: 'Submit complete document package: income, bank statements, company financials.',       done: false, current: false },
-  { label: 'Bank Underwriting',        desc: 'Credit committee review — typically 10–20 working days for self-employed applicants.', done: false, current: false },
-  { label: 'Mortgage Contract',        desc: 'Úvěrová smlouva signed; disbursement conditions and drawdown date confirmed.',         done: false, current: false },
-  { label: 'Cadastre Registration',    desc: 'Katastr nemovitostí — zástavní právo (lien) registered against the property.',        done: false, current: false },
-  { label: 'Property Handover',        desc: 'Předání nemovitosti — keys exchanged, mortgage live, ownership transferred.',          done: false, current: false },
+  { label: 'Pre-scoring Check',        desc: 'Free eligibility assessment complete — you are here.',                                                              done: true,  current: true  },
+  { label: 'Property Search & Offer',  desc: 'Locate your property and agree a purchase price with the seller.',                                                  done: false, current: false },
+  { label: 'Reservation Agreement',    desc: 'Reservation Agreement (Rezervační smlouva) — secure the property with a 3–5% deposit.',                            done: false, current: false },
+  { label: 'Bank Pre-approval',        desc: 'Submit indicative application to selected lenders for competing offers.',                                           done: false, current: false },
+  { label: 'Property Appraisal',       desc: 'Property Appraisal (Odhad nemovitosti) — bank-commissioned valuer confirms market value.',                         done: false, current: false },
+  { label: 'Full Mortgage Application',desc: 'Submit complete document package: income evidence, bank statements, company financials.',                           done: false, current: false },
+  { label: 'Bank Underwriting',        desc: 'Credit committee review — typically 10–20 working days for Self-employed (OSVČ) and Company Director applicants.', done: false, current: false },
+  { label: 'Mortgage Contract',        desc: 'Mortgage Contract (Úvěrová smlouva) signed; disbursement conditions and drawdown date confirmed.',                 done: false, current: false },
+  { label: 'Land Registry Filing',     desc: 'Land Registry (Katastr nemovitostí) — property lien (zástavní právo) registered against the title.',               done: false, current: false },
+  { label: 'Property Handover',        desc: 'Property Handover (Předání nemovitosti) — keys exchanged, mortgage live, ownership transferred.',                  done: false, current: false },
 ]
 
 const STATUS_CFG = {
@@ -38,9 +38,9 @@ const STATUS_CFG = {
 }
 
 const RISK_MATRIX_CFG = {
-  zelena:   { label: 'ZELENÁ',   labelEn: 'Green Light',   color: '#10B981', bg: 'bg-success-light',  border: 'border-success-border',  text: 'text-success-text'  },
-  oranzova: { label: 'ORANŽOVÁ', labelEn: 'Amber Review',  color: '#F59E0B', bg: 'bg-warning-light',  border: 'border-warning-border',  text: 'text-warning-text'  },
-  cervena:  { label: 'ČERVENÁ',  labelEn: 'Red Flag',      color: '#EF4444', bg: 'bg-risk-light',     border: 'border-risk-border',     text: 'text-risk-text'     },
+  zelena:   { label: 'Green Light',  labelEn: 'Zelená',   color: '#10B981', bg: 'bg-success-light',  border: 'border-success-border',  text: 'text-success-text'  },
+  oranzova: { label: 'Amber Review', labelEn: 'Oranžová', color: '#F59E0B', bg: 'bg-warning-light',  border: 'border-warning-border',  text: 'text-warning-text'  },
+  cervena:  { label: 'Red Flag',     labelEn: 'Červená',  color: '#EF4444', bg: 'bg-risk-light',     border: 'border-risk-border',     text: 'text-risk-text'     },
 }
 
 // ── scoreCfg ──────────────────────────────────────────
@@ -61,7 +61,7 @@ function buildFactors(f, simNetIncome) {
     monthlyLeasing = 0, otherObligations = 0,
     purchasePrice = 0, ownFunds = 0,
     propertyPurpose = '', purchaseTimeline = '',
-    bankAnalysisStatus = '', bankAnalysisResults = null,
+    bankAnalysisStatus = '',
     businessName = '', businessAgeMonths = null,
     contractType = '', probationPeriod = '', isProbation = false, employmentSector = '',
     applicantAge = 35,
@@ -150,9 +150,9 @@ function buildFactors(f, simNetIncome) {
     })(),
   }
 
-  // Bonity card — uses engine E[X] / Var[X]
+  // Loan capacity card — uses engine E[X] / Var[X]
   const bonityFactor = {
-    title:  'Bonity / Loan Capacity',
+    title:  'Loan Capacity (Bonita)',
     icon:   TrendingUp,
     detail: incomeForCalc > 0 && eX > 0 ? `E[X] ≈ ${formatCZKShort(eX)}` : incomeForCalc > 0 ? 'Capacity exhausted' : 'Set income below →',
     desc: incomeForCalc > 0
@@ -237,17 +237,10 @@ function buildFactors(f, simNetIncome) {
         : propertyPurpose === 'holiday' ? 'review' : 'review',
     },
     {
-      title: 'Transaction History', icon: FileText,
-      detail: bankAnalysisStatus === 'done'
-        ? (bankAnalysisResults?.hasRedFlags ? 'Risk signals found' : 'Clear')
-        : bankAnalysisStatus === 'skipped' ? 'Skipped / Calendly' : 'Not analysed',
-      desc: bankAnalysisStatus === 'done' && !bankAnalysisResults?.hasRedFlags
-        ? 'Passed all 7 risk checks — no gambling, enforcement or exchange activity detected.'
-        : bankAnalysisStatus === 'done' && bankAnalysisResults?.hasRedFlags
-        ? `Risk keywords: ${bankAnalysisResults.redFlagKeywords.join(', ')} — impacts bank eligibility.`
-        : 'Statement not analysed — banks will request 3–6 months statements; risk unknown.',
-      status: bankAnalysisStatus === 'done' && !bankAnalysisResults?.hasRedFlags ? 'strong'
-        : bankAnalysisStatus === 'done' && bankAnalysisResults?.hasRedFlags ? 'risk' : 'review',
+      title: 'Bank Statement Review', icon: FileText,
+      detail: bankAnalysisStatus === 'skipped' ? 'Scheduled — Consultation Booked' : 'Pending — Consultation Required',
+      desc: 'Bank statement review will be conducted securely during your strategy session in full compliance with 2026 Czech banking data-privacy requirements. No document upload required.',
+      status: bankAnalysisStatus === 'skipped' ? 'good' : 'review',
     },
     bonityFactor,
     {
@@ -658,14 +651,14 @@ function JourneyTimeline() {
 // ── Main Results Dashboard ────────────────────────────
 
 export default function Step7Results({ formData, onBack, onRestart }) {
-  const score  = computeScore(formData)
-  const cfg    = scoreCfg(score)
-  const hasRed = formData.bankAnalysisResults?.hasRedFlags ?? false
-  const redKws = formData.bankAnalysisResults?.redFlagKeywords ?? []
+  const score = computeScore(formData)
+  const cfg   = scoreCfg(score)
 
   // simNetIncome is owned here so the Risk Matrix and Bonity card stay in sync
   const [simNetIncome, setSimNetIncome] = useState(
-    formData.netIncome > 0 ? formData.netIncome : 80_000
+    (formData.netMonthlySalary || formData.netIncome) > 0
+      ? (formData.netMonthlySalary || formData.netIncome)
+      : 80_000
   )
 
   const factors = buildFactors(formData, simNetIncome)
@@ -684,28 +677,14 @@ export default function Step7Results({ formData, onBack, onRestart }) {
                 {cfg.label}
               </h2>
               <p className="text-sm text-ink-muted mb-4 max-w-md leading-relaxed">
-                Computed across 10 eligibility dimensions, ČNB regulatory limits, and 2026
-                underwriting criteria from ČS, ČSOB, KB, mBank, and UniCredit Bank.
+                Computed across 10 eligibility dimensions, Czech National Bank (ČNB) regulatory
+                limits, and 2026 underwriting criteria from Česká spořitelna, ČSOB, Komerční
+                banka, mBank, and UniCredit Bank — calibrated for expat and self-employed applicants.
               </p>
               <span className={`badge ${cfg.badge} text-xs`}>{cfg.label}</span>
             </div>
           </div>
         </div>
-
-        {/* ── Red-flag warning ─────────────────────── */}
-        {hasRed && (
-          <div className="flex items-start gap-4 rounded-card bg-risk-light border border-risk-border p-6">
-            <AlertTriangle size={20} className="text-risk-DEFAULT flex-shrink-0 mt-0.5" />
-            <div>
-              <p className="font-bold text-risk-text mb-1">Risk Warning: High-risk transactions detected</p>
-              <p className="text-sm text-risk-text leading-relaxed">
-                Gambling or betting platform activity was identified ({redKws.join(', ')}).
-                Czech banks routinely decline applications with active gambling history.
-                A specialist broker can advise on lenders that may still consider your case.
-              </p>
-            </div>
-          </div>
-        )}
 
         {/* ── Risk Matrix ───────────────────────────── */}
         <section>

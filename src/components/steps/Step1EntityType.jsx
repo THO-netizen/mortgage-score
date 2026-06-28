@@ -233,35 +233,35 @@ const ENTITY_OPTIONS = [
   {
     value:    'osvc',
     Icon:     Briefcase,
-    title:    'OSVČ',
-    subtitle: 'Self-employed · Freelancer · Živnostník',
-    desc:     'You operate under a Czech trade license as an individual. Income declared via personal tax return (DPFO).',
+    title:    'Self-employed (OSVČ)',
+    subtitle: 'Freelancer · Sole trader · Trade licence holder',
+    desc:     'You operate under a Czech trade licence as an individual. Income declared via personal tax return (Tax Return / DAP).',
     docs: [
-      'Trade license — Živnostenský list',
-      'Personal tax returns (DPFO) — last 2 years',
-      'ČSSZ & health insurer clearances',
+      'Trade licence — Živnostenský list',
+      'Personal tax returns (DAP / DPFO) — last 2 years',
+      'Social & health insurance clearances (ČSSZ)',
     ],
     note: 'Simpler document path — one set of financials',
   },
   {
     value:    'sro',
     Icon:     Building2,
-    title:    's.r.o. Director',
+    title:    'Company Director (s.r.o.)',
     subtitle: 'Limited company owner · Director · Shareholder',
-    desc:     'You receive income as a director, employee, or dividend recipient of a Czech s.r.o. (spol. s r.o.).',
+    desc:     'You receive income as a director, employee, or dividend recipient of a Czech Limited Company (s.r.o. / spol. s r.o.).',
     docs: [
       'Corporate financials (DPPO) — last 2 years',
       'Director salary slips or dividend history',
-      'UBO ownership structure declaration',
+      'UBO beneficial ownership declaration',
     ],
     note: 'Both company and personal documents required',
   },
   {
     value:    'zamestnanec',
     Icon:     UserCheck,
-    title:    'Zaměstnanec',
-    subtitle: 'Employed · Contract worker · Expat employee',
-    desc:     'You receive a regular salary from a Czech employer. Income verified via payslips and employer confirmation.',
+    title:    'Employed',
+    subtitle: 'Salary employee · Contract worker · Expat hire',
+    desc:     'You receive a regular salary from a Czech or foreign employer. Income verified via payslips and employer confirmation.',
     docs: [
       'Last 3 payslips (výplatní pásky)',
       'Employer income confirmation letter',
@@ -320,14 +320,14 @@ const TAX_REGIME_OPTIONS = [
   {
     value:    'tax_return',
     label:    'Standard Tax Return',
-    sublabel: '§7 / §16 DAP',
-    desc:     'Income declared via annual personal or corporate tax return',
+    sublabel: 'Tax Return (DAP) — §7 / §16',
+    desc:     'Income declared via annual personal or corporate tax return (DAP)',
   },
   {
     value:    'flat_tax',
     label:    'Flat Tax Regime',
-    sublabel: 'Paušální daň',
-    desc:     'Fixed quarterly payments; no annual tax return required',
+    sublabel: 'Flat Tax (Paušální daň)',
+    desc:     'Fixed quarterly flat-tax payments; no annual return required',
   },
 ]
 
@@ -394,11 +394,11 @@ function BusinessIncomeSection({ data, onChange }) {
       {taxRegime === 'tax_return' && (
         <div className="animate-fade-up">
           <label htmlFor="annualTurnover" className="section-label mb-1.5 block">
-            Gross Annual Turnover / Revenues
+            Gross Annual Turnover (Obrat)
             <span className="text-risk-DEFAULT ml-1">*</span>
           </label>
           <p className="text-[10px] font-medium text-ink-muted uppercase tracking-wide mb-2">
-            Roční obrat / tržby
+            Enter your gross annual business turnover as declared in your Tax Return (DAP)
           </p>
           <div className="relative">
             <input
@@ -420,13 +420,13 @@ function BusinessIncomeSection({ data, onChange }) {
           </div>
           {turnoverError ? (
             <p className="text-xs text-risk-text mt-1.5">
-              This field is required to calculate your borrowing capacity.
+              Required — enter your gross annual business turnover to calculate borrowing capacity.
             </p>
           ) : (
             <p className="text-[11px] text-ink-subtle mt-1.5 leading-relaxed">
-              Enter your total business revenues as declared in your last tax return (DAP),
-              Appendix 1, line 101 or 102. For s.r.o. directors, use the company's total
-              annual revenues from the P&L statement.
+              Enter your total declared revenues from your last Tax Return (DAP), Appendix 1,
+              line 101–102. For Company Directors (s.r.o.), use the company's total annual
+              revenues from the Profit &amp; Loss statement (Výsledovka).
             </p>
           )}
         </div>
@@ -436,11 +436,11 @@ function BusinessIncomeSection({ data, onChange }) {
       {taxRegime === 'flat_tax' && (
         <div className="animate-fade-up">
           <label htmlFor="avgMonthlyCreditTurnover" className="section-label mb-1.5 block">
-            Average Monthly Credit Turnover
+            Average Monthly Credit Turnover (Kreditní obrat)
             <span className="text-risk-DEFAULT ml-1">*</span>
           </label>
           <p className="text-[10px] font-medium text-ink-muted uppercase tracking-wide mb-2">
-            Průměrný měsíční kreditní obrat z podnikání
+            Average monthly incoming business payments credited to your business account
           </p>
           <div className="relative">
             <input
@@ -462,14 +462,13 @@ function BusinessIncomeSection({ data, onChange }) {
           </div>
           {creditError ? (
             <p className="text-xs text-risk-text mt-1.5">
-              This field is required to calculate your borrowing capacity.
+              Required — enter your average monthly credit turnover to calculate borrowing capacity.
             </p>
           ) : (
             <p className="text-[11px] text-ink-subtle mt-1.5 leading-relaxed">
-              Calculate the average of the last 3 to 6 months of incoming business payments
-              credited to your business bank account. Exclude internal transfers between your
-              own accounts, personal deposits, loan drawdowns, and any one-off non-recurring
-              receipts.
+              Average the last 3–6 months of inbound business payments to your business account
+              (Kreditní obrat). Exclude internal transfers, personal deposits, loan drawdowns,
+              and any one-off non-recurring receipts.
             </p>
           )}
         </div>
@@ -554,9 +553,10 @@ function EmployeeDetails({ data, onChange }) {
           How banks evaluate employees
         </p>
         <p className="text-xs text-brand-700 leading-relaxed">
-          Underwriting guidelines from ČS, ČSOB, mBank, and UCB are applied to your salary,
-          contract type, tenure, and supplemental income components to compute your borrowing
-          capacity across all four banks simultaneously.
+          Underwriting guidelines from ČS, ČSOB, mBank, and UCB are applied to your net
+          monthly take-home pay (after taxes and social deductions), contract type, tenure,
+          and supplemental income components to compute your borrowing capacity across all
+          four banks simultaneously.
         </p>
       </div>
 
@@ -694,7 +694,7 @@ function EmployeeDetails({ data, onChange }) {
       {/* ── Net monthly salary ───────────────────────────── */}
       <div>
         <label htmlFor="netMonthlySalary" className="section-label mb-2 block">
-          Net Monthly Salary (CZK)
+          Net Monthly Take-Home Pay (CZK)
           <span className="text-risk-DEFAULT ml-1">*</span>
         </label>
         <div className="relative">
@@ -713,7 +713,7 @@ function EmployeeDetails({ data, onChange }) {
           </span>
         </div>
         <p className="text-[11px] text-ink-subtle mt-1.5">
-          Average net income from the last 3–6 months after taxes and deductions.
+          Net monthly take-home pay after taxes and social deductions — average of the last 3–6 months.
         </p>
       </div>
 

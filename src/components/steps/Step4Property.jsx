@@ -95,7 +95,7 @@ export default function Step4Property({ data, onChange, onBack, onContinue }) {
     <FunnelCard
       stepLabel="Step 4 of 7 · Property & Cash Reserves"
       title="What property are you planning to purchase?"
-      subtitle="Your Loan-to-Value ratio is the single most critical number Czech banks assess for self-employed applicants. Adjust the sliders to see it update live."
+      subtitle="Your Loan-to-Value (LTV) ratio is the single most critical number Czech banks assess for Self-employed (OSVČ) and Company Director (s.r.o.) applicants. Adjust the sliders to see it update live."
       footer={
         <ActionBar
           canContinue={canContinue}
@@ -122,14 +122,14 @@ export default function Step4Property({ data, onChange, onBack, onContinue }) {
 
         <CurrencySlider
           id="ownFunds"
-          label="Available Own Funds"
-          sublabel="cash · savings · gift equity"
+          label="Available Own Funds (Vlastní zdroje)"
+          sublabel="cash · savings · confirmed gift equity"
           value={safeOwnFunds}
           onChange={(v) => onChange('ownFunds', v)}
           min={0}
           max={purchasePrice}
           step={50_000}
-          hint="Include only confirmed liquid funds — not expected income or unsold assets"
+          hint="Include only confirmed liquid funds (Vlastní zdroje) — not expected income, unsold assets, or pending loans"
         />
       </div>
 
@@ -170,10 +170,10 @@ export default function Step4Property({ data, onChange, onBack, onContinue }) {
               LTV Exceeds CNB Limit for Self-Employed Applicants
             </p>
             <p className="text-xs text-risk-text leading-relaxed">
-              The Czech National Bank caps mortgage LTV at <strong>80%</strong> for OSVČ
-              and s.r.o. directors. You need at least{' '}
+              The Czech National Bank (ČNB) caps mortgage LTV at <strong>80%</strong> for
+              Self-employed (OSVČ) and Company Directors (s.r.o.). You need at least{' '}
               <strong>{formatCZK(minOwnFundsNeeded)}</strong> more in confirmed own funds
-              before any Czech bank can consider this application.
+              (Vlastní zdroje) before any Czech bank can consider this application.
             </p>
           </div>
         </div>
@@ -195,8 +195,9 @@ export default function Step4Property({ data, onChange, onBack, onContinue }) {
           <CheckCircle size={15} className="text-success-DEFAULT flex-shrink-0 mt-0.5" />
           <p className="text-xs text-success-text leading-relaxed">
             <strong>Strong LTV position.</strong> Below 70% LTV unlocks competitive fixed
-            rates across all 19 covered Czech banks and signals low-risk to underwriters —
-            your best position for OSVČ or s.r.o. applications.
+            rates across all 19 covered Czech banks and signals low collateral risk to
+            underwriters — the optimal position for Self-employed (OSVČ) and Company Director
+            (s.r.o.) applications.
           </p>
         </div>
       )}

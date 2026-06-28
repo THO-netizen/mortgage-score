@@ -156,9 +156,10 @@ export default function Step6LeadCapture({ data, formData, onChange, onBack, onC
       subtitle="We can save your result and send you the full report, checklist and next steps by email."
       footer={
         <ActionBar
+          isLast
           canContinue={canContinue}
           loading={submitting}
-          loadingLabel="Sending…"
+          loadingLabel="Calculating your results…"
           onBack={onBack}
           onContinue={handleSubmit}
         />

@@ -13,9 +13,9 @@ export default function Step5BankStatement({ onChange, onBack, onContinue }) {
 
   return (
     <FunnelCard
-      stepLabel="Step 5 of 7 · Strategy Consultation"
-      title="Secure Your Consultation"
-      subtitle="To guarantee 100% data privacy, we never ask you to upload sensitive bank statements online. We will review your numbers securely during your strategy session."
+      stepLabel="Step 5 of 7 · Data Privacy & Consultation Scheduling"
+      title="Data Privacy & Consultation Scheduling"
+      subtitle="To guarantee 100% financial security, we never ask you to upload sensitive bank statements or PDF copies online. Our analysis runs strictly in compliance with 2026 Czech banking metadata risk frameworks."
       footer={
         <ActionBar
           canContinue
@@ -43,11 +43,12 @@ export default function Step5BankStatement({ onChange, onBack, onContinue }) {
             </div>
             <div>
               <p className="font-display text-[15px] font-extrabold text-ink leading-snug mb-1">
-                Your documents stay completely private
+                Zero-upload. 100% secure. Fully compliant.
               </p>
               <p className="text-sm text-ink-muted leading-relaxed">
-                We review your bank statements and financial history securely during your free
-                15-minute strategy session — no uploads, no data exposure, no risk.
+                We review your bank statements, turnover history, and financial metadata
+                confidentially during your free 15-minute strategy session — no file uploads,
+                no data exposure, no third-party transmission.
               </p>
             </div>
           </div>
