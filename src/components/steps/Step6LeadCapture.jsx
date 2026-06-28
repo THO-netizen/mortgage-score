@@ -1,10 +1,12 @@
+import { useState } from 'react'
 import { Mail, Phone, User, ChevronRight } from 'lucide-react'
 import FunnelCard from '../funnel/FunnelCard.jsx'
 import ActionBar  from '../funnel/ActionBar.jsx'
 
-const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+const EMAIL_RE      = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+const FORMSPREE_URL = 'https://formspree.io/f/maqgjlbn'
 
-function InputRow({ id, label, icon: Icon, type = 'text', value, onChange, placeholder, required }) {
+function InputRow({ id, label, icon: Icon, type = 'text', value, onChange, placeholder, required, disabled }) {
   return (
     <div>
       <label htmlFor={id} className="section-label mb-2 block">
@@ -21,7 +23,8 @@ function InputRow({ id, label, icon: Icon, type = 'text', value, onChange, place
           value={value}
           onChange={(e) => onChange(e.target.value)}
           placeholder={placeholder}
-          className="input-field pl-10"
+          disabled={disabled}
+          className="input-field pl-10 disabled:opacity-50 disabled:cursor-not-allowed"
           autoComplete={type === 'email' ? 'email' : type === 'tel' ? 'tel' : 'name'}
         />
       </div>
@@ -35,13 +38,74 @@ const BENEFITS = [
   'Step-by-step action plan and timeline for your application',
 ]
 
-export default function Step6LeadCapture({ data, onChange, onBack, onContinue }) {
+export default function Step6LeadCapture({ data, formData, onChange, onBack, onContinue }) {
   const { leadName = '', email = '', leadPhone = '', gdprConsent = false } = data
+  const [submitting, setSubmitting] = useState(false)
 
   const canContinue =
     leadName.trim().length >= 2 &&
     EMAIL_RE.test(email) &&
     gdprConsent
+
+  const handleSubmit = async () => {
+    if (!canContinue || submitting) return
+    setSubmitting(true)
+
+    const payload = {
+      // Contact
+      name:    leadName,
+      email,
+      phone:   leadPhone,
+
+      // Business
+      entityType:        formData?.entityType        ?? '',
+      ico:               formData?.ico               ?? '',
+      businessName:      formData?.businessName      ?? '',
+      businessAgeMonths: formData?.businessAgeMonths ?? null,
+      datumVzniku:       formData?.datumVzniku       ?? '',
+
+      // Employee (if applicable)
+      contractType:    formData?.contractType    ?? '',
+      probationPeriod: formData?.probationPeriod ?? '',
+      netIncome:       formData?.netIncome       ?? 0,
+
+      // Residence
+      residenceStatus: formData?.residenceStatus ?? '',
+      yearsInCZ:       formData?.yearsInCZ       ?? '',
+
+      // Liabilities
+      monthlyLoanPayments: formData?.monthlyLoanPayments ?? 0,
+      creditCardLimits:    formData?.creditCardLimits    ?? 0,
+      monthlyLeasing:      formData?.monthlyLeasing      ?? 0,
+      otherObligations:    formData?.otherObligations    ?? 0,
+
+      // Property
+      purchasePrice:    formData?.purchasePrice    ?? 0,
+      ownFunds:         formData?.ownFunds         ?? 0,
+      propertyPurpose:  formData?.propertyPurpose  ?? '',
+      purchaseTimeline: formData?.purchaseTimeline ?? '',
+
+      // Bank scan
+      bankAnalysisStatus:  formData?.bankAnalysisStatus  ?? '',
+      bankHasRedFlags:     formData?.bankAnalysisResults?.hasRedFlags     ?? null,
+      bankRedFlagKeywords: formData?.bankAnalysisResults?.redFlagKeywords ?? [],
+
+      _subject: `Mortgage prescoring — ${leadName} (${email})`,
+    }
+
+    try {
+      await fetch(FORMSPREE_URL, {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify(payload),
+      })
+    } catch {
+      // Silent fail — user still advances to results
+    } finally {
+      setSubmitting(false)
+      onContinue()
+    }
+  }
 
   return (
     <FunnelCard
@@ -51,8 +115,10 @@ export default function Step6LeadCapture({ data, onChange, onBack, onContinue })
       footer={
         <ActionBar
           canContinue={canContinue}
+          loading={submitting}
+          loadingLabel="Odesílám…"
           onBack={onBack}
-          onContinue={onContinue}
+          onContinue={handleSubmit}
         />
       }
     >
@@ -83,6 +149,7 @@ export default function Step6LeadCapture({ data, onChange, onBack, onContinue })
           onChange={(v) => onChange('leadName', v)}
           placeholder="Your full name"
           required
+          disabled={submitting}
         />
 
         <InputRow
@@ -94,6 +161,7 @@ export default function Step6LeadCapture({ data, onChange, onBack, onContinue })
           onChange={(v) => onChange('email', v)}
           placeholder="you@example.com"
           required
+          disabled={submitting}
         />
 
         <InputRow
@@ -104,6 +172,7 @@ export default function Step6LeadCapture({ data, onChange, onBack, onContinue })
           value={leadPhone}
           onChange={(v) => onChange('leadPhone', v)}
           placeholder="+420 or international format"
+          disabled={submitting}
         />
 
       </div>
@@ -115,6 +184,7 @@ export default function Step6LeadCapture({ data, onChange, onBack, onContinue })
             type="checkbox"
             checked={gdprConsent}
             onChange={(e) => onChange('gdprConsent', e.target.checked)}
+            disabled={submitting}
             className="sr-only"
           />
           <div
@@ -124,6 +194,7 @@ export default function Step6LeadCapture({ data, onChange, onBack, onContinue })
               gdprConsent
                 ? 'bg-brand-600 border-brand-600'
                 : 'bg-card border-border group-hover:border-brand-400',
+              submitting ? 'opacity-50' : '',
             ].join(' ')}
           >
             {gdprConsent && (
@@ -146,7 +217,6 @@ export default function Step6LeadCapture({ data, onChange, onBack, onContinue })
           <span className="text-brand-600 font-medium">Required *</span>
         </span>
       </label>
-
 
     </FunnelCard>
   )

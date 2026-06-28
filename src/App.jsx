@@ -12,12 +12,15 @@ import Step7Results         from './components/steps/Step7Results.jsx'
 
 // ─── Initial form state ───────────────────────────────
 const INITIAL_FORM = {
-  // Step 1
+  // Step 1 — entity type + employee fields
   entityType:        '',
   ico:               '',
   businessName:      '',
   businessAgeMonths: null,
   datumVzniku:       '',
+  netIncome:         0,
+  contractType:      '',   // 'indefinite' | 'definite'
+  probationPeriod:   '',   // 'yes' | 'no'
 
   // Step 2
   residenceStatus: '',
@@ -189,6 +192,12 @@ export default function App() {
                         businessAgeMonths: r.businessAgeMonths ?? prev.businessAgeMonths,
                         datumVzniku:       r.datumVzniku       ?? prev.datumVzniku,
                       }))}
+                      employeeData={{
+                        netIncome:       formData.netIncome,
+                        contractType:    formData.contractType,
+                        probationPeriod: formData.probationPeriod,
+                      }}
+                      onEmployeeChange={setField}
                       onContinue={handleStep1Continue}
                     />
                   )}
@@ -253,6 +262,7 @@ export default function App() {
                         leadPhone:   formData.leadPhone,
                         gdprConsent: formData.gdprConsent,
                       }}
+                      formData={formData}
                       onChange={setField}
                       onBack={goBack}
                       onContinue={handleStep6Continue}

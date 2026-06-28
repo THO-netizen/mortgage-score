@@ -1,10 +1,12 @@
 import { useEffect, useRef, useState } from 'react'
-import { Briefcase, Building2, Check, Loader2, CheckCircle, XCircle } from 'lucide-react'
+import {
+  Briefcase, Building2, UserCheck,
+  Check, Loader2, CheckCircle, XCircle, ChevronDown,
+} from 'lucide-react'
 import FunnelCard from '../funnel/FunnelCard.jsx'
 import ActionBar  from '../funnel/ActionBar.jsx'
 
 // ── ARES legal-form → entity-type mapping ──────────────
-// Source: číselník právních forem ARES / MF ČR
 const OSVC_FORMS = new Set(['101', '102', '103', '104', '105', '106', '107', '108', '109'])
 const SRO_FORMS  = new Set(['112'])
 
@@ -44,7 +46,6 @@ function IcoLookup({ onResult }) {
   useEffect(() => {
     if (ico.length !== 8) { setStatus('idle'); return }
 
-    // Cancel any previous in-flight request
     abortRef.current?.abort()
     const ctrl = new AbortController()
     abortRef.current = ctrl
@@ -73,13 +74,7 @@ function IcoLookup({ onResult }) {
         setQualified(months !== null && months >= 24)
         setStatus('found')
 
-        onResult({
-          ico,
-          businessName:     name,
-          businessAgeMonths: months,
-          datumVzniku:      dateStr,
-          entityType,
-        })
+        onResult({ ico, businessName: name, businessAgeMonths: months, datumVzniku: dateStr, entityType })
       })
       .catch((err) => {
         if (err.name === 'AbortError') return
@@ -114,13 +109,12 @@ function IcoLookup({ onResult }) {
           className="input-field pr-11 tabular-nums tracking-widest"
         />
         <span className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none">
-          {status === 'loading' && <Loader2  size={16} className="text-ink-subtle animate-spin" />}
+          {status === 'loading' && <Loader2    size={16} className="text-ink-subtle animate-spin" />}
           {status === 'found'   && <CheckCircle size={16} className="text-success-DEFAULT" />}
-          {status === 'error'   && <XCircle    size={16} className="text-risk-DEFAULT" />}
+          {status === 'error'   && <XCircle     size={16} className="text-risk-DEFAULT" />}
         </span>
       </div>
 
-      {/* Status rows */}
       {status === 'loading' && (
         <p className="text-xs text-ink-muted mt-2">Hledám v registru ARES…</p>
       )}
@@ -133,9 +127,7 @@ function IcoLookup({ onResult }) {
           </div>
           {ageMonths !== null && (
             <div className="flex items-center gap-2 ml-[21px]">
-              <p className="text-[11px] text-success-text">
-                Founded {formatAge(ageMonths)} ago
-              </p>
+              <p className="text-[11px] text-success-text">Founded {formatAge(ageMonths)} ago</p>
               {qualified ? (
                 <span className="badge-success text-[10px] px-1.5 py-0.5">24-month requirement met</span>
               ) : (
@@ -190,6 +182,19 @@ const ENTITY_OPTIONS = [
     ],
     note: 'Both company and personal documents required',
   },
+  {
+    value:    'zamestnanec',
+    Icon:     UserCheck,
+    title:    'Zaměstnanec',
+    subtitle: 'Employed · Contract worker · Expat employee',
+    desc:     'You receive a regular salary from a Czech employer. Income verified via payslips and employer confirmation.',
+    docs: [
+      'Last 3 payslips (výplatní pásky)',
+      'Employer income confirmation letter',
+      'Employment contract — type and duration',
+    ],
+    note: 'Fastest path — automated scoring by most banks',
+  },
 ]
 
 function EntityCard({ option, selected, onSelect }) {
@@ -235,32 +240,165 @@ function EntityCard({ option, selected, onSelect }) {
   )
 }
 
+// ── Employee detail fields ─────────────────────────────
+
+const CONTRACT_TYPES = [
+  { value: 'indefinite', label: 'Indefinite (HPP — smlouva na dobu neurčitou)' },
+  { value: 'definite',   label: 'Fixed-term (smlouva na dobu určitou)' },
+]
+
+function EmployeeDetails({ data, onChange }) {
+  const { netIncome = '', contractType = '', probationPeriod = '' } = data
+
+  return (
+    <div className="mt-7 pt-7 border-t border-border space-y-5 animate-fade-up">
+
+      {/* Methodology explanation */}
+      <div className="rounded-xl bg-brand-50 border border-brand-100 p-4">
+        <p className="text-[11px] font-semibold text-brand-700 uppercase tracking-wide mb-2">
+          Jak banky hodnotí zaměstnance
+        </p>
+        <p className="text-xs text-brand-700 leading-relaxed">
+          Metodika pro poskytování hypoték představuje interní pravidla bank, podle kterých
+          posuzují schopnost žadatele splácet a hodnotu zajištěné nemovitosti. Tyto směrnice
+          určují, na jakou maximální částku a za jakých podmínek dosáhnete.
+        </p>
+      </div>
+
+      {/* Net monthly income */}
+      <div>
+        <label htmlFor="netIncome" className="section-label mb-2 block">
+          Čistý měsíční příjem (Kč)
+          <span className="text-risk-DEFAULT ml-1">*</span>
+        </label>
+        <div className="relative">
+          <input
+            id="netIncome"
+            type="number"
+            inputMode="numeric"
+            min={0}
+            value={netIncome}
+            onChange={(e) => onChange('netIncome', Number(e.target.value))}
+            placeholder="např. 55 000"
+            className="input-field pr-16 tabular-nums"
+          />
+          <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs text-ink-subtle pointer-events-none font-medium">
+            Kč / měs
+          </span>
+        </div>
+        <p className="text-[11px] text-ink-subtle mt-1.5">
+          Použijte průměr za posledních 3–6 měsíců po zdanění a srážkách.
+        </p>
+      </div>
+
+      {/* Contract type */}
+      <div>
+        <label className="section-label mb-2 block">Typ pracovní smlouvy</label>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {CONTRACT_TYPES.map(({ value, label }) => (
+            <button
+              key={value}
+              type="button"
+              onClick={() => onChange('contractType', value)}
+              className={[
+                'relative text-left rounded-xl border-2 px-4 py-3.5 text-xs font-medium',
+                'transition-all duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-600/40',
+                contractType === value
+                  ? 'border-brand-600 bg-brand-50 text-brand-700'
+                  : 'border-border bg-card text-ink-muted hover:border-border-strong',
+              ].join(' ')}
+            >
+              {contractType === value && (
+                <span className="absolute top-2.5 right-2.5 w-4 h-4 rounded-full bg-brand-600 flex items-center justify-center">
+                  <Check size={9} className="text-white" strokeWidth={3} />
+                </span>
+              )}
+              {label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Probation period */}
+      <div>
+        <label className="section-label mb-2 block">Jste ve zkušební době?</label>
+        <div className="grid grid-cols-2 gap-3">
+          {[
+            { value: 'no',  label: 'Ne — zkušební doba uplynula' },
+            { value: 'yes', label: 'Ano — stále ve zkušební době' },
+          ].map(({ value, label }) => (
+            <button
+              key={value}
+              type="button"
+              onClick={() => onChange('probationPeriod', value)}
+              className={[
+                'relative text-left rounded-xl border-2 px-4 py-3.5 text-xs font-medium',
+                'transition-all duration-150 focus:outline-none',
+                probationPeriod === value
+                  ? 'border-brand-600 bg-brand-50 text-brand-700'
+                  : 'border-border bg-card text-ink-muted hover:border-border-strong',
+              ].join(' ')}
+            >
+              {probationPeriod === value && (
+                <span className="absolute top-2.5 right-2.5 w-4 h-4 rounded-full bg-brand-600 flex items-center justify-center">
+                  <Check size={9} className="text-white" strokeWidth={3} />
+                </span>
+              )}
+              {label}
+            </button>
+          ))}
+        </div>
+        {probationPeriod === 'yes' && (
+          <div className="mt-2 flex items-start gap-2 rounded-lg bg-warning-light border border-warning-border px-3 py-2.5">
+            <ChevronDown size={13} className="text-warning-DEFAULT flex-shrink-0 mt-0.5 rotate-[-90deg]" />
+            <p className="text-[11px] text-warning-text leading-relaxed">
+              Většina bank hypotéku ve zkušební době neschválí. Doporučujeme požádat po jejím ukončení.
+            </p>
+          </div>
+        )}
+      </div>
+
+    </div>
+  )
+}
+
 // ── Main component ─────────────────────────────────────
 
-export default function Step1EntityType({ value, onChange, onIcoResult, onContinue }) {
+export default function Step1EntityType({ value, onChange, onIcoResult, employeeData, onEmployeeChange, onContinue }) {
+  const isEmployee = value === 'zamestnanec'
+
+  const canContinue = !!value && (
+    !isEmployee || (
+      (employeeData?.netIncome ?? 0) > 0 &&
+      !!employeeData?.contractType
+    )
+  )
+
   return (
     <FunnelCard
       stepLabel="Step 1 of 7 · Business Structure"
       title="How do you earn income in Czechia?"
-      subtitle="Your business structure determines your document requirements and which banks can assess your application. Both paths are fully supported."
+      subtitle="Your income structure determines your document requirements and which banks can assess your application. All three paths are fully supported."
       footer={
         <ActionBar
           isFirst
-          canContinue={!!value}
+          canContinue={canContinue}
           onContinue={onContinue}
         />
       }
     >
-      {/* IČO auto-lookup */}
-      <IcoLookup
-        onResult={(result) => {
-          onIcoResult(result)
-          if (result.entityType) onChange(result.entityType)
-        }}
-      />
+      {/* IČO auto-lookup — only relevant for OSVČ / s.r.o. */}
+      {!isEmployee && (
+        <IcoLookup
+          onResult={(result) => {
+            onIcoResult(result)
+            if (result.entityType) onChange(result.entityType)
+          }}
+        />
+      )}
 
-      {/* Manual entity selection */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      {/* Entity selection — 3-column on sm+ */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         {ENTITY_OPTIONS.map((opt) => (
           <EntityCard
             key={opt.value}
@@ -270,6 +408,14 @@ export default function Step1EntityType({ value, onChange, onIcoResult, onContin
           />
         ))}
       </div>
+
+      {/* Employee detail fields — shown inline when Zaměstnanec selected */}
+      {isEmployee && (
+        <EmployeeDetails
+          data={employeeData ?? {}}
+          onChange={onEmployeeChange}
+        />
+      )}
     </FunnelCard>
   )
 }

@@ -12,6 +12,7 @@ export default function ActionBar({
   isFirst      = false,
   isLast       = false,
   loading      = false,
+  loadingLabel = 'Calculating…',
 }) {
   return (
     <div className="flex items-center justify-between pt-6 border-t border-border">
@@ -41,7 +42,7 @@ export default function ActionBar({
         {loading ? (
           <>
             <Loader2 size={15} className="animate-spin" />
-            Calculating…
+            {loadingLabel}
           </>
         ) : (
           <>
