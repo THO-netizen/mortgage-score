@@ -1,11 +1,4 @@
-import { Lock, Shield, Users, TrendingUp, BookOpen } from 'lucide-react'
-
-const stats = [
-  { value: '2,400+', label: 'expats assessed'       },
-  { value: '19',     label: 'Czech banks covered'    },
-  { value: '87%',    label: 'received pre-approval'  },
-  { value: '4 min',  label: 'average completion'     },
-]
+import { Lock, Shield, TrendingUp, Target, BarChart2, BookOpen, Lightbulb } from 'lucide-react'
 
 const privacyPoints = [
   'No documents uploaded to any server',
@@ -14,10 +7,24 @@ const privacyPoints = [
   'All document analysis runs inside your browser',
 ]
 
-/**
- * Dark sticky sidebar — visible on lg+ breakpoints during the funnel.
- * Communicates privacy, methodology, and social proof.
- */
+const pillars = [
+  {
+    icon: TrendingUp,
+    title: 'Financial Potential',
+    desc: 'Helping individuals and entrepreneurs understand their numbers',
+  },
+  {
+    icon: Target,
+    title: 'Mortgage Readiness',
+    desc: 'Optimizing your profile before official bank submission',
+  },
+  {
+    icon: BarChart2,
+    title: 'Smarter Decisions',
+    desc: 'Data-backed guidance for property financing',
+  },
+]
+
 export default function TrustSidebar() {
   return (
     <aside className="hidden lg:flex flex-col gap-4 sticky top-24">
@@ -52,22 +59,56 @@ export default function TrustSidebar() {
         </ul>
       </div>
 
-      {/* ── Social proof (light card) ─────────────────── */}
+      {/* ── Advisor profile (light card) ─────────────── */}
       <div className="card-surface p-6">
-        <div className="flex items-center gap-2 mb-4">
-          <Users size={13} className="text-ink-subtle" />
-          <p className="section-label">Trusted by expats in Czechia</p>
+
+        {/* Header */}
+        <div className="flex items-center gap-2 mb-5">
+          <Lightbulb size={13} className="text-brand-500 flex-shrink-0" />
+          <p className="section-label">Mortgage &amp; Financial Intelligence</p>
         </div>
-        <div className="grid grid-cols-2 gap-x-4 gap-y-4">
-          {stats.map(({ value, label }) => (
-            <div key={label}>
-              <p className="font-display text-xl font-extrabold text-ink leading-none">
-                {value}
-              </p>
-              <p className="text-xs text-ink-muted mt-1">{label}</p>
+
+        {/* Avatar + name block */}
+        <div className="flex items-center gap-3 mb-4">
+          <div className="w-10 h-10 rounded-full bg-brand-600 flex items-center justify-center flex-shrink-0 shadow-cta">
+            <span className="font-display text-sm font-extrabold text-white tracking-tight">AL</span>
+          </div>
+          <div>
+            <p className="font-display text-sm font-extrabold text-ink leading-tight">Andy Le</p>
+            <p className="text-[11px] text-ink-muted leading-snug mt-0.5">
+              Mortgage &amp; Financial Intelligence Specialist
+            </p>
+          </div>
+        </div>
+
+        {/* Tagline */}
+        <p className="text-xs font-semibold text-brand-600 italic mb-4 leading-snug">
+          "Know your mortgage power before the bank does."
+        </p>
+
+        {/* Bio */}
+        <p className="text-xs text-ink-muted leading-relaxed mb-5">
+          At Mortgage Score, we transform complex financial data into clear
+          mortgage insights. Our mission is to help you evaluate your financial
+          health, understand your borrowing capacity, and unlock better mortgage
+          opportunities with confidence, speed, and precision.
+        </p>
+
+        {/* Pillars */}
+        <div className="space-y-3 pt-4 border-t border-border">
+          {pillars.map(({ icon: Icon, title, desc }) => (
+            <div key={title} className="flex items-start gap-2.5">
+              <div className="w-6 h-6 rounded-lg bg-brand-50 flex items-center justify-center flex-shrink-0 mt-0.5">
+                <Icon size={12} className="text-brand-600" />
+              </div>
+              <div>
+                <p className="text-[11px] font-semibold text-ink leading-tight">{title}</p>
+                <p className="text-[10px] text-ink-muted leading-relaxed mt-0.5">{desc}</p>
+              </div>
             </div>
           ))}
         </div>
+
       </div>
 
       {/* ── Methodology note (light card) ────────────── */}
