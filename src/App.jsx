@@ -8,6 +8,7 @@ import Step3Liabilities     from './components/steps/Step3Liabilities.jsx'
 import Step4Property        from './components/steps/Step4Property.jsx'
 import Step5BankStatement   from './components/steps/Step5BankStatement.jsx'
 import Step6LeadCapture     from './components/steps/Step6LeadCapture.jsx'
+import Step7Results         from './components/steps/Step7Results.jsx'
 
 // ─── Initial form state ───────────────────────────────
 const INITIAL_FORM = {
@@ -16,7 +17,7 @@ const INITIAL_FORM = {
 
   // Step 2
   residenceStatus: '',
-  yearsInCZ: '',
+  yearsInCZ:       '',
 
   // Step 3 — Liabilities
   monthlyLoanPayments: 0,
@@ -32,7 +33,7 @@ const INITIAL_FORM = {
 
   // Step 5 — Bank statement (client-side only)
   bankStatementFile:   null,
-  bankAnalysisStatus:  '',  // '' | 'scanning' | 'done' | 'skipped'
+  bankAnalysisStatus:  '',   // '' | 'scanning' | 'done' | 'skipped'
   bankAnalysisResults: null,
 
   // Step 6 — Lead capture
@@ -40,9 +41,6 @@ const INITIAL_FORM = {
   email:       '',
   leadPhone:   '',
   gdprConsent: false,
-
-  // Step 7 — Results (derived scores stored for dashboard)
-  primaryGoal: '',
 }
 
 // ─── Landing page placeholder ─────────────────────────
@@ -50,9 +48,7 @@ function LandingPlaceholder({ onStart }) {
   return (
     <main className="min-h-screen bg-hero flex items-center justify-center px-4">
       <div className="text-center max-w-xl animate-fade-up">
-        <p className="section-label text-slate-400 mb-4">
-          Free · Private · Instant
-        </p>
+        <p className="section-label text-slate-400 mb-4">Free · Private · Instant</p>
         <h1 className="font-display text-4xl sm:text-5xl font-black text-white leading-tight tracking-tight mb-4">
           Check Your Czech Mortgage
           <br />
@@ -62,11 +58,7 @@ function LandingPlaceholder({ onStart }) {
           Private. Instant. Built for OSVČ and s.r.o.
           <br />No uploads. No hidden checks. No bank commitment.
         </p>
-        <button
-          onClick={onStart}
-          className="btn-cta mx-auto text-base px-10"
-          type="button"
-        >
+        <button onClick={onStart} className="btn-cta mx-auto text-base px-10" type="button">
           Start Free Check
         </button>
         <p className="mt-4 text-xs text-slate-500">
@@ -83,9 +75,7 @@ export default function App() {
   const [formData,    setFormData]    = useState(INITIAL_FORM)
 
   useEffect(() => {
-    analytics.track('landing_page_viewed', {
-      referrer: document.referrer || 'direct',
-    })
+    analytics.track('landing_page_viewed', { referrer: document.referrer || 'direct' })
   }, [])
 
   // ── Form helpers ─────────────────────────────────────
@@ -94,55 +84,36 @@ export default function App() {
 
   // ── Navigation ───────────────────────────────────────
   const scrollTop = () => window.scrollTo({ top: 0, behavior: 'smooth' })
+  const goToStep  = (n) => { setCurrentStep(n); scrollTop() }
+  const goNext    = ()  => goToStep(currentStep + 1)
+  const goBack    = ()  => goToStep(Math.max(1, currentStep - 1))
 
-  const goToStep = (n) => {
-    setCurrentStep(n)
-    scrollTop()
-  }
-
-  const goNext = () => goToStep(currentStep + 1)
-  const goBack = () => goToStep(Math.max(1, currentStep - 1))
-
-  // ── Per-step Continue handlers ────────────────────────
+  // ── Step Continue handlers ────────────────────────────
   const handleStart = () => {
     analytics.track('funnel_started')
     goToStep(1)
   }
 
   const handleStep1Continue = () => {
-    analytics.track('step_completed', {
-      stepIndex:  1,
-      stepName:   'Entity Type',
-      entityType: formData.entityType,
-    })
+    analytics.track('step_completed', { stepIndex: 1, stepName: 'Entity Type', entityType: formData.entityType })
     goNext()
   }
 
   const handleStep2Continue = () => {
-    analytics.track('step_completed', {
-      stepIndex:       2,
-      stepName:        'Residence Status',
-      residenceStatus: formData.residenceStatus,
-      yearsInCZ:       formData.yearsInCZ,
-    })
+    analytics.track('step_completed', { stepIndex: 2, stepName: 'Residence Status', residenceStatus: formData.residenceStatus, yearsInCZ: formData.yearsInCZ })
     goNext()
   }
 
   const handleStep3Continue = () => {
-    const creditCard5pct = Math.round(formData.creditCardLimits * 0.05)
+    const cc5 = Math.round(formData.creditCardLimits * 0.05)
     analytics.track('step_completed', {
-      stepIndex:           3,
-      stepName:            'Liabilities',
+      stepIndex: 3, stepName: 'Liabilities',
       monthlyLoanPayments: formData.monthlyLoanPayments,
       creditCardLimits:    formData.creditCardLimits,
-      creditCard5pct,
+      creditCard5pct:      cc5,
       monthlyLeasing:      formData.monthlyLeasing,
       otherObligations:    formData.otherObligations,
-      totalObligations:
-        formData.monthlyLoanPayments +
-        creditCard5pct +
-        formData.monthlyLeasing +
-        formData.otherObligations,
+      totalObligations:    formData.monthlyLoanPayments + cc5 + formData.monthlyLeasing + formData.otherObligations,
     })
     goNext()
   }
@@ -150,15 +121,12 @@ export default function App() {
   const handleStep4Continue = () => {
     const loanAmount = Math.max(0, formData.purchasePrice - formData.ownFunds)
     const ltv = formData.purchasePrice > 0
-      ? Math.round((loanAmount / formData.purchasePrice) * 100)
-      : 0
+      ? Math.round((loanAmount / formData.purchasePrice) * 100) : 0
     analytics.track('step_completed', {
-      stepIndex:        4,
-      stepName:         'Property & LTV',
+      stepIndex: 4, stepName: 'Property & LTV',
       purchasePrice:    formData.purchasePrice,
       ownFunds:         formData.ownFunds,
-      loanAmount,
-      ltv,
+      loanAmount, ltv,
       propertyPurpose:  formData.propertyPurpose,
       purchaseTimeline: formData.purchaseTimeline,
     })
@@ -167,50 +135,48 @@ export default function App() {
 
   const handleStep5Continue = () => {
     analytics.track('step_completed', {
-      stepIndex:          5,
-      stepName:           'Bank Statement',
-      status:             formData.bankAnalysisStatus,
-      hasRedFlags:        formData.bankAnalysisResults?.hasRedFlags ?? null,
-      redFlagKeywords:    formData.bankAnalysisResults?.redFlagKeywords ?? [],
+      stepIndex:       5,
+      stepName:        'Bank Statement',
+      status:          formData.bankAnalysisStatus,
+      hasRedFlags:     formData.bankAnalysisResults?.hasRedFlags ?? null,
+      redFlagKeywords: formData.bankAnalysisResults?.redFlagKeywords ?? [],
     })
     goNext()
   }
 
   const handleStep6Continue = () => {
     analytics.track('step_completed', {
-      stepIndex: 6,
-      stepName:  'Lead Capture',
+      stepIndex: 6, stepName: 'Lead Capture',
       hasEmail:  !!formData.email,
       hasPhone:  !!formData.leadPhone,
     })
-    goNext()
+    goNext()  // → step 7 = Results Dashboard
   }
 
   // ── Layout flags ─────────────────────────────────────
   const isLanding = currentStep === 0
-  const isFunnel  = currentStep >= 1 && currentStep <= 7
-  const isResults = currentStep === 8
+  const isFunnel  = currentStep >= 1 && currentStep <= 6
+  const isResults = currentStep === 7
 
   // ── Render ───────────────────────────────────────────
   return (
     <div className="min-h-screen bg-surface">
 
+      {/* Header — visible for all funnel and results steps */}
       {!isLanding && (
-        <Header currentStep={currentStep} totalSteps={7} />
+        <Header currentStep={Math.min(currentStep, 7)} totalSteps={7} />
       )}
 
-      {isLanding && (
-        <LandingPlaceholder onStart={handleStart} />
-      )}
+      {/* ── Landing ──────────────────────────────────── */}
+      {isLanding && <LandingPlaceholder onStart={handleStart} />}
 
+      {/* ── Funnel steps 1-6 (8+4 col grid) ─────────── */}
       {isFunnel && (
         <main className="py-8 sm:py-12">
           <div className="max-w-6xl mx-auto px-4 sm:px-6">
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
 
-              {/* Main funnel area — 8 cols */}
               <div className="lg:col-span-8">
-                {/* key re-mounts on each step, re-triggering fade-up */}
                 <div key={currentStep} className="animate-fade-up">
 
                   {currentStep === 1 && (
@@ -287,27 +253,9 @@ export default function App() {
                     />
                   )}
 
-                  {/* Step 7 — Results dashboard, next session */}
-                  {currentStep === 7 && (
-                    <div className="card-surface px-8 py-12 text-center">
-                      <p className="section-label mb-3">Step 7 of 7</p>
-                      <p className="text-ink-muted text-sm">
-                        Results dashboard — coming in the next build session.
-                      </p>
-                      <button
-                        onClick={goBack}
-                        className="btn-ghost mt-6 mx-auto"
-                        type="button"
-                      >
-                        ← Back
-                      </button>
-                    </div>
-                  )}
-
                 </div>
               </div>
 
-              {/* Trust sidebar — 4 cols, desktop only */}
               <div className="lg:col-span-4">
                 <TrustSidebar />
               </div>
@@ -317,14 +265,13 @@ export default function App() {
         </main>
       )}
 
+      {/* ── Results Dashboard (full-width, step 7) ─── */}
       {isResults && (
-        <main className="py-12">
-          <div className="max-w-6xl mx-auto px-4 sm:px-6">
-            <p className="text-center text-ink-muted">
-              Results dashboard — coming soon.
-            </p>
-          </div>
-        </main>
+        <Step7Results
+          formData={formData}
+          onBack={goBack}
+          onRestart={() => { setFormData(INITIAL_FORM); goToStep(0) }}
+        />
       )}
 
     </div>
