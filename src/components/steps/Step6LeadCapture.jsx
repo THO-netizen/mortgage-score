@@ -135,9 +135,7 @@ export default function Step6LeadCapture({ data, formData, onChange, onBack, onC
         propertyPurpose:  formData?.propertyPurpose  ?? '',
         purchaseTimeline: formData?.purchaseTimeline ?? '',
 
-        bankAnalysisStatus:  formData?.bankAnalysisStatus                    ?? '',
-        bankHasRedFlags:     formData?.bankAnalysisResults?.hasRedFlags       ?? null,
-        bankRedFlagKeywords: formData?.bankAnalysisResults?.redFlagKeywords   ?? [],
+        bankAnalysisStatus: formData?.bankAnalysisStatus ?? '',
 
         _subject: `Mortgage prescoring — ${leadName} (${email})`,
       }),

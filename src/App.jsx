@@ -68,10 +68,8 @@ const INITIAL_FORM = {
   propertyPurpose:  '',
   purchaseTimeline: '',
 
-  // Step 5 — Bank statement (client-side only)
-  bankStatementFile:   null,
-  bankAnalysisStatus:  '',   // '' | 'scanning' | 'done' | 'skipped'
-  bankAnalysisResults: null,
+  // Step 5 — Consultation booking
+  bankAnalysisStatus: '',   // '' | 'skipped' (set on book/continue)
 
   // Step 6 — Lead capture
   leadName:    '',
@@ -176,11 +174,8 @@ export default function App() {
 
   const handleStep5Continue = () => {
     analytics.track('step_completed', {
-      stepIndex:       5,
-      stepName:        'Bank Statement',
-      status:          formData.bankAnalysisStatus,
-      hasRedFlags:     formData.bankAnalysisResults?.hasRedFlags ?? null,
-      redFlagKeywords: formData.bankAnalysisResults?.redFlagKeywords ?? [],
+      stepIndex: 5, stepName: 'Consultation Booking',
+      booked:    formData.bankAnalysisStatus === 'skipped',
     })
     goNext()
   }
@@ -304,11 +299,6 @@ export default function App() {
 
                   {currentStep === 5 && (
                     <Step5BankStatement
-                      data={{
-                        bankStatementFile:   formData.bankStatementFile,
-                        bankAnalysisStatus:  formData.bankAnalysisStatus,
-                        bankAnalysisResults: formData.bankAnalysisResults,
-                      }}
                       onChange={setField}
                       onBack={goBack}
                       onContinue={handleStep5Continue}
