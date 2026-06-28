@@ -13,7 +13,11 @@ import Step7Results         from './components/steps/Step7Results.jsx'
 // ─── Initial form state ───────────────────────────────
 const INITIAL_FORM = {
   // Step 1
-  entityType: '',
+  entityType:        '',
+  ico:               '',
+  businessName:      '',
+  businessAgeMonths: null,
+  datumVzniku:       '',
 
   // Step 2
   residenceStatus: '',
@@ -48,16 +52,11 @@ function LandingPlaceholder({ onStart }) {
   return (
     <main className="min-h-screen bg-hero flex items-center justify-center px-4">
       <div className="text-center max-w-xl animate-fade-up">
-        <p className="section-label text-slate-400 mb-4">Free · Private · Instant</p>
-        <h1 className="font-display text-4xl sm:text-5xl font-black text-white leading-tight tracking-tight mb-4">
+        <h1 className="font-display text-4xl sm:text-5xl font-black text-white leading-tight tracking-tight mb-10">
           Check Your Czech Mortgage
           <br />
           <span className="text-brand-400">Eligibility in 3 Minutes</span>
         </h1>
-        <p className="text-slate-400 text-base mb-10 leading-relaxed">
-          Private. Instant. Built for OSVČ and s.r.o.
-          <br />No uploads. No hidden checks. No bank commitment.
-        </p>
         <button onClick={onStart} className="btn-cta mx-auto text-base px-10" type="button">
           Start Free Check
         </button>
@@ -183,6 +182,13 @@ export default function App() {
                     <Step1EntityType
                       value={formData.entityType}
                       onChange={(v) => setField('entityType', v)}
+                      onIcoResult={(r) => setFormData((prev) => ({
+                        ...prev,
+                        ico:               r.ico               ?? prev.ico,
+                        businessName:      r.businessName      ?? prev.businessName,
+                        businessAgeMonths: r.businessAgeMonths ?? prev.businessAgeMonths,
+                        datumVzniku:       r.datumVzniku       ?? prev.datumVzniku,
+                      }))}
                       onContinue={handleStep1Continue}
                     />
                   )}

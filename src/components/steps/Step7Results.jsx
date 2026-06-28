@@ -88,7 +88,8 @@ function buildFactors(f, netIncome) {
     monthlyLeasing = 0, otherObligations = 0,
     purchasePrice = 0, ownFunds = 0,
     propertyPurpose, purchaseTimeline,
-    bankAnalysisStatus, bankAnalysisResults } = f
+    bankAnalysisStatus, bankAnalysisResults,
+    businessName = '', businessAgeMonths = null } = f
 
   const cc5   = Math.round(creditCardLimits * 0.05)
   const total = monthlyLoanPayments + cc5 + monthlyLeasing + otherObligations
@@ -147,12 +148,29 @@ function buildFactors(f, netIncome) {
     {
       title: 'Business Structure',      icon: Users,
       detail: entityType === 'osvc' ? 'OSVČ' : entityType === 'sro' ? 's.r.o. Director' : '—',
-      desc: entityType === 'sro'
-        ? 'Directors can evidence income via salary slips or dividends — preferred by most banks.'
-        : entityType === 'osvc'
-        ? 'Sole traders assessed on 2-year average net profit from tax returns (DPFO).'
-        : 'Not specified.',
-      status: entityType === 'sro' ? 'strong' : entityType === 'osvc' ? 'good' : 'review',
+      desc: (() => {
+        const base = entityType === 'sro'
+          ? 'Directors can evidence income via salary slips or dividends — preferred by most banks.'
+          : entityType === 'osvc'
+          ? 'Sole traders assessed on 2-year average net profit from tax returns (DPFO).'
+          : 'Not specified.'
+        if (businessAgeMonths === null) return base
+        const y = Math.floor(businessAgeMonths / 12)
+        const m = businessAgeMonths % 12
+        const age = y > 0 ? `${y} yr ${m > 0 ? m + ' mo' : ''}`.trim() : `${m} months`
+        const ageNote = businessAgeMonths >= 24
+          ? `Business age ${age} — 24-month bank requirement met.`
+          : `Business age ${age} — below the 24-month threshold required by most Czech banks.`
+        return `${base} ${ageNote}${businessName ? ` Registered as: ${businessName}.` : ''}`
+      })(),
+      status: (() => {
+        if (!entityType) return 'review'
+        if (businessAgeMonths !== null) {
+          if (businessAgeMonths < 12)  return 'risk'
+          if (businessAgeMonths < 24)  return 'review'
+        }
+        return entityType === 'sro' ? 'strong' : 'good'
+      })(),
     },
     {
       title: 'LTV Position',            icon: Home,
