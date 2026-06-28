@@ -59,26 +59,29 @@ function formatAge(months) {
 // ── IČO lookup widget ──────────────────────────────────
 
 function IcoLookup({ onResult }) {
-  const [icoInput,       setIcoInput]       = useState('')
-  const [status,         setStatus]         = useState('idle')  // idle|loading|found|error
-  const [businessName,   setBusinessName]   = useState('')
-  const [ageMonths,      setAgeMonths]      = useState(null)
-  const [qualified,      setQualified]      = useState(false)
-  const [legalFormLabel, setLegalFormLabel] = useState('')
-  const [resolvedType,   setResolvedType]   = useState('')
+  const [icoInput,        setIcoInput]        = useState('')
+  const [status,          setStatus]          = useState('idle')  // idle|loading|found|inactive|error
+  const [businessName,    setBusinessName]    = useState('')
+  const [ageMonths,       setAgeMonths]       = useState(null)
+  const [qualified,       setQualified]       = useState(false)
+  const [legalFormLabel,  setLegalFormLabel]  = useState('')
+  const [resolvedType,    setResolvedType]    = useState('')
+  const [activeStatus,    setActiveStatus]    = useState('')   // raw stavEkonSubjektu from ARES
   const abortRef = useRef(null)
+
+  const resetResult = () => {
+    setStatus('idle')
+    setBusinessName('')
+    setAgeMonths(null)
+    setLegalFormLabel('')
+    setResolvedType('')
+    setActiveStatus('')
+  }
 
   const handleChange = (e) => {
     const val = e.target.value.replace(/\D/g, '').slice(0, 8)
     setIcoInput(val)
-    // Reset result if user edits after a successful lookup
-    if (status === 'found' || status === 'error') {
-      setStatus('idle')
-      setBusinessName('')
-      setAgeMonths(null)
-      setLegalFormLabel('')
-      setResolvedType('')
-    }
+    if (status !== 'idle' && status !== 'loading') resetResult()
   }
 
   const handleVerify = () => {
@@ -93,6 +96,7 @@ function IcoLookup({ onResult }) {
     setAgeMonths(null)
     setLegalFormLabel('')
     setResolvedType('')
+    setActiveStatus('')
 
     fetch(
       `https://ares.gov.cz/ekonomicke-subjekty-v-be/rest/ekonomicke-subjekty/${icoInput}`,
@@ -103,26 +107,33 @@ function IcoLookup({ onResult }) {
         return r.json()
       })
       .then((data) => {
-        const name       = data.obchodniJmeno ?? data.nazev ?? ''
-        const formCode   = String(data.pravniForma ?? '')
-        const dateStr    = data.datumVzniku ?? ''
-        const months     = calcAgeMonths(dateStr)
-        const entityType = mapLegalForm(formCode)
-        const formLabel  = getLegalFormLabel(formCode)
+        const name         = data.obchodniJmeno ?? data.nazev ?? ''
+        const formCode     = String(data.pravniForma ?? '')
+        const dateStr      = data.datumVzniku ?? ''
+        const months       = calcAgeMonths(dateStr)
+        const entityType   = mapLegalForm(formCode)
+        const formLabel    = getLegalFormLabel(formCode)
+        // stavEkonSubjektu: 'AKTIVNÍ' | 'ZANIKLÝ' | 'POZASTAVENÝ' | etc.
+        const icoStatus    = data.stavEkonSubjektu ?? 'AKTIVNÍ'
 
         setBusinessName(name)
         setAgeMonths(months)
         setQualified(months !== null && months >= 24)
         setLegalFormLabel(formLabel)
         setResolvedType(entityType)
-        setStatus('found')
+        setActiveStatus(icoStatus)
+        setStatus(icoStatus === 'AKTIVNÍ' ? 'found' : 'inactive')
 
-        onResult({ ico: icoInput, businessName: name, businessAgeMonths: months, datumVzniku: dateStr, entityType, legalFormLabel: formLabel })
+        onResult({
+          ico: icoInput, businessName: name, businessAgeMonths: months,
+          datumVzniku: dateStr, entityType, legalFormLabel: formLabel,
+          icoActiveStatus: icoStatus,
+        })
       })
       .catch((err) => {
         if (err.name === 'AbortError') return
         setStatus('error')
-        onResult({ ico: icoInput, businessName: '', businessAgeMonths: null, datumVzniku: '', entityType: '', legalFormLabel: '' })
+        onResult({ ico: icoInput, businessName: '', businessAgeMonths: null, datumVzniku: '', entityType: '', legalFormLabel: '', icoActiveStatus: '' })
       })
   }
 
@@ -133,6 +144,7 @@ function IcoLookup({ onResult }) {
   const entityBadgeClass = resolvedType === 'osvc' ? 'badge-warning' : 'badge-neutral'
   const entityBadgeLabel = resolvedType === 'osvc' ? 'OSVČ' : resolvedType === 'sro' ? 's.r.o.' : 'Other'
   const canVerify = icoInput.length === 8 && status !== 'loading'
+  const hasResult = status === 'found' || status === 'inactive'
 
   return (
     <div className="mt-6 pt-6 border-t border-border space-y-4 animate-fade-up">
@@ -160,8 +172,9 @@ function IcoLookup({ onResult }) {
               className="input-field pr-11 tabular-nums tracking-widest w-full"
             />
             <span className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none">
-              {status === 'found' && <CheckCircle size={16} className="text-success-DEFAULT" />}
-              {status === 'error' && <XCircle     size={16} className="text-risk-DEFAULT" />}
+              {status === 'found'    && <CheckCircle size={16} className="text-success-DEFAULT" />}
+              {status === 'inactive' && <XCircle     size={16} className="text-warning-DEFAULT" />}
+              {status === 'error'    && <XCircle     size={16} className="text-risk-DEFAULT" />}
             </span>
           </div>
           <button
@@ -191,50 +204,57 @@ function IcoLookup({ onResult }) {
         )}
       </div>
 
-      {/* ── Auto-populated fields — visible after successful lookup ── */}
-      {status === 'found' && (
+      {/* ── Auto-populated fields — visible after lookup ── */}
+      {hasResult && (
         <div className="space-y-3 animate-fade-up">
 
-          {/* Verified success stamp + company name */}
-          <div className="flex items-center gap-3 rounded-xl bg-success-light border border-success-border px-4 py-3">
-            <CheckCircle size={18} className="text-success-DEFAULT flex-shrink-0" />
-            <div className="min-w-0">
-              <p className="text-xs font-bold text-success-text leading-snug truncate">{businessName}</p>
-              <p className="text-[10px] text-success-text/80 mt-0.5">Verified via Czech Business Register (ARES)</p>
+          {/* Primary result banner — active (green) vs inactive (amber) */}
+          {status === 'inactive' ? (
+            <div className="flex items-start gap-3 rounded-xl bg-warning-light border border-warning-border px-4 py-3">
+              <AlertTriangle size={16} className="text-warning-DEFAULT flex-shrink-0 mt-0.5" />
+              <div className="min-w-0">
+                <p className="text-xs font-bold text-warning-text leading-snug truncate">{businessName}</p>
+                <p className="text-[11px] text-warning-text mt-0.5">
+                  This trade licence (IČO) is not currently active ({activeStatus}). Please verify
+                  your registration status with the Czech Business Register.
+                </p>
+              </div>
             </div>
-          </div>
+          ) : (
+            <div className="flex items-center gap-3 rounded-xl bg-success-light border border-success-border px-4 py-3">
+              <CheckCircle size={18} className="text-success-DEFAULT flex-shrink-0" />
+              <div className="min-w-0">
+                <p className="text-xs font-bold text-success-text leading-snug truncate">{businessName}</p>
+                <p className="text-[10px] text-success-text/80 mt-0.5">
+                  Active — Verified via Czech Business Register (ARES)
+                </p>
+              </div>
+            </div>
+          )}
 
           {/* Legal Structure */}
           <div className="flex items-center gap-3 rounded-xl border border-border bg-surface px-4 py-3">
             <span className="flex-1 text-sm font-medium text-ink leading-snug">{legalFormLabel}</span>
-            {resolvedType && (
-              <span className={entityBadgeClass}>{entityBadgeLabel}</span>
-            )}
+            {resolvedType && <span className={entityBadgeClass}>{entityBadgeLabel}</span>}
           </div>
 
           {/* Business age */}
           {ageMonths !== null && (
             <div className="flex items-center justify-between rounded-xl border border-border bg-surface px-4 py-3">
-              <span className="text-xs text-ink-muted">Company age</span>
+              <span className="text-xs text-ink-muted">Registered</span>
               <div className="flex items-center gap-2">
                 <span className="text-xs font-semibold text-ink">{formatAge(ageMonths)}</span>
-                {qualified
+                {ageMonths >= 24
                   ? <span className="badge-success text-[10px]">24-month requirement met</span>
                   : ageMonths >= 12
                   ? <span className="badge-warning text-[10px]">12–24 months — medium risk</span>
-                  : <span className="badge-risk text-[10px]">Under 12 months — hard block</span>
+                  : ageMonths >= 6
+                  ? <span className="badge-warning text-[10px]">6–12 months — limited lenders</span>
+                  : <span className="badge-risk text-[10px]">Under 6 months — hard block</span>
                 }
               </div>
             </div>
           )}
-
-          {/* ARES verification stamp — legacy slot kept for backward compat below */}
-          <div className="flex items-center gap-2.5 rounded-xl bg-success-light border border-success-border px-4 py-2.5">
-            <CheckCircle size={13} className="text-success-DEFAULT flex-shrink-0" />
-            <p className="text-[11px] font-semibold text-success-text tracking-wide">
-              Verified via Czech Ministry of Finance (ARES)
-            </p>
-          </div>
 
         </div>
       )}
@@ -352,6 +372,11 @@ function BusinessIncomeSection({ data, onChange }) {
     taxRegime                = '',
     annualTurnover           = null,
     avgMonthlyCreditTurnover = null,
+    // ARES-verified identity
+    businessName             = '',
+    datumVzniku              = '',
+    companyExistenceMonths   = null,
+    icoActiveStatus          = '',
   } = data
 
   const [turnoverTouched, setTurnoverTouched]   = useState(false)
@@ -366,8 +391,89 @@ function BusinessIncomeSection({ data, onChange }) {
   const turnoverError = turnoverTouched && taxRegime === 'tax_return' && !(Number(annualTurnover) >= 1)
   const creditError   = creditTouched   && taxRegime === 'flat_tax'   && !(Number(avgMonthlyCreditTurnover) >= 1)
 
+  // ARES-derived state
+  const aresVerified    = !!businessName && !!datumVzniku
+  const isInactive      = aresVerified && icoActiveStatus && icoActiveStatus !== 'AKTIVNÍ'
+  const existMo         = companyExistenceMonths !== null ? Number(companyExistenceMonths) : null
+  const aresAgeResolved = aresVerified && existMo !== null
+
   return (
     <div className="mt-7 pt-7 border-t border-border space-y-5 animate-fade-up">
+
+      {/* ── ARES identity block ───────────────────────── */}
+      {aresVerified && (
+        <div className="space-y-3">
+
+          {/* Inactive trade licence — hard block */}
+          {isInactive ? (
+            <div className="flex items-start gap-3 rounded-xl bg-risk-light border border-risk-border px-4 py-3">
+              <XCircle size={15} className="text-risk-DEFAULT flex-shrink-0 mt-0.5" />
+              <div>
+                <p className="text-xs font-bold text-risk-text mb-0.5">{businessName}</p>
+                <p className="text-[11px] text-risk-text leading-relaxed">
+                  This trade licence (IČO) is not currently active ({icoActiveStatus}). Inactive
+                  registrations cannot be assessed for mortgage underwriting. Please verify your
+                  registration status at the Czech Business Register (ARES).
+                </p>
+              </div>
+            </div>
+          ) : (
+            /* Active — verified company badge */
+            <div className="flex items-center gap-3 rounded-xl bg-success-light border border-success-border px-4 py-3">
+              <CheckCircle size={15} className="text-success-DEFAULT flex-shrink-0" />
+              <div className="min-w-0">
+                <p className="text-xs font-bold text-success-text truncate">
+                  {businessName}
+                  <span className="ml-2 text-[10px] font-semibold normal-case tracking-normal opacity-70">
+                    Active Trade Licence
+                  </span>
+                </p>
+                <p className="text-[10px] text-success-text/80 mt-0.5">
+                  Verified via Czech Business Register (ARES)
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* Business age — auto-resolved from ARES */}
+          {aresAgeResolved && !isInactive && (
+            existMo < 12 ? (
+              <div className="flex items-start gap-3 rounded-xl bg-risk-light border border-risk-border px-4 py-3">
+                <AlertTriangle size={14} className="text-risk-DEFAULT flex-shrink-0 mt-0.5" />
+                <div>
+                  <p className="text-xs font-semibold text-risk-text mb-0.5">Hard Block — Insufficient Business History</p>
+                  <p className="text-[11px] text-risk-text leading-relaxed">
+                    According to the Czech Business Register, your trade licence has been active for{' '}
+                    <strong>{formatAge(existMo)}</strong>. Our underwriting criteria require at least
+                    12 months of active business history (Česká spořitelna, ČSOB). UCB and mBank
+                    may consider applications from 6 months, but with significant income restrictions.
+                  </p>
+                </div>
+              </div>
+            ) : existMo < 24 ? (
+              <div className="flex items-center justify-between rounded-xl border border-warning-border bg-warning-light px-4 py-3">
+                <div className="flex items-center gap-2">
+                  <AlertTriangle size={13} className="text-warning-DEFAULT flex-shrink-0" />
+                  <span className="text-xs font-semibold text-warning-text">
+                    Active for {formatAge(existMo)} — auto-resolved from ARES
+                  </span>
+                </div>
+                <span className="badge-warning text-[10px]">Medium Risk</span>
+              </div>
+            ) : (
+              <div className="flex items-center justify-between rounded-xl border border-success-border bg-success-light px-4 py-3">
+                <div className="flex items-center gap-2">
+                  <CheckCircle size={13} className="text-success-DEFAULT flex-shrink-0" />
+                  <span className="text-xs font-semibold text-success-text">
+                    Active for {formatAge(existMo)} — auto-resolved from ARES
+                  </span>
+                </div>
+                <span className="badge-success text-[10px]">Low Risk</span>
+              </div>
+            )
+          )}
+        </div>
+      )}
 
       {/* Tax regime selector */}
       <div>

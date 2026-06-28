@@ -20,6 +20,9 @@ const INITIAL_FORM = {
   businessAgeMonths: null,
   datumVzniku:       '',
 
+  // Step 1 — ARES verification
+  icoActiveStatus:          '',    // '' | 'AKTIVNÍ' | other ARES status string
+
   // Step 1 — OSVČ / s.r.o. income fields
   taxRegime:                '',    // 'tax_return' | 'flat_tax'
   annualTurnover:           null,  // Integer CZK/year  (tax_return path)
@@ -249,7 +252,8 @@ export default function App() {
                         legalFormLabel:         r.legalFormLabel    ?? prev.legalFormLabel,
                         businessAgeMonths:      r.businessAgeMonths ?? prev.businessAgeMonths,
                         datumVzniku:            r.datumVzniku       ?? prev.datumVzniku,
-                        // Auto-fill ESSO v2 existence months from ARES
+                        icoActiveStatus:        r.icoActiveStatus   ?? prev.icoActiveStatus,
+                        // Auto-fill existence months from ARES for both OSVČ and s.r.o.
                         companyExistenceMonths: r.businessAgeMonths ?? prev.companyExistenceMonths,
                       }))}
                       employeeData={{
@@ -278,6 +282,7 @@ export default function App() {
                         // ARES-verified identity
                         businessName:                formData.businessName,
                         datumVzniku:                 formData.datumVzniku,
+                        icoActiveStatus:             formData.icoActiveStatus,
                         // ESSO v2 fields
                         companyIncomeStream:         formData.companyIncomeStream,
                         companyOwnershipPct:         formData.companyOwnershipPct,

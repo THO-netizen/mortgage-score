@@ -171,6 +171,7 @@ export function computeEffectiveIncome(formData) {
     taxRegime                = '',
     annualTurnover           = null,
     avgMonthlyCreditTurnover = null,
+    icoActiveStatus          = '',   // ARES stavEkonSubjektu — '' | 'AKTIVNÍ' | other
     // s.r.o. ESSO v2 fields (numeric)
     companyIncomeStream      = '',
     companyOwnershipPct      = null,
@@ -263,20 +264,32 @@ export function computeEffectiveIncome(formData) {
   // ── OSVČ ────────────────────────────────────────────────────────────────
   if (entityType === 'osvc') {
 
-    // Business age haircuts
-    if (businessAgeMonths !== null) {
-      if (businessAgeMonths < 3) {
+    // Hard block: inactive trade licence per ARES
+    if (icoActiveStatus && icoActiveStatus !== 'AKTIVNÍ') {
+      redFlags.push('osvc_inactive_licence')
+      return { baseIncome: 0, effectiveIncome: 0, haircut: 0, flags, redFlags }
+    }
+
+    // Canonical age: prefer ARES-derived companyExistenceMonths, fall back to businessAgeMonths
+    const ageMonths = companyExistenceMonths ?? businessAgeMonths
+
+    if (ageMonths !== null) {
+      if (ageMonths < 6) {
+        // Under 6 months: all banks decline
         redFlags.push('business_too_new')
         return { baseIncome: 0, effectiveIncome: 0, haircut: 0, flags, redFlags }
       }
-      if (businessAgeMonths < 12) {
+      if (ageMonths < 12) {
+        // 6–12 months: UCB/mBank only (transition path) — 30% haircut, ČS/ČSOB excluded
         flags.push('transition_path_required')
+        flags.push('osvc_6to12mo_ucb_mbank_only')
         haircut = 0.70
-        flags.push('under_12mo_30pct_haircut')
-      } else if (businessAgeMonths < 24) {
+      } else if (ageMonths < 24) {
+        // 12–24 months: all banks with 15% haircut
         flags.push('under_24mo_15pct_haircut')
         haircut = 0.85
       }
+      // 24+ months: full recognition, haircut = 1.0
     }
 
     // Income method selection
@@ -451,10 +464,11 @@ export function computeVarianceCoeff(formData) {
   }
 
   if (entityType === 'osvc') {
+    const ageMonths = companyExistenceMonths ?? businessAgeMonths
     let v
-    if      (businessAgeMonths === null || businessAgeMonths >= 24) v = VAR_COEFF.osvc_mature
-    else if (businessAgeMonths >= 12)                               v = VAR_COEFF.osvc_young
-    else                                                            v = VAR_COEFF.osvc_new
+    if      (ageMonths === null || ageMonths >= 24) v = VAR_COEFF.osvc_mature
+    else if (ageMonths >= 12)                       v = VAR_COEFF.osvc_young
+    else                                            v = VAR_COEFF.osvc_new
     if (taxRegime === 'flat_tax') v = Math.max(VAR_COEFF.flat_tax, v * 1.15)
     return Math.min(0.35, v)
   }
@@ -557,6 +571,7 @@ export function computeMortgageProfile(formData) {
   let riskStatus = 'zelena'
   const hardStop = ltvBreached || dtiBreached ||
     redFlags.includes('probation') || redFlags.includes('business_too_new') ||
+    redFlags.includes('osvc_inactive_licence') ||
     redFlags.includes('sro_negative_financials') || redFlags.includes('sro_insufficient_history')
 
   if (hardStop) {
@@ -653,9 +668,15 @@ export function computeScore(formData) {
   if (p.dtiBreached)                                 s = Math.max(0, s - 18)
 
   if (entityType === 'osvc' || entityType === 'sro') {
-    if      (businessAgeMonths !== null && businessAgeMonths < 12) s = Math.max(0, s - 12)
-    else if (businessAgeMonths !== null && businessAgeMonths < 24) s = Math.max(0, s - 5)
+    // Use ARES-derived age if available, fall back to ARES businessAgeMonths
+    const ageForScore = formData.companyExistenceMonths ?? businessAgeMonths
+    if      (ageForScore !== null && ageForScore < 12) s = Math.max(0, s - 12)
+    else if (ageForScore !== null && ageForScore < 24) s = Math.max(0, s - 5)
   }
+
+  // OSVČ ARES deductions
+  if (p.redFlags.includes('osvc_inactive_licence'))    s = Math.max(0, s - 30)
+  if (p.flags.includes('osvc_6to12mo_ucb_mbank_only')) s = Math.max(0, s - 8)
 
   // ESSO s.r.o. deductions
   if (p.redFlags.includes('sro_negative_financials'))  s = Math.max(0, s - 25)
