@@ -17,6 +17,15 @@ export const PAYOFF_AGES = {
   kb:    75,   // Komerční banka — most generous
 }
 
+// Turnover-to-income coefficient for tax_return pathway (§7.6.1 conservative default)
+// ČS: up to 0.70 for services; mBank: 0.60; UCB: sector-dependent. Using 0.55 as
+// a conservative cross-bank average absent NACE sector data.
+export const TURNOVER_COEFF_DEFAULT = 0.55
+
+// Flat-tax (paušální daň) income coefficient — all four bank methodologies, 2026
+export const FLAT_TAX_INCOME_COEFF = 0.60
+export const FLAT_TAX_INCOME_CAP   = 150_000   // CZK/month hard ceiling per all methodologies
+
 // Variance coefficients: capture cross-bank methodology spread (σ/E[X])
 export const VAR_COEFF = {
   stable_employee:    0.02,   // indefinite + public sector + no probation
@@ -133,12 +142,15 @@ export function calcMaxMaturity(applicantAge, ltvPct, dstiPct, dtiRatio) {
  */
 export function computeEffectiveIncome(formData) {
   const {
-    entityType       = '',
-    netIncome        = 0,
-    contractType     = '',
-    probationPeriod  = '',
-    employmentSector = '',
-    businessAgeMonths = null,
+    entityType              = '',
+    netIncome               = 0,
+    contractType            = '',
+    probationPeriod         = '',
+    employmentSector        = '',
+    businessAgeMonths       = null,
+    taxRegime               = '',
+    annualTurnover          = null,
+    avgMonthlyCreditTurnover = null,
   } = formData
 
   const flags    = []
@@ -148,20 +160,14 @@ export function computeEffectiveIncome(formData) {
 
   // ── Zaměstnanec ────────────────────────────────────────────────────────
   if (entityType === 'zamestnanec') {
-    // Probation period
     if (probationPeriod === 'yes') {
       if (employmentSector === 'health' || employmentSector === 'education') {
-        // ČSOB compensating strength rule — manual HQ underwriting allowed
         flags.push('probation_csob_exception')
       } else {
-        // Most banks decline outright; soft-reject
         redFlags.push('probation')
       }
     }
 
-    // Fixed-term contract: 20% income haircut (ČS/ČSOB/KB methodology)
-    // Exception: contract ≥12 months total + currently active ≥3 months
-    // We apply haircut conservatively (we don't collect contract duration detail)
     if (contractType === 'definite') {
       haircut = 0.80
       flags.push('fixed_term_20pct_haircut')
@@ -178,21 +184,38 @@ export function computeEffectiveIncome(formData) {
 
   // ── OSVČ / s.r.o. ──────────────────────────────────────────────────────
   if (entityType === 'osvc' || entityType === 'sro') {
+
+    // Step 1: Business age haircuts (applied regardless of income method)
     if (businessAgeMonths !== null) {
       if (businessAgeMonths < 3) {
-        // Below ČS/mBank minimum — no viable path
         redFlags.push('business_too_new')
-        return { baseIncome: income, effectiveIncome: 0, haircut: 0, flags, redFlags }
+        return { baseIncome: 0, effectiveIncome: 0, haircut: 0, flags, redFlags }
       }
       if (businessAgeMonths < 12) {
-        // Transition path only: same NACE + single stable B2B client
         flags.push('transition_path_required')
-        haircut = 0.70   // 30% conservative haircut
+        haircut = 0.70
         flags.push('under_12mo_30pct_haircut')
       } else if (businessAgeMonths < 24) {
-        // Most banks apply conservative weighting below 24 months
         flags.push('under_24mo_15pct_haircut')
         haircut = 0.85
+      }
+    }
+
+    // Step 2: Income method selection
+    const monthlyCredit = Number(avgMonthlyCreditTurnover ?? 0)
+    const turnover      = Number(annualTurnover ?? 0)
+
+    if (taxRegime === 'flat_tax' && monthlyCredit >= 1) {
+      // Obratová / paušální daň method — net income already derived by coefficient + deduction
+      const gross = monthlyCredit * FLAT_TAX_INCOME_COEFF
+      income = Math.min(Math.max(0, gross - LIVING_MIN_CZK), FLAT_TAX_INCOME_CAP)
+      flags.push('flat_tax_method')
+    } else if (taxRegime === 'tax_return' && turnover >= 1) {
+      // Turnover pathway: compare with DAP-base and use the more favourable
+      const turnoverMonthly = Math.round(turnover * TURNOVER_COEFF_DEFAULT / 12)
+      if (turnoverMonthly > income) {
+        income = turnoverMonthly
+        flags.push('turnover_method')
       }
     }
 
@@ -217,6 +240,7 @@ export function computeVarianceCoeff(formData) {
     probationPeriod   = '',
     employmentSector  = '',
     businessAgeMonths = null,
+    taxRegime         = '',
   } = formData
 
   if (entityType === 'zamestnanec') {
@@ -229,13 +253,18 @@ export function computeVarianceCoeff(formData) {
   if (entityType === 'sro') {
     let v = VAR_COEFF.sro_mature
     if (businessAgeMonths !== null && businessAgeMonths < 24) v += 0.08
+    // Flat-tax 15% variance penalty: bank-statement methodology has higher spread
+    if (taxRegime === 'flat_tax') v = Math.max(VAR_COEFF.flat_tax, v * 1.15)
     return Math.min(0.35, v)
   }
 
   if (entityType === 'osvc') {
-    if (businessAgeMonths === null || businessAgeMonths >= 24) return VAR_COEFF.osvc_mature
-    if (businessAgeMonths >= 12)                               return VAR_COEFF.osvc_young
-    return VAR_COEFF.osvc_new
+    let v
+    if      (businessAgeMonths === null || businessAgeMonths >= 24) v = VAR_COEFF.osvc_mature
+    else if (businessAgeMonths >= 12)                               v = VAR_COEFF.osvc_young
+    else                                                            v = VAR_COEFF.osvc_new
+    if (taxRegime === 'flat_tax') v = Math.max(VAR_COEFF.flat_tax, v * 1.15)
+    return Math.min(0.35, v)
   }
 
   return 0.15

@@ -42,6 +42,9 @@
   }
   .input-field:hover  { @apply border-border-strong; }
   .input-field:focus  { @apply border-brand-600 shadow-input-focus; }
+  .input-field.input-error,
+  .input-field.input-error:hover { @apply border-risk-DEFAULT; }
+  .input-field.input-error:focus { @apply border-risk-DEFAULT shadow-[0_0_0_3px_rgba(220,38,38,.12)]; }
 
   /* Select — same height, custom chevron */
   .select-field {

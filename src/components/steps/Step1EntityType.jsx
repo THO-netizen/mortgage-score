@@ -314,6 +314,171 @@ function EntityCard({ option, selected, onSelect }) {
   )
 }
 
+// ── Business income sub-section (OSVČ / s.r.o.) ───────
+
+const TAX_REGIME_OPTIONS = [
+  {
+    value:    'tax_return',
+    label:    'Standard Tax Return',
+    sublabel: '§7 / §16 DAP',
+    desc:     'Income declared via annual personal or corporate tax return',
+  },
+  {
+    value:    'flat_tax',
+    label:    'Flat Tax Regime',
+    sublabel: 'Paušální daň',
+    desc:     'Fixed quarterly payments; no annual tax return required',
+  },
+]
+
+function BusinessIncomeSection({ data, onChange }) {
+  const {
+    taxRegime                = '',
+    annualTurnover           = null,
+    avgMonthlyCreditTurnover = null,
+  } = data
+
+  const [turnoverTouched, setTurnoverTouched]   = useState(false)
+  const [creditTouched,   setCreditTouched]     = useState(false)
+
+  const handleRegimeChange = (newRegime) => {
+    onChange('taxRegime', newRegime)
+    if (newRegime === 'tax_return') { onChange('avgMonthlyCreditTurnover', null); setCreditTouched(false) }
+    if (newRegime === 'flat_tax')   { onChange('annualTurnover', null);           setTurnoverTouched(false) }
+  }
+
+  const turnoverError = turnoverTouched && taxRegime === 'tax_return' && !(Number(annualTurnover) >= 1)
+  const creditError   = creditTouched   && taxRegime === 'flat_tax'   && !(Number(avgMonthlyCreditTurnover) >= 1)
+
+  return (
+    <div className="mt-7 pt-7 border-t border-border space-y-5 animate-fade-up">
+
+      {/* Tax regime selector */}
+      <div>
+        <label className="section-label mb-2 block">
+          What is your current tax filing regime?
+          <span className="text-risk-DEFAULT ml-1">*</span>
+        </label>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {TAX_REGIME_OPTIONS.map(({ value, label, sublabel, desc }) => (
+            <button
+              key={value}
+              type="button"
+              onClick={() => handleRegimeChange(value)}
+              className={[
+                'relative text-left rounded-xl border-2 px-4 py-3.5 transition-all duration-150',
+                'focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-600/40',
+                taxRegime === value
+                  ? 'border-brand-600 bg-brand-50'
+                  : 'border-border bg-card hover:border-border-strong',
+              ].join(' ')}
+            >
+              {taxRegime === value && (
+                <span className="absolute top-2.5 right-2.5 w-4 h-4 rounded-full bg-brand-600 flex items-center justify-center">
+                  <Check size={9} className="text-white" strokeWidth={3} />
+                </span>
+              )}
+              <p className={`text-xs font-bold mb-0.5 ${taxRegime === value ? 'text-brand-700' : 'text-ink'}`}>
+                {label}
+              </p>
+              <p className={`text-[10px] font-semibold mb-1 ${taxRegime === value ? 'text-brand-600' : 'text-ink-muted'}`}>
+                {sublabel}
+              </p>
+              <p className="text-[10px] text-ink-subtle leading-relaxed">{desc}</p>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Branch A — Standard tax return → Gross Annual Turnover */}
+      {taxRegime === 'tax_return' && (
+        <div className="animate-fade-up">
+          <label htmlFor="annualTurnover" className="section-label mb-1.5 block">
+            Gross Annual Turnover / Revenues
+            <span className="text-risk-DEFAULT ml-1">*</span>
+          </label>
+          <p className="text-[10px] font-medium text-ink-muted uppercase tracking-wide mb-2">
+            Roční obrat / tržby
+          </p>
+          <div className="relative">
+            <input
+              id="annualTurnover"
+              type="number"
+              inputMode="numeric"
+              min={1}
+              max={999_000_000}
+              step={1}
+              value={annualTurnover ?? ''}
+              onChange={(e) => onChange('annualTurnover', e.target.value === '' ? null : Math.round(Number(e.target.value)))}
+              onBlur={() => setTurnoverTouched(true)}
+              placeholder="e.g. 2 400 000"
+              className={`input-field pr-24 tabular-nums${turnoverError ? ' input-error' : ''}`}
+            />
+            <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs text-ink-subtle pointer-events-none font-medium whitespace-nowrap">
+              CZK / year
+            </span>
+          </div>
+          {turnoverError ? (
+            <p className="text-xs text-risk-text mt-1.5">
+              This field is required to calculate your borrowing capacity.
+            </p>
+          ) : (
+            <p className="text-[11px] text-ink-subtle mt-1.5 leading-relaxed">
+              Enter your total business revenues as declared in your last tax return (DAP),
+              Appendix 1, line 101 or 102. For s.r.o. directors, use the company's total
+              annual revenues from the P&L statement.
+            </p>
+          )}
+        </div>
+      )}
+
+      {/* Branch B — Flat tax → Average Monthly Credit Turnover */}
+      {taxRegime === 'flat_tax' && (
+        <div className="animate-fade-up">
+          <label htmlFor="avgMonthlyCreditTurnover" className="section-label mb-1.5 block">
+            Average Monthly Credit Turnover
+            <span className="text-risk-DEFAULT ml-1">*</span>
+          </label>
+          <p className="text-[10px] font-medium text-ink-muted uppercase tracking-wide mb-2">
+            Průměrný měsíční kreditní obrat z podnikání
+          </p>
+          <div className="relative">
+            <input
+              id="avgMonthlyCreditTurnover"
+              type="number"
+              inputMode="numeric"
+              min={1}
+              max={12_500_000}
+              step={1}
+              value={avgMonthlyCreditTurnover ?? ''}
+              onChange={(e) => onChange('avgMonthlyCreditTurnover', e.target.value === '' ? null : Math.round(Number(e.target.value)))}
+              onBlur={() => setCreditTouched(true)}
+              placeholder="e.g. 120 000"
+              className={`input-field pr-28 tabular-nums${creditError ? ' input-error' : ''}`}
+            />
+            <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs text-ink-subtle pointer-events-none font-medium whitespace-nowrap">
+              CZK / month
+            </span>
+          </div>
+          {creditError ? (
+            <p className="text-xs text-risk-text mt-1.5">
+              This field is required to calculate your borrowing capacity.
+            </p>
+          ) : (
+            <p className="text-[11px] text-ink-subtle mt-1.5 leading-relaxed">
+              Calculate the average of the last 3 to 6 months of incoming business payments
+              credited to your business bank account. Exclude internal transfers between your
+              own accounts, personal deposits, loan drawdowns, and any one-off non-recurring
+              receipts.
+            </p>
+          )}
+        </div>
+      )}
+
+    </div>
+  )
+}
+
 // ── Employee detail fields ─────────────────────────────
 
 const CONTRACT_TYPES = [
@@ -486,13 +651,21 @@ function EmployeeDetails({ data, onChange }) {
 
 // ── Main component ─────────────────────────────────────
 
-export default function Step1EntityType({ value, onChange, onIcoResult, employeeData, onEmployeeChange, onContinue }) {
-  const isEmployee = value === 'zamestnanec'
+export default function Step1EntityType({ value, onChange, onIcoResult, employeeData, onEmployeeChange, businessData, onBusinessChange, onContinue }) {
+  const isEmployee     = value === 'zamestnanec'
+  const isSelfEmployed = value === 'osvc' || value === 'sro'
 
   const canContinue = !!value && (
     !isEmployee || (
       (employeeData?.netIncome ?? 0) > 0 &&
       !!employeeData?.contractType
+    )
+  ) && (
+    !isSelfEmployed || (
+      !!businessData?.taxRegime && (
+        (businessData.taxRegime === 'tax_return' && Number(businessData.annualTurnover           ?? 0) >= 1) ||
+        (businessData.taxRegime === 'flat_tax'   && Number(businessData.avgMonthlyCreditTurnover ?? 0) >= 1)
+      )
     )
   )
 
@@ -530,6 +703,14 @@ export default function Step1EntityType({ value, onChange, onIcoResult, employee
           />
         ))}
       </div>
+
+      {/* Business income sub-section — shown for OSVČ / s.r.o. */}
+      {isSelfEmployed && (
+        <BusinessIncomeSection
+          data={businessData ?? {}}
+          onChange={onBusinessChange}
+        />
+      )}
 
       {/* Employee detail fields — shown inline when Zaměstnanec selected */}
       {isEmployee && (

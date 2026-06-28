@@ -96,6 +96,10 @@ export default function Step6LeadCapture({ data, formData, onChange, onBack, onC
         businessAgeMonths: formData?.businessAgeMonths ?? null,
         datumVzniku:       formData?.datumVzniku       ?? '',
 
+        tax_regime:                      formData?.taxRegime                    ?? 'N/A',
+        annual_turnover_czk:             formData?.annualTurnover               ?? '',
+        avg_monthly_credit_turnover_czk: formData?.avgMonthlyCreditTurnover    ?? '',
+
         contractType:    formData?.contractType    ?? '',
         probationPeriod: formData?.probationPeriod ?? '',
         netIncome:       formData?.netIncome       ?? 0,

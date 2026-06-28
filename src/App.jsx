@@ -12,13 +12,20 @@ import Step7Results         from './components/steps/Step7Results.jsx'
 
 // ─── Initial form state ───────────────────────────────
 const INITIAL_FORM = {
-  // Step 1 — entity type + employee fields
+  // Step 1 — entity type + shared
   entityType:        '',
   ico:               '',
   businessName:      '',
   legalFormLabel:    '',
   businessAgeMonths: null,
   datumVzniku:       '',
+
+  // Step 1 — OSVČ / s.r.o. income fields
+  taxRegime:                '',    // 'tax_return' | 'flat_tax'
+  annualTurnover:           null,  // Integer CZK/year  (tax_return path)
+  avgMonthlyCreditTurnover: null,  // Integer CZK/month (flat_tax path)
+
+  // Step 1 — employee fields
   netIncome:         0,
   contractType:      '',        // 'indefinite' | 'definite'
   probationPeriod:   '',        // 'yes' | 'no'
@@ -205,6 +212,12 @@ export default function App() {
                         employmentSector: formData.employmentSector,
                       }}
                       onEmployeeChange={setField}
+                      businessData={{
+                        taxRegime:                formData.taxRegime,
+                        annualTurnover:           formData.annualTurnover,
+                        avgMonthlyCreditTurnover: formData.avgMonthlyCreditTurnover,
+                      }}
+                      onBusinessChange={setField}
                       onContinue={handleStep1Continue}
                     />
                   )}
