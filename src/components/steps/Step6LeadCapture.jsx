@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Mail, Phone, User, ChevronRight } from 'lucide-react'
+import { Mail, Phone, User, ChevronRight, FileText } from 'lucide-react'
 import FunnelCard from '../funnel/FunnelCard.jsx'
 import ActionBar  from '../funnel/ActionBar.jsx'
 
@@ -46,6 +46,15 @@ const BENEFITS = [
   'Your personalised eligibility score with bank recommendations',
   'Czech mortgage document checklist tailored to your entity type',
   'Step-by-step action plan and timeline for your application',
+]
+
+const SRO_DOCS = [
+  { label: 'Corporate Tax Returns (DPPO)',         detail: 'Last 2 completed fiscal years — filed with Finanční úřad' },
+  { label: 'Tax Clearance Certificate (Bezdlužnost)', detail: 'Issued by Finanční úřad & ČSSZ — max 3 months old'     },
+  { label: 'Personal Bank Statements',              detail: 'Last 3–6 months — personal account showing salary credits'  },
+  { label: 'Director\'s Service Agreement',         detail: 'Smlouva o výkonu funkce jednatele — if director fees apply' },
+  { label: 'Company Financial Statements',          detail: 'Balance sheet & P&L (Výsledovka) — last 2 fiscal years'    },
+  { label: 'UBO Declaration (Beneficial Ownership)',detail: 'Required for ESSO classification — ownership chain >25%'   },
 ]
 
 export default function Step6LeadCapture({ data, formData, onChange, onBack, onContinue }) {
@@ -137,6 +146,15 @@ export default function Step6LeadCapture({ data, formData, onChange, onBack, onC
 
         bankAnalysisStatus: formData?.bankAnalysisStatus ?? '',
 
+        // s.r.o. ESSO corporate income fields
+        sro_negative_equity:        formData?.sroNegativeEquity    ?? '',
+        sro_negative_profit:        formData?.sroNegativeProfit    ?? '',
+        sro_full_fiscal_year:       formData?.sroFullFiscalYear    ?? '',
+        sro_ownership_pct:          formData?.sroOwnershipPct      ?? '',
+        sro_director_salary_czk:    formData?.sroDirectorSalary    ?? '',
+        sro_director_fees_czk:      formData?.sroDirectorFees      ?? '',
+        sro_profit_share_annual_czk: formData?.sroProfitShare      ?? '',
+
         _subject: `Mortgage prescoring — ${leadName} (${email})`,
       }),
     }).catch(() => {})
@@ -180,6 +198,31 @@ export default function Step6LeadCapture({ data, formData, onChange, onBack, onC
           ))}
         </ul>
       </div>
+
+      {/* ── s.r.o. Director document checklist ───────── */}
+      {formData?.entityType === 'sro' && (
+        <div className="rounded-xl border border-border bg-surface p-4 mb-6">
+          <div className="flex items-center gap-2 mb-3">
+            <FileText size={13} className="text-ink-subtle flex-shrink-0" />
+            <p className="text-xs font-semibold text-ink">Required Documentation — Company Director (s.r.o.)</p>
+          </div>
+          <p className="text-[11px] text-ink-muted mb-3 leading-relaxed">
+            As part of the ESSO underwriting process, Czech banks require both personal and
+            corporate financial evidence. Have the following ready for your strategy session:
+          </p>
+          <ul className="space-y-2.5">
+            {SRO_DOCS.map(({ label, detail }) => (
+              <li key={label} className="flex items-start gap-2.5">
+                <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-brand-400 flex-shrink-0" />
+                <div>
+                  <p className="text-xs font-semibold text-ink leading-tight">{label}</p>
+                  <p className="text-[10px] text-ink-subtle mt-0.5 leading-relaxed">{detail}</p>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       {/* ── Form fields ───────────────────────────────── */}
       <div className="space-y-4 mb-6">

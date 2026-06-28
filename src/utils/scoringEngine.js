@@ -167,10 +167,18 @@ export function computeEffectiveIncome(formData) {
     foreignSalaryCurrency   = 'EUR',
     hasOwnership            = false,
     employerOwnershipPct    = null,
-    businessAgeMonths       = null,
-    taxRegime               = '',
-    annualTurnover          = null,
+    businessAgeMonths        = null,
+    taxRegime                = '',
+    annualTurnover           = null,
     avgMonthlyCreditTurnover = null,
+    // s.r.o. ESSO fields
+    sroNegativeEquity        = false,
+    sroNegativeProfit        = false,
+    sroFullFiscalYear        = true,
+    sroOwnershipPct          = null,
+    sroDirectorSalary        = null,
+    sroDirectorFees          = null,
+    sroProfitShare           = null,
   } = formData
 
   const flags    = []
@@ -244,10 +252,10 @@ export function computeEffectiveIncome(formData) {
 
   let income = Number(netIncome)
 
-  // ── OSVČ / s.r.o. ──────────────────────────────────────────────────────
-  if (entityType === 'osvc' || entityType === 'sro') {
+  // ── OSVČ ────────────────────────────────────────────────────────────────
+  if (entityType === 'osvc') {
 
-    // Step 1: Business age haircuts (applied regardless of income method)
+    // Business age haircuts
     if (businessAgeMonths !== null) {
       if (businessAgeMonths < 3) {
         redFlags.push('business_too_new')
@@ -263,22 +271,70 @@ export function computeEffectiveIncome(formData) {
       }
     }
 
-    // Step 2: Income method selection
+    // Income method selection
     const monthlyCredit = Number(avgMonthlyCreditTurnover ?? 0)
     const turnover      = Number(annualTurnover ?? 0)
 
     if (taxRegime === 'flat_tax' && monthlyCredit >= 1) {
-      // Obratová / paušální daň method — net income already derived by coefficient + deduction
       const gross = monthlyCredit * FLAT_TAX_INCOME_COEFF
       income = Math.min(Math.max(0, gross - LIVING_MIN_CZK), FLAT_TAX_INCOME_CAP)
       flags.push('flat_tax_method')
     } else if (taxRegime === 'tax_return' && turnover >= 1) {
-      // Turnover pathway: compare with DAP-base and use the more favourable
       const turnoverMonthly = Math.round(turnover * TURNOVER_COEFF_DEFAULT / 12)
       if (turnoverMonthly > income) {
         income = turnoverMonthly
         flags.push('turnover_method')
       }
+    }
+
+    return {
+      baseIncome:      income,
+      effectiveIncome: Math.round(income * haircut),
+      haircut,
+      flags,
+      redFlags,
+    }
+  }
+
+  // ── s.r.o. Director — ESSO (Economically Self-related Subject Owner) ────
+  if (entityType === 'sro') {
+
+    // ESSO hard blocks: negative financials or no full fiscal year
+    if (sroNegativeEquity || sroNegativeProfit) {
+      redFlags.push('sro_negative_financials')
+      return { baseIncome: 0, effectiveIncome: 0, haircut: 0, flags, redFlags }
+    }
+    if (sroFullFiscalYear === false) {
+      redFlags.push('sro_insufficient_history')
+      return { baseIncome: 0, effectiveIncome: 0, haircut: 0, flags, redFlags }
+    }
+
+    // Full audit mode (>50% ownership)
+    if (Number(sroOwnershipPct || 0) > 50) {
+      flags.push('sro_full_audit_required')
+    }
+
+    // ESSO income base: salary + director fees + profit share (monthly)
+    const salary   = Number(sroDirectorSalary ?? netIncome ?? 0)
+    const fees     = Number(sroDirectorFees   ?? 0)
+    const profitMo = Math.round(Number(sroProfitShare ?? 0) / 12)
+    income = salary + fees + profitMo
+
+    // Business age → ESSO risk tier
+    if (businessAgeMonths !== null) {
+      if (businessAgeMonths < 3) {
+        redFlags.push('business_too_new')
+        return { baseIncome: 0, effectiveIncome: 0, haircut: 0, flags, redFlags }
+      }
+      if (businessAgeMonths < 12) {
+        flags.push('transition_path_required')
+        haircut = 0.70
+      } else if (businessAgeMonths < 24) {
+        // Medium risk: 1–2 fiscal years — 50% recognition cap
+        haircut = 0.50
+        flags.push('sro_medium_risk_50pct_cap')
+      }
+      // Low risk (≥24 months): haircut = 1.0
     }
 
     return {
@@ -325,10 +381,9 @@ export function computeVarianceCoeff(formData) {
   }
 
   if (entityType === 'sro') {
-    let v = VAR_COEFF.sro_mature
-    if (businessAgeMonths !== null && businessAgeMonths < 24) v += 0.08
-    // Flat-tax 15% variance penalty: bank-statement methodology has higher spread
-    if (taxRegime === 'flat_tax') v = Math.max(VAR_COEFF.flat_tax, v * 1.15)
+    // ESSO: 20% base variance — owner-directed income is inherently more volatile
+    let v = 0.20
+    if (businessAgeMonths !== null && businessAgeMonths < 24) v = Math.max(v, 0.27)
     return Math.min(0.35, v)
   }
 
@@ -438,7 +493,8 @@ export function computeMortgageProfile(formData) {
   // ── Risk matrix: Zelená / Oranžová / Červená ──────────────────────────────
   let riskStatus = 'zelena'
   const hardStop = ltvBreached || dtiBreached ||
-    redFlags.includes('probation') || redFlags.includes('business_too_new')
+    redFlags.includes('probation') || redFlags.includes('business_too_new') ||
+    redFlags.includes('sro_negative_financials') || redFlags.includes('sro_insufficient_history')
 
   if (hardStop) {
     riskStatus = 'cervena'
@@ -447,6 +503,8 @@ export function computeMortgageProfile(formData) {
     flags.includes('under_24mo_15pct_haircut') ||
     flags.includes('fixed_term_20pct_haircut') ||
     flags.includes('transition_path_required') ||
+    flags.includes('sro_medium_risk_50pct_cap') ||
+    flags.includes('sro_full_audit_required') ||
     ltvPct > 70 ||
     maturity.maxMonths < 240
   ) {
@@ -535,6 +593,12 @@ export function computeScore(formData) {
     if      (businessAgeMonths !== null && businessAgeMonths < 12) s = Math.max(0, s - 12)
     else if (businessAgeMonths !== null && businessAgeMonths < 24) s = Math.max(0, s - 5)
   }
+
+  // ESSO s.r.o. deductions
+  if (p.redFlags.includes('sro_negative_financials'))  s = Math.max(0, s - 25)
+  if (p.redFlags.includes('sro_insufficient_history')) s = Math.max(0, s - 15)
+  if (p.flags.includes('sro_medium_risk_50pct_cap'))   s = Math.max(0, s - 8)
+  if (p.flags.includes('sro_full_audit_required'))     s = Math.max(0, s - 3)
 
   return Math.min(100, Math.max(0, s))
 }

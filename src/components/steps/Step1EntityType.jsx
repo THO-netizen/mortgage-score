@@ -511,6 +511,219 @@ function Toggle({ on, onToggle, danger = false }) {
   )
 }
 
+// ── s.r.o. Director — ESSO corporate income assessment ──
+
+function SroIncomeSection({ data, onChange }) {
+  const {
+    sroNegativeEquity = false,
+    sroNegativeProfit = false,
+    sroFullFiscalYear = true,
+    sroOwnershipPct   = null,
+    sroDirectorSalary = null,
+    sroDirectorFees   = null,
+    sroProfitShare    = null,
+  } = data
+
+  const hardBlock = sroNegativeEquity || sroNegativeProfit || sroFullFiscalYear === false
+  const ownerPct  = Number(sroOwnershipPct || 0)
+  const fullAudit = ownerPct > 50
+
+  return (
+    <div className="mt-7 pt-7 border-t border-border space-y-5 animate-fade-up">
+
+      {/* Section header */}
+      <div className="flex items-center gap-2">
+        <Building2 size={14} className="text-brand-600 flex-shrink-0" />
+        <p className="font-display text-sm font-extrabold text-ink">Corporate Income Assessment</p>
+      </div>
+
+      {/* ESSO methodology note */}
+      <div className="rounded-xl bg-brand-50 border border-brand-100 p-4">
+        <p className="text-[11px] font-semibold text-brand-700 uppercase tracking-wide mb-1">
+          ESSO — Economically Self-related Subject Owner
+        </p>
+        <p className="text-xs text-brand-700 leading-relaxed">
+          Czech banks assess Company Director income under ESSO methodology — a stricter audit
+          path requiring corporate financial statements, ownership verification, and profitability
+          evidence across 2 full fiscal years.
+        </p>
+      </div>
+
+      {/* ── Corporate financial health ─────────────────── */}
+      <div>
+        <label className="section-label mb-2 block">Corporate Financial Health</label>
+        <div className="space-y-2">
+          <div className={`flex items-center justify-between rounded-xl border px-4 py-3 ${sroNegativeEquity ? 'bg-risk-light border-risk-border' : 'border-border bg-card'}`}>
+            <div>
+              <p className={`text-xs font-medium ${sroNegativeEquity ? 'text-risk-text' : 'text-ink'}`}>
+                Company has negative equity (vlastní kapitál &lt; 0)
+              </p>
+              <p className="text-[10px] text-ink-subtle mt-0.5">Negative net equity on the company balance sheet</p>
+            </div>
+            <Toggle on={sroNegativeEquity} onToggle={() => onChange('sroNegativeEquity', !sroNegativeEquity)} danger />
+          </div>
+          <div className={`flex items-center justify-between rounded-xl border px-4 py-3 ${sroNegativeProfit ? 'bg-risk-light border-risk-border' : 'border-border bg-card'}`}>
+            <div>
+              <p className={`text-xs font-medium ${sroNegativeProfit ? 'text-risk-text' : 'text-ink'}`}>
+                Company shows a net loss (hospodářský výsledek &lt; 0)
+              </p>
+              <p className="text-[10px] text-ink-subtle mt-0.5">Negative net profit in the last filed fiscal year</p>
+            </div>
+            <Toggle on={sroNegativeProfit} onToggle={() => onChange('sroNegativeProfit', !sroNegativeProfit)} danger />
+          </div>
+        </div>
+      </div>
+
+      {/* ── Fiscal year gate ──────────────────────────── */}
+      <div>
+        <label className="section-label mb-2 block">Company History</label>
+        <div className={`flex items-center justify-between rounded-xl border px-4 py-3 ${!sroFullFiscalYear ? 'bg-risk-light border-risk-border' : 'bg-success-light border-success-border'}`}>
+          <div>
+            <p className={`text-xs font-medium ${!sroFullFiscalYear ? 'text-risk-text' : 'text-success-text'}`}>
+              Company has completed at least one full fiscal year (12+ months)
+            </p>
+            <p className="text-[10px] text-ink-subtle mt-0.5">Required by all Czech banks under ESSO assessment</p>
+          </div>
+          <Toggle on={sroFullFiscalYear} onToggle={() => onChange('sroFullFiscalYear', !sroFullFiscalYear)} />
+        </div>
+      </div>
+
+      {/* ── ESSO hard block warning ───────────────────── */}
+      {hardBlock && (
+        <div className="rounded-xl bg-risk-light border border-risk-border px-4 py-3 animate-fade-up">
+          <div className="flex items-start gap-2">
+            <AlertTriangle size={14} className="text-risk-DEFAULT flex-shrink-0 mt-0.5" />
+            <div>
+              <p className="text-xs font-semibold text-risk-text mb-1">Hard Block — ESSO Assessment Failed</p>
+              <p className="text-[11px] text-risk-text leading-relaxed">
+                Your corporate financials do not currently meet the standard underwriting criteria
+                for an owned-company income assessment. Continue to see your full pre-score report
+                and discuss alternative pathways with your advisor.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Ownership stake ───────────────────────────── */}
+      <div>
+        <label htmlFor="sroOwnershipPct" className="section-label mb-2 block">
+          Your Ownership Stake in the Company
+          <span className="text-risk-DEFAULT ml-1">*</span>
+        </label>
+        <div className="relative">
+          <input
+            id="sroOwnershipPct"
+            type="number"
+            inputMode="numeric"
+            min={1}
+            max={100}
+            value={sroOwnershipPct ?? ''}
+            onChange={(e) => onChange('sroOwnershipPct', e.target.value === '' ? null : Math.min(100, Math.max(0, Number(e.target.value))))}
+            placeholder="e.g. 100"
+            className="input-field pr-10 tabular-nums"
+          />
+          <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs text-ink-subtle pointer-events-none font-medium">%</span>
+        </div>
+        {fullAudit && (
+          <div className="mt-2 flex items-start gap-2 rounded-lg bg-warning-light border border-warning-border px-3 py-2.5">
+            <AlertTriangle size={12} className="text-warning-DEFAULT flex-shrink-0 mt-0.5" />
+            <p className="text-[11px] text-warning-text leading-relaxed">
+              <strong>Full Audit Mode — &gt;50% ownership.</strong> Banks apply ESSO
+              classification and require full corporate financial statements, including
+              audited accounts where available.
+            </p>
+          </div>
+        )}
+        {ownerPct > 25 && ownerPct <= 50 && (
+          <p className="text-[11px] text-warning-text mt-1.5">
+            Significant influence — banks assess both salary and dividend income. Full DPPO audit trail required.
+          </p>
+        )}
+        {ownerPct > 0 && ownerPct <= 25 && (
+          <p className="text-[11px] text-ink-subtle mt-1.5">
+            Minority stake — standard co-owner methodology; DPPO required alongside personal returns.
+          </p>
+        )}
+      </div>
+
+      {/* ── Income components — only shown when not hard-blocked ─── */}
+      {!hardBlock && (
+        <>
+          {/* Director salary */}
+          <div>
+            <label htmlFor="sroDirectorSalary" className="section-label mb-2 block">
+              Monthly Director Salary — Odměna jednatele (CZK)
+            </label>
+            <div className="relative">
+              <input
+                id="sroDirectorSalary"
+                type="number"
+                inputMode="numeric"
+                min={0}
+                value={sroDirectorSalary ?? ''}
+                onChange={(e) => onChange('sroDirectorSalary', e.target.value === '' ? null : Number(e.target.value))}
+                placeholder="e.g. 60 000"
+                className="input-field pr-20 tabular-nums"
+              />
+              <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs text-ink-subtle pointer-events-none font-medium whitespace-nowrap">CZK / mo</span>
+            </div>
+            <p className="text-[11px] text-ink-subtle mt-1.5">
+              Net monthly salary paid by the company to you as director — after taxes and social deductions.
+            </p>
+          </div>
+
+          {/* Director service fees */}
+          <div>
+            <label htmlFor="sroDirectorFees" className="section-label mb-2 block">
+              Monthly Director Service Fees (CZK)
+            </label>
+            <div className="relative">
+              <input
+                id="sroDirectorFees"
+                type="number"
+                inputMode="numeric"
+                min={0}
+                value={sroDirectorFees ?? ''}
+                onChange={(e) => onChange('sroDirectorFees', e.target.value === '' ? null : Number(e.target.value))}
+                placeholder="e.g. 0"
+                className="input-field pr-20 tabular-nums"
+              />
+              <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs text-ink-subtle pointer-events-none font-medium whitespace-nowrap">CZK / mo</span>
+            </div>
+            <p className="text-[11px] text-ink-subtle mt-1.5">
+              Fees under Director's Service Agreement (Smlouva o výkonu funkce jednatele), if applicable. Enter 0 if none.
+            </p>
+          </div>
+
+          {/* Annual profit share / dividends */}
+          <div>
+            <label htmlFor="sroProfitShare" className="section-label mb-2 block">
+              Annual Profit Share / Dividends (CZK)
+            </label>
+            <div className="relative">
+              <input
+                id="sroProfitShare"
+                type="number"
+                inputMode="numeric"
+                min={0}
+                value={sroProfitShare ?? ''}
+                onChange={(e) => onChange('sroProfitShare', e.target.value === '' ? null : Number(e.target.value))}
+                placeholder="e.g. 500 000"
+                className="input-field pr-24 tabular-nums"
+              />
+              <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs text-ink-subtle pointer-events-none font-medium whitespace-nowrap">CZK / year</span>
+            </div>
+            <p className="text-[11px] text-ink-subtle mt-1.5">
+              Dividends or profit share (podíl na zisku) received in the last fiscal year. Enter 0 if none.
+            </p>
+          </div>
+        </>
+      )}
+    </div>
+  )
+}
+
 function EmployeeDetails({ data, onChange }) {
   const {
     isProbation           = false,
@@ -867,8 +1080,9 @@ function EmployeeDetails({ data, onChange }) {
 // ── Main component ─────────────────────────────────────
 
 export default function Step1EntityType({ value, onChange, onIcoResult, employeeData, onEmployeeChange, businessData, onBusinessChange, onContinue }) {
-  const isEmployee     = value === 'zamestnanec'
-  const isSelfEmployed = value === 'osvc' || value === 'sro'
+  const isEmployee = value === 'zamestnanec'
+  const isOSVC     = value === 'osvc'
+  const isSRODir   = value === 'sro'
 
   const canContinue = !!value && (
     !isEmployee || (
@@ -876,11 +1090,15 @@ export default function Step1EntityType({ value, onChange, onIcoResult, employee
       !!employeeData?.contractType
     )
   ) && (
-    !isSelfEmployed || (
+    !isOSVC || (
       !!businessData?.taxRegime && (
         (businessData.taxRegime === 'tax_return' && Number(businessData.annualTurnover           ?? 0) >= 1) ||
         (businessData.taxRegime === 'flat_tax'   && Number(businessData.avgMonthlyCreditTurnover ?? 0) >= 1)
       )
+    )
+  ) && (
+    !isSRODir || (
+      businessData?.sroOwnershipPct !== null && businessData?.sroOwnershipPct !== ''
     )
   )
 
@@ -919,9 +1137,17 @@ export default function Step1EntityType({ value, onChange, onIcoResult, employee
         ))}
       </div>
 
-      {/* Business income sub-section — shown for OSVČ / s.r.o. */}
-      {isSelfEmployed && (
+      {/* OSVČ — tax regime + turnover */}
+      {isOSVC && (
         <BusinessIncomeSection
+          data={businessData ?? {}}
+          onChange={onBusinessChange}
+        />
+      )}
+
+      {/* s.r.o. Director — ESSO corporate income assessment */}
+      {isSRODir && (
+        <SroIncomeSection
           data={businessData ?? {}}
           onChange={onBusinessChange}
         />

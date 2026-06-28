@@ -49,6 +49,15 @@ const INITIAL_FORM = {
   probationPeriod:   '',        // 'yes' | 'no'  (synced from isProbation)
   employmentSector:  '',        // 'health' | 'education' | 'other'
 
+  // Step 1 — s.r.o. director corporate income assessment (ESSO)
+  sroNegativeEquity: false,
+  sroNegativeProfit: false,
+  sroFullFiscalYear: true,
+  sroOwnershipPct:   null,
+  sroDirectorSalary: null,    // CZK/mo — director salary (odměna jednatele)
+  sroDirectorFees:   null,    // CZK/mo — Smlouva o výkonu funkce
+  sroProfitShare:    null,    // CZK/year — dividends / podíl na zisku
+
   // Step 2 — residence + applicant age (for maturity model)
   applicantAge:      35,
 
@@ -250,6 +259,13 @@ export default function App() {
                         taxRegime:                formData.taxRegime,
                         annualTurnover:           formData.annualTurnover,
                         avgMonthlyCreditTurnover: formData.avgMonthlyCreditTurnover,
+                        sroNegativeEquity:        formData.sroNegativeEquity,
+                        sroNegativeProfit:        formData.sroNegativeProfit,
+                        sroFullFiscalYear:        formData.sroFullFiscalYear,
+                        sroOwnershipPct:          formData.sroOwnershipPct,
+                        sroDirectorSalary:        formData.sroDirectorSalary,
+                        sroDirectorFees:          formData.sroDirectorFees,
+                        sroProfitShare:           formData.sroProfitShare,
                       }}
                       onBusinessChange={setField}
                       onContinue={handleStep1Continue}
