@@ -1,4 +1,4 @@
-import { Lock, Mail, Phone, User, ChevronRight } from 'lucide-react'
+import { Mail, Phone, User, ChevronRight } from 'lucide-react'
 import FunnelCard from '../funnel/FunnelCard.jsx'
 import ActionBar  from '../funnel/ActionBar.jsx'
 
@@ -147,15 +147,6 @@ export default function Step6LeadCapture({ data, onChange, onBack, onContinue })
         </span>
       </label>
 
-      {/* ── Trust strip ──────────────────────────────── */}
-      <div className="flex items-center gap-3 rounded-xl bg-dark-900/[.03] border border-border px-4 py-3">
-        <Lock size={13} className="text-success-DEFAULT flex-shrink-0" />
-        <p className="text-[11px] text-ink-muted leading-relaxed">
-          <span className="font-semibold text-ink-muted">No spam, ever — </span>
-          you'll receive one email with your report. Unsubscribe in one click.
-          We are not a bank or broker — your data is never sold or shared.
-        </p>
-      </div>
 
     </FunnelCard>
   )
