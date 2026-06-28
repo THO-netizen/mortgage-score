@@ -244,11 +244,13 @@ export default function App() {
                       onChange={(v) => setField('entityType', v)}
                       onIcoResult={(r) => setFormData((prev) => ({
                         ...prev,
-                        ico:               r.ico               ?? prev.ico,
-                        businessName:      r.businessName      ?? prev.businessName,
-                        legalFormLabel:    r.legalFormLabel    ?? prev.legalFormLabel,
-                        businessAgeMonths: r.businessAgeMonths ?? prev.businessAgeMonths,
-                        datumVzniku:       r.datumVzniku       ?? prev.datumVzniku,
+                        ico:                    r.ico               ?? prev.ico,
+                        businessName:           r.businessName      ?? prev.businessName,
+                        legalFormLabel:         r.legalFormLabel    ?? prev.legalFormLabel,
+                        businessAgeMonths:      r.businessAgeMonths ?? prev.businessAgeMonths,
+                        datumVzniku:            r.datumVzniku       ?? prev.datumVzniku,
+                        // Auto-fill ESSO v2 existence months from ARES
+                        companyExistenceMonths: r.businessAgeMonths ?? prev.companyExistenceMonths,
                       }))}
                       employeeData={{
                         isProbation:           formData.isProbation,
@@ -273,6 +275,9 @@ export default function App() {
                         taxRegime:                   formData.taxRegime,
                         annualTurnover:              formData.annualTurnover,
                         avgMonthlyCreditTurnover:    formData.avgMonthlyCreditTurnover,
+                        // ARES-verified identity
+                        businessName:                formData.businessName,
+                        datumVzniku:                 formData.datumVzniku,
                         // ESSO v2 fields
                         companyIncomeStream:         formData.companyIncomeStream,
                         companyOwnershipPct:         formData.companyOwnershipPct,

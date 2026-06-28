@@ -59,7 +59,7 @@ function formatAge(months) {
 // ── IČO lookup widget ──────────────────────────────────
 
 function IcoLookup({ onResult }) {
-  const [ico,            setIco]            = useState('')
+  const [icoInput,       setIcoInput]       = useState('')
   const [status,         setStatus]         = useState('idle')  // idle|loading|found|error
   const [businessName,   setBusinessName]   = useState('')
   const [ageMonths,      setAgeMonths]      = useState(null)
@@ -68,15 +68,21 @@ function IcoLookup({ onResult }) {
   const [resolvedType,   setResolvedType]   = useState('')
   const abortRef = useRef(null)
 
-  useEffect(() => {
-    if (ico.length !== 8) {
+  const handleChange = (e) => {
+    const val = e.target.value.replace(/\D/g, '').slice(0, 8)
+    setIcoInput(val)
+    // Reset result if user edits after a successful lookup
+    if (status === 'found' || status === 'error') {
       setStatus('idle')
       setBusinessName('')
       setAgeMonths(null)
       setLegalFormLabel('')
       setResolvedType('')
-      return
     }
+  }
+
+  const handleVerify = () => {
+    if (icoInput.length !== 8 || status === 'loading') return
 
     abortRef.current?.abort()
     const ctrl = new AbortController()
@@ -89,7 +95,7 @@ function IcoLookup({ onResult }) {
     setResolvedType('')
 
     fetch(
-      `https://ares.gov.cz/ekonomicke-subjekty-v-be/rest/ekonomicke-subjekty/${ico}`,
+      `https://ares.gov.cz/ekonomicke-subjekty-v-be/rest/ekonomicke-subjekty/${icoInput}`,
       { signal: ctrl.signal },
     )
       .then((r) => {
@@ -111,57 +117,76 @@ function IcoLookup({ onResult }) {
         setResolvedType(entityType)
         setStatus('found')
 
-        onResult({ ico, businessName: name, businessAgeMonths: months, datumVzniku: dateStr, entityType, legalFormLabel: formLabel })
+        onResult({ ico: icoInput, businessName: name, businessAgeMonths: months, datumVzniku: dateStr, entityType, legalFormLabel: formLabel })
       })
       .catch((err) => {
         if (err.name === 'AbortError') return
         setStatus('error')
-        onResult({ ico, businessName: '', businessAgeMonths: null, datumVzniku: '', entityType: '', legalFormLabel: '' })
+        onResult({ ico: icoInput, businessName: '', businessAgeMonths: null, datumVzniku: '', entityType: '', legalFormLabel: '' })
       })
+  }
 
-    return () => ctrl.abort()
-  }, [ico])  // eslint-disable-line react-hooks/exhaustive-deps
-
-  const handleChange = (e) => {
-    const val = e.target.value.replace(/\D/g, '').slice(0, 8)
-    setIco(val)
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter') handleVerify()
   }
 
   const entityBadgeClass = resolvedType === 'osvc' ? 'badge-warning' : 'badge-neutral'
   const entityBadgeLabel = resolvedType === 'osvc' ? 'OSVČ' : resolvedType === 'sro' ? 's.r.o.' : 'Other'
+  const canVerify = icoInput.length === 8 && status !== 'loading'
 
   return (
-    <div className="mb-7 pb-7 border-b border-border space-y-4">
+    <div className="mt-6 pt-6 border-t border-border space-y-4 animate-fade-up">
 
-      {/* ── Registration Number input ──────────────────── */}
+      <p className="text-[11px] font-semibold text-ink-muted uppercase tracking-wide">
+        Business Registry Verification (Optional)
+      </p>
+
+      {/* ── IČO input + Verify button ─────────────────── */}
       <div>
         <label htmlFor="ico" className="section-label mb-2 block">
           Registration Number (IČO)
         </label>
-        <div className="relative">
-          <input
-            id="ico"
-            type="text"
-            inputMode="numeric"
-            value={ico}
-            onChange={handleChange}
-            placeholder="e.g. 12345678"
-            maxLength={8}
-            className="input-field pr-11 tabular-nums tracking-widest"
-          />
-          <span className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none">
-            {status === 'loading' && <Loader2     size={16} className="text-ink-subtle animate-spin" />}
-            {status === 'found'   && <CheckCircle size={16} className="text-success-DEFAULT" />}
-            {status === 'error'   && <XCircle     size={16} className="text-risk-DEFAULT" />}
-          </span>
+        <div className="flex gap-2">
+          <div className="relative flex-1">
+            <input
+              id="ico"
+              type="text"
+              inputMode="numeric"
+              value={icoInput}
+              onChange={handleChange}
+              onKeyDown={handleKeyDown}
+              placeholder="e.g. 12345678"
+              maxLength={8}
+              className="input-field pr-11 tabular-nums tracking-widest w-full"
+            />
+            <span className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none">
+              {status === 'found' && <CheckCircle size={16} className="text-success-DEFAULT" />}
+              {status === 'error' && <XCircle     size={16} className="text-risk-DEFAULT" />}
+            </span>
+          </div>
+          <button
+            type="button"
+            onClick={handleVerify}
+            disabled={!canVerify}
+            className={[
+              'flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all duration-150 whitespace-nowrap',
+              'focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-600/40',
+              canVerify
+                ? 'bg-brand-600 text-white hover:bg-brand-700 shadow-sm'
+                : 'bg-surface text-ink-subtle border border-border cursor-not-allowed',
+            ].join(' ')}
+          >
+            {status === 'loading'
+              ? <><Loader2 size={14} className="animate-spin" /> Verifying…</>
+              : 'Verify IČO'
+            }
+          </button>
         </div>
-        {status === 'loading' && (
-          <p className="text-xs text-ink-muted mt-2">Looking up in ARES registry…</p>
-        )}
+
         {status === 'error' && (
           <div className="flex items-center gap-1.5 mt-2">
             <XCircle size={12} className="text-risk-DEFAULT flex-shrink-0" />
-            <p className="text-xs text-risk-text">IČO not found — please enter your details manually</p>
+            <p className="text-xs text-risk-text">Invalid IČO or company not found. Please check the number and try again.</p>
           </div>
         )}
       </div>
@@ -170,49 +195,40 @@ function IcoLookup({ onResult }) {
       {status === 'found' && (
         <div className="space-y-3 animate-fade-up">
 
-          {/* Company / Business Name — read-only */}
-          <div>
-            <label className="section-label mb-1.5 block">Company / Business Name</label>
-            <div className="relative">
-              <input
-                type="text"
-                value={businessName}
-                readOnly
-                className="input-field pr-10 bg-surface cursor-default select-all font-medium"
-              />
-              <CheckCircle
-                size={15}
-                className="absolute right-3.5 top-1/2 -translate-y-1/2 text-success-DEFAULT pointer-events-none"
-              />
+          {/* Verified success stamp + company name */}
+          <div className="flex items-center gap-3 rounded-xl bg-success-light border border-success-border px-4 py-3">
+            <CheckCircle size={18} className="text-success-DEFAULT flex-shrink-0" />
+            <div className="min-w-0">
+              <p className="text-xs font-bold text-success-text leading-snug truncate">{businessName}</p>
+              <p className="text-[10px] text-success-text/80 mt-0.5">Verified via Czech Business Register (ARES)</p>
             </div>
           </div>
 
           {/* Legal Structure */}
-          <div>
-            <label className="section-label mb-1.5 block">Legal Structure</label>
-            <div className="flex items-center gap-3 rounded-xl border border-border bg-surface px-4 py-3">
-              <span className="flex-1 text-sm font-medium text-ink leading-snug">{legalFormLabel}</span>
-              {resolvedType && (
-                <span className={entityBadgeClass}>{entityBadgeLabel}</span>
-              )}
-            </div>
+          <div className="flex items-center gap-3 rounded-xl border border-border bg-surface px-4 py-3">
+            <span className="flex-1 text-sm font-medium text-ink leading-snug">{legalFormLabel}</span>
+            {resolvedType && (
+              <span className={entityBadgeClass}>{entityBadgeLabel}</span>
+            )}
           </div>
 
           {/* Business age */}
           {ageMonths !== null && (
             <div className="flex items-center justify-between rounded-xl border border-border bg-surface px-4 py-3">
-              <span className="text-xs text-ink-muted">Registered</span>
+              <span className="text-xs text-ink-muted">Company age</span>
               <div className="flex items-center gap-2">
-                <span className="text-xs font-semibold text-ink">{formatAge(ageMonths)} ago</span>
+                <span className="text-xs font-semibold text-ink">{formatAge(ageMonths)}</span>
                 {qualified
                   ? <span className="badge-success text-[10px]">24-month requirement met</span>
-                  : <span className="badge-warning text-[10px]">Under 24 months — limited options</span>
+                  : ageMonths >= 12
+                  ? <span className="badge-warning text-[10px]">12–24 months — medium risk</span>
+                  : <span className="badge-risk text-[10px]">Under 12 months — hard block</span>
                 }
               </div>
             </div>
           )}
 
-          {/* ARES verification stamp */}
+          {/* ARES verification stamp — legacy slot kept for backward compat below */}
           <div className="flex items-center gap-2.5 rounded-xl bg-success-light border border-success-border px-4 py-2.5">
             <CheckCircle size={13} className="text-success-DEFAULT flex-shrink-0" />
             <p className="text-[11px] font-semibold text-success-text tracking-wide">
@@ -560,7 +576,13 @@ function SroIncomeSection({ data, onChange }) {
     sroDirectorFees              = null,
     avgMonthlyCreditTurnover     = null,
     taxRegime                    = '',
+    // ARES-verified identity
+    businessName                 = '',
+    datumVzniku                  = '',
   } = data
+
+  // True when company history was resolved from ARES (not manually entered)
+  const aresVerified = !!businessName && !!datumVzniku
 
   // ── Parse active streams ──────────────────────────────
   const hasA = companyIncomeStream.includes('A')
@@ -600,6 +622,18 @@ function SroIncomeSection({ data, onChange }) {
           <Building2 size={14} className="text-brand-600 flex-shrink-0" />
           <p className="font-display text-sm font-extrabold text-ink">Corporate Income Assessment</p>
         </div>
+
+        {/* ARES-verified company badge */}
+        {aresVerified && (
+          <div className="flex items-center gap-3 rounded-xl bg-success-light border border-success-border px-4 py-3">
+            <CheckCircle size={16} className="text-success-DEFAULT flex-shrink-0" />
+            <div className="min-w-0">
+              <p className="text-xs font-bold text-success-text leading-snug truncate">{businessName}</p>
+              <p className="text-[10px] text-success-text/80 mt-0.5">Verified company — data auto-filled from ARES</p>
+            </div>
+          </div>
+        )}
+
         <div className="rounded-xl bg-brand-50 border border-brand-100 p-4">
           <p className="text-[11px] font-semibold text-brand-700 uppercase tracking-wide mb-1">
             ESSO — Economically Self-related Subject Owner
@@ -666,34 +700,81 @@ function SroIncomeSection({ data, onChange }) {
 
       {/* ── 2. Company History ────────────────────────── */}
       <div>
-        <label htmlFor="companyExistenceMonths" className="section-label mb-1.5 block">
-          2. Company Existence — Total Months in Operation
-        </label>
-        <div className="relative">
-          <input
-            id="companyExistenceMonths"
-            type="number"
-            inputMode="numeric"
-            min={0}
-            value={companyExistenceMonths ?? ''}
-            onChange={(e) => onChange('companyExistenceMonths', e.target.value === '' ? null : Math.round(Number(e.target.value)))}
-            placeholder="e.g. 36"
-            className={`input-field pr-20 tabular-nums${noHistory ? ' input-error' : ''}`}
-          />
-          <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs text-ink-subtle pointer-events-none font-medium">months</span>
-        </div>
-        {noHistory && (
-          <p className="text-xs text-risk-text mt-1.5">
-            Hard Block — minimum 12 months required. All Czech banks require at least one complete fiscal year under ESSO.
-          </p>
-        )}
-        {mediumRisk && (
-          <p className="text-[11px] text-warning-text mt-1.5">
-            Medium Risk — 1–2 fiscal years. Income capped at 50% across all banks until 2nd full fiscal year completes.
-          </p>
-        )}
-        {existMoV !== null && existMoV >= 24 && (
-          <p className="text-[11px] text-success-text mt-1.5">Low Risk — 2+ fiscal years. Full ESSO income recognition available.</p>
+        <p className="section-label mb-1.5">2. Company Existence</p>
+
+        {/* ARES auto-resolved — hide manual input, show verified status */}
+        {aresVerified && existMoV !== null ? (
+          <div>
+            {existMoV < 12 ? (
+              <div className="rounded-xl bg-risk-light border border-risk-border px-4 py-3">
+                <div className="flex items-start gap-2">
+                  <AlertTriangle size={14} className="text-risk-DEFAULT flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-xs font-semibold text-risk-text mb-1">Hard Block — Insufficient History</p>
+                    <p className="text-[11px] text-risk-text leading-relaxed">
+                      According to the Czech Business Register, your company has been active for{' '}
+                      <strong>{formatAge(existMoV)}</strong>. This does not meet the minimum 12-month
+                      underwriting criteria required by all Czech banks under ESSO methodology.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="flex items-center justify-between rounded-xl border border-success-border bg-success-light px-4 py-3">
+                <div className="flex items-center gap-2">
+                  <CheckCircle size={14} className="text-success-DEFAULT flex-shrink-0" />
+                  <span className="text-xs font-semibold text-success-text">
+                    Company active for {formatAge(existMoV)} — auto-resolved from ARES
+                  </span>
+                </div>
+                {existMoV >= 24
+                  ? <span className="badge-success text-[10px]">Low Risk</span>
+                  : <span className="badge-warning text-[10px]">Medium Risk</span>
+                }
+              </div>
+            )}
+            {mediumRisk && (
+              <p className="text-[11px] text-warning-text mt-1.5">
+                1–2 fiscal years active. Income capped at 50% across all banks until the 2nd full fiscal year completes.
+              </p>
+            )}
+          </div>
+        ) : (
+          /* Manual entry — shown when ARES not verified or no date available */
+          <div>
+            <label htmlFor="companyExistenceMonths" className="text-[11px] font-semibold text-ink-muted uppercase tracking-wide mb-1.5 block">
+              Total Months in Operation
+            </label>
+            <div className="relative">
+              <input
+                id="companyExistenceMonths"
+                type="number"
+                inputMode="numeric"
+                min={0}
+                value={companyExistenceMonths ?? ''}
+                onChange={(e) => onChange('companyExistenceMonths', e.target.value === '' ? null : Math.round(Number(e.target.value)))}
+                placeholder="e.g. 36"
+                className={`input-field pr-20 tabular-nums${noHistory ? ' input-error' : ''}`}
+              />
+              <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs text-ink-subtle pointer-events-none font-medium">months</span>
+            </div>
+            {noHistory && (
+              <p className="text-xs text-risk-text mt-1.5">
+                Hard Block — minimum 12 months required. All Czech banks require at least one complete fiscal year under ESSO.
+              </p>
+            )}
+            {mediumRisk && (
+              <p className="text-[11px] text-warning-text mt-1.5">
+                Medium Risk — 1–2 fiscal years. Income capped at 50% across all banks until 2nd full fiscal year completes.
+              </p>
+            )}
+            {existMoV !== null && existMoV >= 24 && (
+              <p className="text-[11px] text-success-text mt-1.5">Low Risk — 2+ fiscal years. Full ESSO income recognition available.</p>
+            )}
+            <p className="text-[10px] text-ink-subtle mt-1.5">
+              Tip: Verify your IČO above to auto-fill company age from the Czech Business Register.
+            </p>
+          </div>
         )}
       </div>
 
@@ -1441,16 +1522,6 @@ export default function Step1EntityType({ value, onChange, onIcoResult, employee
         />
       }
     >
-      {/* IČO auto-lookup — only relevant for OSVČ / s.r.o. */}
-      {!isEmployee && (
-        <IcoLookup
-          onResult={(result) => {
-            onIcoResult(result)
-            if (result.entityType) onChange(result.entityType)
-          }}
-        />
-      )}
-
       {/* Entity selection — 3-column on sm+ */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         {ENTITY_OPTIONS.map((opt) => (
@@ -1462,6 +1533,16 @@ export default function Step1EntityType({ value, onChange, onIcoResult, employee
           />
         ))}
       </div>
+
+      {/* IČO lookup — slides in below cards when OSVČ or s.r.o. is selected */}
+      {(isOSVC || isSRODir) && (
+        <IcoLookup
+          onResult={(result) => {
+            onIcoResult(result)
+            if (result.entityType) onChange(result.entityType)
+          }}
+        />
+      )}
 
       {/* OSVČ — tax regime + turnover */}
       {isOSVC && (
