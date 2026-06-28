@@ -3,27 +3,31 @@ import {
   AlertTriangle, CheckCircle, TrendingUp, Home,
   Shield, DollarSign, FileText, BarChart2, Calendar,
   Users, Award, MapPin, RotateCcw, ArrowLeft, Info,
+  Briefcase, Activity,
 } from 'lucide-react'
 import { formatCZK, formatCZKShort } from '../../utils/formatters.js'
+import {
+  computeScore, computeMortgageProfile,
+  monthlyPayment, annuityFactor,
+  getMaxLTV, getMaxDTI, calcMaxMaturity,
+} from '../../utils/scoringEngine.js'
 
 // ── Constants ──────────────────────────────────────────
 
-const CNB_DSTI_LIMIT  = 0.45
-const LIVING_MINIMUM  = 4_860   // CZK/mo, single person
-const GAUGE_R         = 60
-const GAUGE_CIRC      = 2 * Math.PI * GAUGE_R  // ≈ 376.99
+const GAUGE_R    = 60
+const GAUGE_CIRC = 2 * Math.PI * GAUGE_R
 
 const TIMELINE_STEPS = [
-  { label: 'Pre-scoring Check',       desc: 'Free eligibility assessment complete — you are here.',                                  done: true,  current: true  },
-  { label: 'Property Search & Offer', desc: 'Locate your property and agree a purchase price with the seller.',                     done: false, current: false },
-  { label: 'Reservation Contract',    desc: 'Rezervační smlouva — secure the property with a 3–5% deposit.',                        done: false, current: false },
-  { label: 'Bank Pre-approval',       desc: 'Submit indicative application to selected lenders for competing offers.',              done: false, current: false },
-  { label: 'Property Appraisal',      desc: 'Odhad nemovitosti — bank-commissioned valuer confirms market value.',                  done: false, current: false },
-  { label: 'Full Mortgage Application', desc: 'Submit complete document package: income, bank statements, company financials.',     done: false, current: false },
-  { label: 'Bank Underwriting',       desc: 'Credit committee review — typically 10–20 working days for self-employed applicants.', done: false, current: false },
-  { label: 'Mortgage Contract',       desc: 'Úvěrová smlouva signed; disbursement conditions and drawdown date confirmed.',         done: false, current: false },
-  { label: 'Cadastre Registration',   desc: 'Katastr nemovitostí — zástavní právo (lien) registered against the property.',        done: false, current: false },
-  { label: 'Property Handover',       desc: 'Předání nemovitosti — keys exchanged, mortgage live, ownership transferred.',          done: false, current: false },
+  { label: 'Pre-scoring Check',        desc: 'Free eligibility assessment complete — you are here.',                                  done: true,  current: true  },
+  { label: 'Property Search & Offer',  desc: 'Locate your property and agree a purchase price with the seller.',                     done: false, current: false },
+  { label: 'Reservation Contract',     desc: 'Rezervační smlouva — secure the property with a 3–5% deposit.',                        done: false, current: false },
+  { label: 'Bank Pre-approval',        desc: 'Submit indicative application to selected lenders for competing offers.',              done: false, current: false },
+  { label: 'Property Appraisal',       desc: 'Odhad nemovitosti — bank-commissioned valuer confirms market value.',                  done: false, current: false },
+  { label: 'Full Mortgage Application',desc: 'Submit complete document package: income, bank statements, company financials.',       done: false, current: false },
+  { label: 'Bank Underwriting',        desc: 'Credit committee review — typically 10–20 working days for self-employed applicants.', done: false, current: false },
+  { label: 'Mortgage Contract',        desc: 'Úvěrová smlouva signed; disbursement conditions and drawdown date confirmed.',         done: false, current: false },
+  { label: 'Cadastre Registration',    desc: 'Katastr nemovitostí — zástavní právo (lien) registered against the property.',        done: false, current: false },
+  { label: 'Property Handover',        desc: 'Předání nemovitosti — keys exchanged, mortgage live, ownership transferred.',          done: false, current: false },
 ]
 
 const STATUS_CFG = {
@@ -33,45 +37,13 @@ const STATUS_CFG = {
   risk:   { label: 'Risk',         cls: 'badge-risk'    },
 }
 
-// ── Scoring engine ─────────────────────────────────────
-
-function computeScore(f) {
-  const { entityType, residenceStatus, yearsInCZ,
-    monthlyLoanPayments = 0, creditCardLimits = 0,
-    monthlyLeasing = 0, otherObligations = 0,
-    purchasePrice = 0, ownFunds = 0,
-    propertyPurpose, purchaseTimeline,
-    bankAnalysisStatus, bankAnalysisResults } = f
-
-  let s = 0
-
-  s += { eu: 20, permanent: 20, longterm5plus: 14, longterm: 9, employment: 4, other: 2 }[residenceStatus] ?? 6
-  s += { '10plus': 10, '5-10': 8, '2-5': 6, '1-2': 4, 'less1': 2 }[yearsInCZ] ?? 5
-
-  const ltv = purchasePrice > 0 ? ((purchasePrice - ownFunds) / purchasePrice) * 100 : 0
-  if      (purchasePrice === 0) s += 10
-  else if (ltv <= 60)           s += 20
-  else if (ltv <= 70)           s += 16
-  else if (ltv <= 80)           s += 10
-
-  const cc5 = Math.round(creditCardLimits * 0.05)
-  const tot = monthlyLoanPayments + cc5 + monthlyLeasing + otherObligations
-  if      (tot === 0)      s += 15
-  else if (tot < 10_000)  s += 12
-  else if (tot < 20_000)  s += 8
-  else if (tot < 35_000)  s += 4
-
-  s += { primary: 8, investment: 5, holiday: 3 }[propertyPurpose] ?? 0
-  s += { '3months': 7, '6months': 5, '12months': 3, 'exploring': 1 }[purchaseTimeline] ?? 0
-
-  if      (bankAnalysisStatus === 'done' && !bankAnalysisResults?.hasRedFlags) s += 10
-  else if (bankAnalysisStatus === 'skipped' || !bankAnalysisStatus)            s += 6
-
-  s += { sro: 10, osvc: 7 }[entityType] ?? 0
-
-  if (bankAnalysisResults?.hasRedFlags) s = Math.max(0, s - 15)
-  return Math.min(100, s)
+const RISK_MATRIX_CFG = {
+  zelena:   { label: 'ZELENÁ',   labelEn: 'Green Light',   color: '#10B981', bg: 'bg-success-light',  border: 'border-success-border',  text: 'text-success-text'  },
+  oranzova: { label: 'ORANŽOVÁ', labelEn: 'Amber Review',  color: '#F59E0B', bg: 'bg-warning-light',  border: 'border-warning-border',  text: 'text-warning-text'  },
+  cervena:  { label: 'ČERVENÁ',  labelEn: 'Red Flag',      color: '#EF4444', bg: 'bg-risk-light',     border: 'border-risk-border',     text: 'text-risk-text'     },
 }
+
+// ── scoreCfg ──────────────────────────────────────────
 
 function scoreCfg(score) {
   if (score >= 75) return { label: 'Strong Applicant', color: '#10B981', badge: 'badge-success' }
@@ -80,32 +52,30 @@ function scoreCfg(score) {
   return               { label: 'High Risk',           color: '#EF4444', badge: 'badge-risk' }
 }
 
-// ── Readiness factors ──────────────────────────────────
+// ── Readiness factor builder ───────────────────────────
 
-function buildFactors(f, netIncome) {
-  const { entityType, residenceStatus, yearsInCZ,
+function buildFactors(f, simNetIncome) {
+  const {
+    entityType = '', residenceStatus = '', yearsInCZ = '',
     monthlyLoanPayments = 0, creditCardLimits = 0,
     monthlyLeasing = 0, otherObligations = 0,
     purchasePrice = 0, ownFunds = 0,
-    propertyPurpose, purchaseTimeline,
-    bankAnalysisStatus, bankAnalysisResults,
-    businessName = '', businessAgeMonths = null } = f
+    propertyPurpose = '', purchaseTimeline = '',
+    bankAnalysisStatus = '', bankAnalysisResults = null,
+    businessName = '', businessAgeMonths = null,
+    contractType = '', probationPeriod = '', employmentSector = '',
+    applicantAge = 35,
+  } = f
 
-  const cc5   = Math.round(creditCardLimits * 0.05)
-  const total = monthlyLoanPayments + cc5 + monthlyLeasing + otherObligations
-  const loan  = Math.max(0, purchasePrice - ownFunds)
-  const ltv   = purchasePrice > 0 ? (loan / purchasePrice) * 100 : 0
-  const own   = purchasePrice > 0 ? (ownFunds / purchasePrice) * 100 : 0
+  // Use sim income if formData has none (non-employee path)
+  const incomeForCalc = (f.netIncome > 0 ? f.netIncome : simNetIncome) || 0
 
-  // Bonity
-  const r20   = 0.045 / 12
-  const r20s  = 0.065 / 12
-  const af20  = (1 - Math.pow(1 + r20,  -240)) / r20
-  const af20s = (1 - Math.pow(1 + r20s, -240)) / r20s
-  const cap   = Math.max(0, netIncome * CNB_DSTI_LIMIT - total)
-  const eX    = Math.round(cap * af20)
-  const eXs   = Math.round(cap * af20s)
-  const varX  = Math.abs(eX - eXs)
+  const profile = computeMortgageProfile({ ...f, netIncome: incomeForCalc })
+  const { existingDebt, ltvPct, maxLTVPct, dtiRatio, maxDTIVal, maturity,
+    eX, eXStress, varX, dstiAtEX, bottleneck, flags, redFlags } = profile
+
+  const loan = Math.max(0, purchasePrice - ownFunds)
+  const own  = purchasePrice > 0 ? (ownFunds / purchasePrice) * 100 : 0
 
   const RL = {
     eu: 'EU / EEA Citizen', permanent: 'Permanent Residence',
@@ -116,104 +86,157 @@ function buildFactors(f, netIncome) {
   const PL = { primary: 'Primary Residence', investment: 'Investment / Rental', holiday: 'Holiday Home' }
   const TL = { '3months': 'Within 3 months', '6months': 'Within 6 months', '12months': '6–12 months', 'exploring': 'Exploring' }
 
+  // Business structure or employment status factor (context-sensitive)
+  const isEmployee = entityType === 'zamestnanec'
+  const businessOrEmploymentFactor = isEmployee ? {
+    title:  'Employment Status',
+    icon:   Briefcase,
+    detail: contractType === 'indefinite' ? 'Indefinite contract (HPP)' : contractType === 'definite' ? 'Fixed-term contract' : 'Contract not specified',
+    desc: (() => {
+      const parts = []
+      if (probationPeriod === 'yes') {
+        if (employmentSector === 'health' || employmentSector === 'education')
+          parts.push('Probation — ČSOB exception applies (zdravotnictví/školství); manual HQ underwriting route.')
+        else
+          parts.push('In probation period — most banks will decline until probation ends.')
+      } else {
+        parts.push('Not in probation — standard underwriting applies.')
+      }
+      if (contractType === 'definite') parts.push('Fixed-term: 20% income haircut applied per ČS/ČSOB/KB methodology.')
+      if (contractType === 'indefinite') parts.push('Indefinite contract — preferred by all 19 covered banks.')
+      const sectorLabel = { health: 'Zdravotnictví', education: 'Školství', other: 'Private sector' }[employmentSector] ?? 'Not specified'
+      parts.push(`Sector: ${sectorLabel}.`)
+      return parts.join(' ')
+    })(),
+    status: (() => {
+      if (redFlags.includes('probation')) return 'risk'
+      if (flags.includes('probation_csob_exception')) return 'review'
+      if (contractType === 'definite') return 'review'
+      if (contractType === 'indefinite') return 'strong'
+      return 'review'
+    })(),
+  } : {
+    title:  'Business Structure',
+    icon:   Users,
+    detail: entityType === 'osvc' ? 'OSVČ' : entityType === 'sro' ? 's.r.o. Director' : '—',
+    desc: (() => {
+      const base = entityType === 'sro'
+        ? 'Directors evidence income via salary slips or dividends — preferred by most banks.'
+        : entityType === 'osvc'
+        ? 'Sole traders assessed on 2-year average net profit from DPFO tax returns.'
+        : 'Not specified.'
+      if (businessAgeMonths === null) return base
+      const y = Math.floor(businessAgeMonths / 12)
+      const m = businessAgeMonths % 12
+      const age = y > 0 ? `${y} yr ${m > 0 ? m + ' mo' : ''}`.trim() : `${m} months`
+      let ageNote = businessAgeMonths >= 24
+        ? `Business age ${age} — 24-month requirement met by all banks.`
+        : businessAgeMonths >= 12
+        ? `Business age ${age} — below 24 months; 15% income haircut applied; ČS/mBank require 24 months.`
+        : `Business age ${age} — below 12 months; transition path required (same NACE + single B2B client).`
+      return `${base} ${ageNote}${businessName ? ` Registered: ${businessName}.` : ''}`
+    })(),
+    status: (() => {
+      if (!entityType) return 'review'
+      if (businessAgeMonths !== null) {
+        if (businessAgeMonths < 12) return 'risk'
+        if (businessAgeMonths < 24) return 'review'
+      }
+      return entityType === 'sro' ? 'strong' : 'good'
+    })(),
+  }
+
+  // Bonity card — uses engine E[X] / Var[X]
+  const bonityFactor = {
+    title:  'Bonity / Loan Capacity',
+    icon:   TrendingUp,
+    detail: incomeForCalc > 0 && eX > 0 ? `E[X] ≈ ${formatCZKShort(eX)}` : incomeForCalc > 0 ? 'Capacity exhausted' : 'Set income below →',
+    desc: incomeForCalc > 0
+      ? `Max maturity: ${maturity.maxYears} yrs (payoff by age ${Number(applicantAge) + maturity.maxYears}). Bottleneck: ${bottleneck ?? '—'}. Variance across banks: ±${formatCZKShort(varX)}.`
+      : 'Enter your net monthly income in the Scenario Simulator below.',
+    status: incomeForCalc > 0 && eX > 0 ? (eX > 3_000_000 ? 'strong' : eX > 1_000_000 ? 'good' : 'review') : 'review',
+    // Pass through for extended card display
+    eX, eXStress, varX, dstiAtEX, bottleneck, maturity,
+    netIncome: incomeForCalc, existingDebt,
+  }
+
   return [
     {
-      title: 'Residence & Visa',        icon: MapPin,
+      title: 'Residence & Visa', icon: MapPin,
       detail: RL[residenceStatus] ?? '—',
       desc: !residenceStatus ? 'Not specified'
         : residenceStatus === 'eu' || residenceStatus === 'permanent'
           ? 'Full access — all 19 covered Czech banks eligible with no extra conditions.'
           : residenceStatus === 'longterm5plus' || residenceStatus === 'longterm'
           ? 'Limited access — ~60% of banks eligible; specialist pre-filtering required.'
-          : 'Restricted — very few lenders consider this visa category; specialist required.',
+          : 'Restricted — very few lenders consider this visa category.',
       status: !residenceStatus ? 'review'
-        : residenceStatus === 'eu' || residenceStatus === 'permanent' ? 'strong'
-        : residenceStatus === 'longterm5plus' || residenceStatus === 'longterm' ? 'good'
+        : (residenceStatus === 'eu' || residenceStatus === 'permanent') ? 'strong'
+        : (residenceStatus === 'longterm5plus' || residenceStatus === 'longterm') ? 'good'
         : 'risk',
     },
     {
-      title: 'Czech Tenure',            icon: Calendar,
+      title: 'Czech Tenure', icon: Calendar,
       detail: YL[yearsInCZ] ?? '—',
       desc: !yearsInCZ ? 'Not specified'
-        : yearsInCZ === '10plus' || yearsInCZ === '5-10'
-          ? 'Strong — multi-year residency builds lender confidence significantly.'
-          : yearsInCZ === '2-5'
-          ? 'Moderate — most specialist lenders accept applicants with 2+ years.'
-          : 'Short — under 2 years in Czechia is a high barrier for most lenders.',
+        : (yearsInCZ === '10plus' || yearsInCZ === '5-10') ? 'Strong — multi-year residency builds lender confidence.'
+        : yearsInCZ === '2-5' ? 'Moderate — most specialist lenders accept 2+ years.'
+        : 'Short — under 2 years is a high barrier for most lenders.',
       status: !yearsInCZ ? 'review'
-        : yearsInCZ === '10plus' || yearsInCZ === '5-10' ? 'strong'
+        : (yearsInCZ === '10plus' || yearsInCZ === '5-10') ? 'strong'
         : yearsInCZ === '2-5' ? 'good'
         : yearsInCZ === '1-2' ? 'review' : 'risk',
     },
+    businessOrEmploymentFactor,
     {
-      title: 'Business Structure',      icon: Users,
-      detail: entityType === 'osvc' ? 'OSVČ' : entityType === 'sro' ? 's.r.o. Director' : '—',
-      desc: (() => {
-        const base = entityType === 'sro'
-          ? 'Directors can evidence income via salary slips or dividends — preferred by most banks.'
-          : entityType === 'osvc'
-          ? 'Sole traders assessed on 2-year average net profit from tax returns (DPFO).'
-          : 'Not specified.'
-        if (businessAgeMonths === null) return base
-        const y = Math.floor(businessAgeMonths / 12)
-        const m = businessAgeMonths % 12
-        const age = y > 0 ? `${y} yr ${m > 0 ? m + ' mo' : ''}`.trim() : `${m} months`
-        const ageNote = businessAgeMonths >= 24
-          ? `Business age ${age} — 24-month bank requirement met.`
-          : `Business age ${age} — below the 24-month threshold required by most Czech banks.`
-        return `${base} ${ageNote}${businessName ? ` Registered as: ${businessName}.` : ''}`
-      })(),
-      status: (() => {
-        if (!entityType) return 'review'
-        if (businessAgeMonths !== null) {
-          if (businessAgeMonths < 12)  return 'risk'
-          if (businessAgeMonths < 24)  return 'review'
-        }
-        return entityType === 'sro' ? 'strong' : 'good'
-      })(),
-    },
-    {
-      title: 'LTV Position',            icon: Home,
-      detail: purchasePrice > 0 ? `${ltv.toFixed(1)}% LTV` : '—',
+      title: 'LTV Position', icon: Home,
+      detail: purchasePrice > 0 ? `${ltvPct.toFixed(1)}% LTV (limit ${maxLTVPct}%)` : '—',
       desc: !purchasePrice ? 'Not specified'
-        : ltv > 80 ? 'Exceeds CNB 80% cap — application blocked until own funds increase.'
-        : ltv > 70 ? 'Acceptable — some banks add a risk premium above 75% LTV for self-employed.'
-        : 'Strong — below 70% LTV unlocks competitive fixed rates across all lenders.',
-      status: !purchasePrice ? 'review' : ltv > 80 ? 'risk' : ltv > 70 ? 'good' : 'strong',
+        : profile.ltvBreached
+          ? `Exceeds the ${maxLTVPct}% cap for this purpose/age combination — own funds must increase.`
+          : ltvPct > 70
+          ? `Acceptable — above 70% LTV some banks add a risk premium. Cap is ${maxLTVPct}% (${propertyPurpose === 'investment' ? 'investment hard limit' : applicantAge < 36 ? 'První bydlení' : 'CNB standard'}).`
+          : `Below 70% LTV — unlocks competitive fixed rates across all lenders.`,
+      status: !purchasePrice ? 'review'
+        : profile.ltvBreached ? 'risk'
+        : ltvPct > 70 ? 'good' : 'strong',
     },
     {
-      title: 'Cash Reserve Adequacy',   icon: DollarSign,
+      title: 'Cash Reserve Adequacy', icon: DollarSign,
       detail: purchasePrice > 0 ? `${own.toFixed(0)}% own funds` : '—',
       desc: own >= 30 ? 'Excellent — above 30% signals financial strength to underwriters.'
-        : own >= 20 ? 'Adequate — meets CNB 20% minimum. Allow extra buffer for fees & taxes.'
-        : own > 0   ? 'Insufficient — CNB requires at least 20% own funds for any application.'
+        : own >= 20 ? 'Adequate — meets CNB minimum. Allow buffer for transaction fees & transfer tax.'
+        : own > 0   ? 'Insufficient — CNB requires at least 20% own funds (10% for First Housing under 36).'
         : 'Not specified.',
       status: !purchasePrice ? 'review' : own >= 30 ? 'strong' : own >= 20 ? 'good' : 'risk',
     },
     {
       title: 'Monthly Obligation Load', icon: BarChart2,
-      detail: `${formatCZK(total)} / mo`,
-      desc: total === 0 ? 'No obligations — maximises available borrowing capacity.'
-        : total < 15_000 ? 'Light load — substantial capacity remains for a mortgage payment.'
-        : total < 30_000 ? 'Moderate — will noticeably reduce your maximum loan amount.'
-        : 'Heavy — significantly constrains borrowing; consider paying down debts first.',
-      status: total === 0 ? 'strong' : total < 15_000 ? 'good' : total < 30_000 ? 'review' : 'risk',
+      detail: `${formatCZK(existingDebt)} / mo`,
+      desc: existingDebt === 0 ? 'No existing obligations — maximises available borrowing capacity.'
+        : existingDebt < 15_000 ? 'Light load — substantial DSTI headroom remains.'
+        : existingDebt < 30_000 ? 'Moderate — noticeably reduces maximum loan amount.'
+        : 'Heavy — significantly constrains borrowing; consider reducing debts before applying.',
+      status: existingDebt === 0 ? 'strong' : existingDebt < 15_000 ? 'good' : existingDebt < 30_000 ? 'review' : 'risk',
     },
     {
-      title: 'Property Use Case',       icon: Home,
+      title: 'Property Use Case', icon: Home,
       detail: PL[propertyPurpose] ?? '—',
-      desc: propertyPurpose === 'primary'   ? 'Most favourable — primary residence gets best underwriting treatment.'
-        : propertyPurpose === 'investment' ? 'Investment — rental income can supplement your income assessment.'
-        : propertyPurpose === 'holiday'    ? 'Holiday home — limited lenders; requires larger own-funds buffer.'
+      desc: propertyPurpose === 'primary'
+        ? `Most favourable — primary residence. Max LTV ${maxLTVPct}%, DTI ${maxDTIVal}.`
+        : propertyPurpose === 'investment'
+        ? `Investment property — hard LTV cap 70%, DTI cap 7 across all banks. No exceptions.`
+        : propertyPurpose === 'holiday'
+        ? 'Holiday home — limited lenders; requires larger own-funds buffer.'
         : 'Not specified.',
       status: propertyPurpose === 'primary' ? 'strong' : propertyPurpose === 'investment' ? 'good'
         : propertyPurpose === 'holiday' ? 'review' : 'review',
     },
     {
-      title: 'Transaction History',     icon: FileText,
+      title: 'Transaction History', icon: FileText,
       detail: bankAnalysisStatus === 'done'
-        ? bankAnalysisResults?.hasRedFlags ? 'Risk signals found' : 'Clear'
-        : bankAnalysisStatus === 'skipped' ? 'Skipped' : 'Not analysed',
+        ? (bankAnalysisResults?.hasRedFlags ? 'Risk signals found' : 'Clear')
+        : bankAnalysisStatus === 'skipped' ? 'Skipped / Calendly' : 'Not analysed',
       desc: bankAnalysisStatus === 'done' && !bankAnalysisResults?.hasRedFlags
         ? 'Passed all 7 risk checks — no gambling, enforcement or exchange activity detected.'
         : bankAnalysisStatus === 'done' && bankAnalysisResults?.hasRedFlags
@@ -222,17 +245,23 @@ function buildFactors(f, netIncome) {
       status: bankAnalysisStatus === 'done' && !bankAnalysisResults?.hasRedFlags ? 'strong'
         : bankAnalysisStatus === 'done' && bankAnalysisResults?.hasRedFlags ? 'risk' : 'review',
     },
+    bonityFactor,
     {
-      title: 'Bonity / Loan Capacity',  icon: TrendingUp,
-      detail: netIncome > 0 && cap > 0 ? `E[X] ≈ ${formatCZKShort(eX)}` : netIncome > 0 ? 'Capacity exhausted' : 'Set income →',
-      desc: netIncome > 0
-        ? `At ${formatCZK(netIncome)}/mo net and 45% DSTI ceiling. Stress variance ±${formatCZKShort(varX)} across banks.`
-        : 'Enter your net monthly income in the Scenario Simulator below to calculate E[X].',
-      status: netIncome > 0 && cap > 0 ? (eX > 2_000_000 ? 'strong' : 'good') : netIncome > 0 ? 'risk' : 'review',
-      eX, varX, eXs, cap, netIncome,
+      title: 'Loan Term & Age Cap', icon: Activity,
+      detail: maturity.maxYears > 0 ? `Max ${maturity.maxYears} years` : 'Calculate below',
+      desc: (() => {
+        const payoffAge = Number(applicantAge) + maturity.maxYears
+        const parts = [`Payoff at age ${payoffAge} (UCB/mBank limit: ${maturity.payoffAgeConservative}, KB: ${maturity.payoffAgeGenerous}).`]
+        if (maturity.canExtend)
+          parts.push('mBank 40-year exception eligible (LTV ≤80%, DSTI ≤45%, DTI ≤8.5).')
+        else
+          parts.push('40-year mBank extension not available at current LTV/DSTI/DTI.')
+        return parts.join(' ')
+      })(),
+      status: maturity.maxYears >= 25 ? 'strong' : maturity.maxYears >= 15 ? 'good' : maturity.maxYears >= 10 ? 'review' : 'risk',
     },
     {
-      title: 'Purchase Readiness',      icon: Award,
+      title: 'Purchase Readiness', icon: Award,
       detail: TL[purchaseTimeline] ?? '—',
       desc: purchaseTimeline === '3months' ? 'Urgent — prioritise pre-approval now; some lenders need 3–4 weeks.'
         : purchaseTimeline === '6months'   ? 'Good window — enough time to compare offers and negotiate conditions.'
@@ -240,20 +269,10 @@ function buildFactors(f, netIncome) {
         : purchaseTimeline === 'exploring' ? 'Exploring — ideal time to resolve LTV and document gaps before committing.'
         : 'Not specified.',
       status: purchaseTimeline === '6months' ? 'strong'
-        : purchaseTimeline === '3months' || purchaseTimeline === '12months' ? 'good'
-        : purchaseTimeline === 'exploring' ? 'review' : 'review',
+        : (purchaseTimeline === '3months' || purchaseTimeline === '12months') ? 'good'
+        : 'review',
     },
   ]
-}
-
-// ── Annuity payment ────────────────────────────────────
-
-function monthlyPayment(principal, annualRate, years) {
-  if (principal <= 0 || years <= 0) return 0
-  const r = annualRate / 100 / 12
-  const n = years * 12
-  if (r === 0) return principal / n
-  return principal * r * Math.pow(1 + r, n) / (Math.pow(1 + r, n) - 1)
 }
 
 // ── Sub-components ─────────────────────────────────────
@@ -282,18 +301,115 @@ function ScoreGauge({ score, color }) {
       />
       <text x="80" y="76" textAnchor="middle"
         fill="#0F172A" fontSize="30" fontWeight="800"
-        fontFamily="Manrope, Inter, sans-serif"
-      >{score}</text>
+        fontFamily="Manrope, Inter, sans-serif">{score}</text>
       <text x="80" y="96" textAnchor="middle"
         fill="#94A3B8" fontSize="11"
-        fontFamily="Inter, sans-serif"
-      >/ 100</text>
+        fontFamily="Inter, sans-serif">/ 100</text>
     </svg>
   )
 }
 
+// ── Risk Matrix ────────────────────────────────────────
+
+function RiskMatrix({ formData, simNetIncome }) {
+  const incomeForCalc = (formData.netIncome > 0 ? formData.netIncome : simNetIncome) || 0
+  const profile = computeMortgageProfile({ ...formData, netIncome: incomeForCalc })
+  const { riskStatus, eX, eXStress, varX, bottleneck, ltvPct, maxLTVPct, dtiRatio, maxDTIVal,
+    dstiAtEX, tentativeDSTI, maturity, ltvBreached, dtiBreached, flags, redFlags } = profile
+
+  const cfg = RISK_MATRIX_CFG[riskStatus]
+
+  const bottleneckDesc = {
+    LTV:  `LTV ${ltvPct.toFixed(0)}% exceeds ${maxLTVPct}% cap`,
+    DTI:  `DTI ${dtiRatio.toFixed(1)}× exceeds ${maxDTIVal}× limit`,
+    DSTI: `DSTI ${dstiAtEX.toFixed(0)}% at or near 45% CNB ceiling`,
+    AGE:  `Age constraint limits maturity to ${maturity.maxYears} years`,
+  }[bottleneck] ?? 'Profile within all limits'
+
+  const MetricCell = ({ label, value, warn }) => (
+    <div className={`rounded-xl px-4 py-3 border ${warn ? 'bg-risk-light border-risk-border' : 'bg-surface border-border'}`}>
+      <p className="text-[10px] font-semibold text-ink-subtle uppercase tracking-wide mb-0.5">{label}</p>
+      <p className={`font-display text-sm font-extrabold tabular-nums ${warn ? 'text-risk-DEFAULT' : 'text-ink'}`}>{value}</p>
+    </div>
+  )
+
+  return (
+    <div className={`rounded-card border-2 ${cfg.border} overflow-hidden`}>
+      {/* Header */}
+      <div className={`${cfg.bg} px-6 py-5`}>
+        <div className="flex items-center justify-between gap-4 flex-wrap">
+          <div className="flex items-center gap-3">
+            <div className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: cfg.color }} />
+            <div>
+              <p className="text-[10px] font-bold tracking-widest uppercase text-ink-subtle mb-0.5">Risk Matrix</p>
+              <p className={`font-display text-xl font-black ${cfg.text}`}>
+                {cfg.label} <span className="text-sm font-semibold opacity-70">— {cfg.labelEn}</span>
+              </p>
+            </div>
+          </div>
+          {incomeForCalc > 0 && (
+            <div className="text-right">
+              <p className="text-[10px] text-ink-subtle mb-0.5">E[X] Expected Loan</p>
+              <p className={`font-display text-2xl font-black tabular-nums ${cfg.text}`}>
+                {eX > 0 ? formatCZKShort(eX) : '—'}
+              </p>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Metrics grid */}
+      <div className="p-5 bg-card">
+        {incomeForCalc > 0 && (
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+            <MetricCell label="LTV" value={`${ltvPct.toFixed(0)}% / ${maxLTVPct}%`} warn={ltvBreached} />
+            <MetricCell label="DTI" value={incomeForCalc > 0 ? `${dtiRatio.toFixed(1)}× / ${maxDTIVal}×` : '—'} warn={dtiBreached} />
+            <MetricCell label="DSTI" value={`${dstiAtEX.toFixed(0)}% / 45%`} warn={dstiAtEX > 45} />
+            <MetricCell label="Max term" value={`${maturity.maxYears} let`} warn={maturity.maxYears < 15} />
+          </div>
+        )}
+
+        {/* Bottleneck row */}
+        <div className="flex items-center justify-between gap-3 flex-wrap">
+          <div className="flex items-center gap-2 min-w-0">
+            <Info size={12} className="text-ink-subtle flex-shrink-0" />
+            <p className="text-xs text-ink-muted">
+              <span className="font-semibold text-ink">Limiting factor:</span> {bottleneckDesc}
+            </p>
+          </div>
+          {incomeForCalc > 0 && eX > 0 && (
+            <div className="flex items-center gap-4 text-xs flex-shrink-0">
+              <span className="text-ink-muted">
+                Stress <span className="font-bold tabular-nums text-warning-text">{formatCZKShort(eXStress)}</span>
+              </span>
+              <span className="text-ink-muted">
+                Var[X] <span className="font-bold tabular-nums">±{formatCZKShort(varX)}</span>
+              </span>
+            </div>
+          )}
+        </div>
+
+        {/* Active flags */}
+        {(flags.length > 0 || redFlags.length > 0) && (
+          <div className="mt-3 pt-3 border-t border-border flex flex-wrap gap-1.5">
+            {redFlags.map((f) => (
+              <span key={f} className="badge-risk text-[10px]">{f.replace(/_/g,' ')}</span>
+            ))}
+            {flags.map((f) => (
+              <span key={f} className="badge-warning text-[10px]">{f.replace(/_/g,' ')}</span>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+// ── Readiness card ─────────────────────────────────────
+
 function ReadinessCard({ factor }) {
-  const { title, icon: Icon, detail, desc, status, eX, varX, eXs, cap, netIncome } = factor
+  const { title, icon: Icon, detail, desc, status,
+    eX, eXStress, varX, dstiAtEX, bottleneck, maturity, netIncome, existingDebt } = factor
   const { label, cls } = STATUS_CFG[status]
 
   return (
@@ -312,19 +428,25 @@ function ReadinessCard({ factor }) {
       <p className="text-xs text-ink-muted leading-relaxed">{desc}</p>
 
       {/* Bonity extended display */}
-      {eX !== undefined && netIncome > 0 && cap > 0 && (
+      {eX !== undefined && netIncome > 0 && eX > 0 && (
         <div className="mt-3 pt-3 border-t border-border space-y-1.5">
           <div className="flex justify-between text-xs">
-            <span className="text-ink-muted">E[X] at 4.5% / 20 yr</span>
+            <span className="text-ink-muted">E[X] @ 4.5% / {maturity?.maxYears ?? 20} yr</span>
             <span className="font-bold text-ink tabular-nums">{formatCZK(eX)}</span>
           </div>
           <div className="flex justify-between text-xs">
-            <span className="text-ink-muted">Stress at 6.5% (±Var)</span>
-            <span className="font-semibold text-warning-text tabular-nums">{formatCZK(eXs)}</span>
+            <span className="text-ink-muted">Stress E[X] @ 6.5%</span>
+            <span className="font-semibold text-warning-text tabular-nums">{formatCZK(eXStress)}</span>
           </div>
           <div className="flex justify-between text-xs">
-            <span className="text-ink-muted">Bank-to-bank variance</span>
+            <span className="text-ink-muted">Var[X] bank spread</span>
             <span className="font-semibold text-ink-muted tabular-nums">±{formatCZKShort(varX)}</span>
+          </div>
+          <div className="flex justify-between text-xs">
+            <span className="text-ink-muted">DSTI at E[X]</span>
+            <span className={`font-semibold tabular-nums ${dstiAtEX > 45 ? 'text-risk-DEFAULT' : 'text-ink-muted'}`}>
+              {dstiAtEX.toFixed(1)}%
+            </span>
           </div>
         </div>
       )}
@@ -332,10 +454,17 @@ function ReadinessCard({ factor }) {
   )
 }
 
-function ScenarioSimulator({ formData }) {
+// ── Scenario Simulator ─────────────────────────────────
+
+function ScenarioSimulator({ formData, onIncomeChange }) {
   const cc5   = Math.round((formData.creditCardLimits ?? 0) * 0.05)
   const total = (formData.monthlyLoanPayments ?? 0) + cc5
     + (formData.monthlyLeasing ?? 0) + (formData.otherObligations ?? 0)
+
+  const applicantAge  = Number(formData.applicantAge ?? 35)
+  const propertyPurpose = formData.propertyPurpose ?? 'primary'
+  const maxLTVForPurpose = getMaxLTV(propertyPurpose, applicantAge)
+  const maxDTIForPurpose = getMaxDTI(propertyPurpose)
 
   const initDown = formData.purchasePrice > 0
     ? Math.round((formData.ownFunds / formData.purchasePrice) * 100)
@@ -346,16 +475,26 @@ function ScenarioSimulator({ formData }) {
     downPct:   Math.min(99, Math.max(5, initDown)),
     rate:      4.5,
     years:     20,
-    netIncome: 80_000,
+    netIncome: formData.netIncome > 0 ? formData.netIncome : 80_000,
   })
 
-  const upd = (k, v) => setS((p) => ({ ...p, [k]: v }))
+  const upd = (k, v) => {
+    setS((p) => ({ ...p, [k]: v }))
+    if (k === 'netIncome') onIncomeChange(v)
+  }
 
   const loanAmt   = Math.round(s.price * (1 - s.downPct / 100))
   const payment   = monthlyPayment(loanAmt, s.rate, s.years)
   const simLTV    = s.price > 0 ? (loanAmt / s.price) * 100 : 0
   const simDSTI   = s.netIncome > 0 ? ((payment + total) / s.netIncome) * 100 : 0
+  const simDTI    = s.netIncome > 0 ? loanAmt / (s.netIncome * 12) : 0
   const dstiAlert = simDSTI > 45
+  const dtiAlert  = simDTI > maxDTIForPurpose
+  const ltvAlert  = simLTV > maxLTVForPurpose
+
+  // Age-aware max maturity
+  const matCheck = calcMaxMaturity(applicantAge, simLTV, simDSTI, simDTI)
+  const simMaxYears = Math.floor(matCheck.maxMonths / 12)
 
   const SliderRow = ({ label, value, min, max, step, format, onChange }) => (
     <div>
@@ -373,6 +512,9 @@ function ScenarioSimulator({ formData }) {
       <div className="flex items-center gap-2 mb-6">
         <TrendingUp size={16} className="text-brand-600" />
         <h3 className="font-display text-lg font-extrabold text-ink">Scenario Simulator</h3>
+        {simMaxYears < 30 && (
+          <span className="badge-warning text-[10px] ml-auto">Age cap: max {simMaxYears} yr</span>
+        )}
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-10 gap-y-6 mb-7">
@@ -386,11 +528,10 @@ function ScenarioSimulator({ formData }) {
           min={1.0} max={9.0} step={0.1}
           format={(v) => `${v.toFixed(1)}%`} onChange={(v) => upd('rate', v)} />
         <SliderRow label="Maturity" value={s.years}
-          min={5} max={30} step={1}
-          format={(v) => `${v} years`} onChange={(v) => upd('years', v)} />
+          min={5} max={Math.max(5, simMaxYears)} step={1}
+          format={(v) => `${v} years`} onChange={(v) => upd('years', Math.min(v, simMaxYears))} />
       </div>
 
-      {/* Net income input */}
       <div className="mb-7">
         <div className="flex justify-between items-baseline mb-1.5">
           <span className="section-label">Monthly Net Income</span>
@@ -398,53 +539,77 @@ function ScenarioSimulator({ formData }) {
         </div>
         <input type="range" min={20_000} max={500_000} step={5_000} value={s.netIncome}
           onChange={(e) => upd('netIncome', Number(e.target.value))} className="slider-field" />
-        <p className="text-[11px] text-ink-subtle mt-1">Used to calculate DSTI and Bonity E[X] — updates the Loan Capacity card above</p>
+        <p className="text-[11px] text-ink-subtle mt-1">Updates E[X] and the Bonity factor card above in real time.</p>
       </div>
 
-      {/* Results row */}
+      {/* Results */}
       <div className="rounded-xl border border-border bg-surface p-5">
-        <div className="grid grid-cols-3 gap-4 mb-4">
+        <div className="grid grid-cols-4 gap-4 mb-4">
           <div>
-            <p className="section-label mb-1">Loan Amount</p>
-            <p className="font-display text-xl font-extrabold text-ink tabular-nums leading-tight">
+            <p className="section-label mb-1">Loan</p>
+            <p className="font-display text-lg font-extrabold text-ink tabular-nums leading-tight">
               {formatCZKShort(loanAmt)}
             </p>
           </div>
           <div className="text-center border-x border-border px-2">
             <p className="section-label mb-1">LTV</p>
-            <p className={`font-display text-xl font-extrabold tabular-nums leading-tight ${
-              simLTV > 80 ? 'text-risk-DEFAULT' : simLTV > 70 ? 'text-warning-DEFAULT' : 'text-success-DEFAULT'
-            }`}>{simLTV.toFixed(0)}%</p>
+            <p className={`font-display text-lg font-extrabold tabular-nums leading-tight ${ltvAlert ? 'text-risk-DEFAULT' : simLTV > 70 ? 'text-warning-DEFAULT' : 'text-success-DEFAULT'}`}>
+              {simLTV.toFixed(0)}%
+            </p>
+          </div>
+          <div className="text-center border-r border-border px-2">
+            <p className="section-label mb-1">DTI</p>
+            <p className={`font-display text-lg font-extrabold tabular-nums leading-tight ${dtiAlert ? 'text-risk-DEFAULT' : 'text-success-DEFAULT'}`}>
+              {s.netIncome > 0 ? `${simDTI.toFixed(1)}×` : '—'}
+            </p>
           </div>
           <div className="text-right">
             <p className="section-label mb-1">DSTI</p>
-            <p className={`font-display text-xl font-extrabold tabular-nums leading-tight ${
-              simDSTI > 45 ? 'text-risk-DEFAULT' : simDSTI > 35 ? 'text-warning-DEFAULT' : 'text-success-DEFAULT'
-            }`}>{s.netIncome > 0 ? `${simDSTI.toFixed(0)}%` : '—'}</p>
+            <p className={`font-display text-lg font-extrabold tabular-nums leading-tight ${dstiAlert ? 'text-risk-DEFAULT' : simDSTI > 35 ? 'text-warning-DEFAULT' : 'text-success-DEFAULT'}`}>
+              {s.netIncome > 0 ? `${simDSTI.toFixed(0)}%` : '—'}
+            </p>
           </div>
         </div>
-
-        {/* Monthly payment highlight */}
         <div className="flex items-center justify-between pt-4 border-t border-border">
           <p className="text-sm font-semibold text-ink">Estimated Monthly Payment</p>
           <p className="font-display text-2xl font-black text-ink tabular-nums">{formatCZK(Math.round(payment))}</p>
         </div>
       </div>
 
-      {/* DSTI alert */}
+      {/* Alerts */}
       {dstiAlert && s.netIncome > 0 && (
         <div className="flex items-start gap-3 mt-4 rounded-xl bg-risk-light border border-risk-border p-4">
           <AlertTriangle size={14} className="text-risk-DEFAULT flex-shrink-0 mt-0.5" />
           <p className="text-xs text-risk-text leading-relaxed">
             <strong>DSTI {simDSTI.toFixed(0)}% exceeds the CNB 45% ceiling.</strong>{' '}
-            This combination of income, obligations, and payment is above the regulatory limit.
             Increase the down-payment, extend maturity, or raise income to bring DSTI below 45%.
+          </p>
+        </div>
+      )}
+      {dtiAlert && s.netIncome > 0 && (
+        <div className="flex items-start gap-3 mt-3 rounded-xl bg-risk-light border border-risk-border p-4">
+          <AlertTriangle size={14} className="text-risk-DEFAULT flex-shrink-0 mt-0.5" />
+          <p className="text-xs text-risk-text leading-relaxed">
+            <strong>DTI {simDTI.toFixed(1)}× exceeds the {maxDTIForPurpose}× limit</strong>
+            {propertyPurpose === 'investment' ? ' (investment property hard cap — no exceptions).' : ' (CNB standard limit).'}
+            {' '}Reduce the loan amount or increase annual income to resolve.
+          </p>
+        </div>
+      )}
+      {ltvAlert && (
+        <div className="flex items-start gap-3 mt-3 rounded-xl bg-risk-light border border-risk-border p-4">
+          <AlertTriangle size={14} className="text-risk-DEFAULT flex-shrink-0 mt-0.5" />
+          <p className="text-xs text-risk-text leading-relaxed">
+            <strong>LTV {simLTV.toFixed(0)}% exceeds the {maxLTVForPurpose}% cap</strong>{' '}
+            for this property purpose and applicant age. Increase down-payment to proceed.
           </p>
         </div>
       )}
     </div>
   )
 }
+
+// ── Journey Timeline ───────────────────────────────────
 
 function JourneyTimeline() {
   return (
@@ -453,38 +618,28 @@ function JourneyTimeline() {
         <Calendar size={16} className="text-brand-600" />
         <h3 className="font-display text-lg font-extrabold text-ink">Czech Mortgage Journey</h3>
       </div>
-
       <div>
         {TIMELINE_STEPS.map((step, i) => (
           <div key={i} className="flex gap-4">
-            {/* Connector column */}
             <div className="flex flex-col items-center">
               <div className={[
                 'w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 text-xs font-bold z-10',
-                step.done
-                  ? 'bg-success-DEFAULT text-white'
-                  : step.current
-                  ? 'bg-brand-600 text-white'
+                step.done ? 'bg-success-DEFAULT text-white'
+                  : step.current ? 'bg-brand-600 text-white'
                   : 'bg-surface border-2 border-border text-ink-subtle',
               ].join(' ')}>
-                {step.done
-                  ? <CheckCircle size={13} />
-                  : <span>{i + 1}</span>}
+                {step.done ? <CheckCircle size={13} /> : <span>{i + 1}</span>}
               </div>
               {i < TIMELINE_STEPS.length - 1 && (
                 <div className={`w-px flex-1 my-1 min-h-[1.25rem] ${step.done ? 'bg-success-DEFAULT/25' : 'bg-border'}`} />
               )}
             </div>
-
-            {/* Content */}
             <div className="pb-4 pt-0.5 min-w-0">
               <div className="flex items-center gap-2 flex-wrap mb-0.5">
                 <p className={`text-sm font-semibold leading-tight ${step.current ? 'text-brand-700' : step.done ? 'text-success-text' : 'text-ink-muted'}`}>
                   {step.label}
                 </p>
-                {step.current && (
-                  <span className="badge-success text-[10px] px-2 py-0.5">You are here</span>
-                )}
+                {step.current && <span className="badge-success text-[10px] px-2 py-0.5">You are here</span>}
               </div>
               <p className="text-xs text-ink-subtle leading-relaxed">{step.desc}</p>
             </div>
@@ -503,13 +658,12 @@ export default function Step7Results({ formData, onBack, onRestart }) {
   const hasRed = formData.bankAnalysisResults?.hasRedFlags ?? false
   const redKws = formData.bankAnalysisResults?.redFlagKeywords ?? []
 
-  const cc5   = Math.round((formData.creditCardLimits ?? 0) * 0.05)
-  const total = (formData.monthlyLoanPayments ?? 0) + cc5
-    + (formData.monthlyLeasing ?? 0) + (formData.otherObligations ?? 0)
+  // simNetIncome is owned here so the Risk Matrix and Bonity card stay in sync
+  const [simNetIncome, setSimNetIncome] = useState(
+    formData.netIncome > 0 ? formData.netIncome : 80_000
+  )
 
-  // factors are rebuilt when sim income changes — ScenarioSimulator owns that state
-  // We pass netIncome=80_000 as default for initial factor render; real value is in simulator
-  const factors = buildFactors(formData, 80_000)
+  const factors = buildFactors(formData, simNetIncome)
 
   return (
     <main className="py-8 sm:py-12 animate-fade-up">
@@ -525,8 +679,8 @@ export default function Step7Results({ formData, onBack, onRestart }) {
                 {cfg.label}
               </h2>
               <p className="text-sm text-ink-muted mb-4 max-w-md leading-relaxed">
-                Computed across 10 eligibility dimensions, CNB regulatory limits, and
-                live underwriting criteria from 19 Czech mortgage lenders.
+                Computed across 10 eligibility dimensions, ČNB regulatory limits, and 2026
+                underwriting criteria from ČS, ČSOB, KB, mBank, and UniCredit Bank.
               </p>
               <span className={`badge ${cfg.badge} text-xs`}>{cfg.label}</span>
             </div>
@@ -538,18 +692,24 @@ export default function Step7Results({ formData, onBack, onRestart }) {
           <div className="flex items-start gap-4 rounded-card bg-risk-light border border-risk-border p-6">
             <AlertTriangle size={20} className="text-risk-DEFAULT flex-shrink-0 mt-0.5" />
             <div>
-              <p className="font-bold text-risk-text mb-1">
-                Risk Warning: High-risk transactions detected
-              </p>
+              <p className="font-bold text-risk-text mb-1">Risk Warning: High-risk transactions detected</p>
               <p className="text-sm text-risk-text leading-relaxed">
-                Gambling or betting platform activity was identified in your bank statement
-                ({redKws.join(', ')}). Czech banks routinely decline applications with
-                active gambling history. This has been factored into your score.
+                Gambling or betting platform activity was identified ({redKws.join(', ')}).
+                Czech banks routinely decline applications with active gambling history.
                 A specialist broker can advise on lenders that may still consider your case.
               </p>
             </div>
           </div>
         )}
+
+        {/* ── Risk Matrix ───────────────────────────── */}
+        <section>
+          <div className="flex items-center gap-2 mb-4">
+            <Activity size={15} className="text-brand-600" />
+            <h3 className="font-display text-xl font-extrabold text-ink">Bank Risk Matrix</h3>
+          </div>
+          <RiskMatrix formData={formData} simNetIncome={simNetIncome} />
+        </section>
 
         {/* ── 10-Factor Readiness Cards ─────────────── */}
         <section>
@@ -565,7 +725,10 @@ export default function Step7Results({ formData, onBack, onRestart }) {
         </section>
 
         {/* ── Scenario Simulator ───────────────────── */}
-        <ScenarioSimulator formData={formData} />
+        <ScenarioSimulator
+          formData={formData}
+          onIncomeChange={setSimNetIncome}
+        />
 
         {/* ── Journey Timeline ─────────────────────── */}
         <JourneyTimeline />
@@ -573,12 +736,10 @@ export default function Step7Results({ formData, onBack, onRestart }) {
         {/* ── Action buttons ───────────────────────── */}
         <div className="flex flex-col sm:flex-row items-center gap-3 pt-2">
           <button onClick={onBack} className="btn-ghost w-full sm:w-auto">
-            <ArrowLeft size={15} />
-            Back
+            <ArrowLeft size={15} /> Back
           </button>
           <button onClick={onRestart} className="btn-ghost w-full sm:w-auto">
-            <RotateCcw size={15} />
-            Start Over
+            <RotateCcw size={15} /> Start Over
           </button>
         </div>
 
@@ -586,10 +747,11 @@ export default function Step7Results({ formData, onBack, onRestart }) {
         <div className="flex items-start gap-2 pt-2 pb-4">
           <Info size={12} className="text-ink-subtle flex-shrink-0 mt-0.5" />
           <p className="text-[11px] text-ink-subtle leading-relaxed">
-            This assessment is indicative only. Every bank has different underwriting
-            criteria and risk appetite. Final mortgage approval always depends on
-            individual bank assessment, document verification, and credit committee
-            decisions. This tool does not constitute financial advice.
+            This assessment is indicative only and reflects 2026 Czech bank underwriting
+            guidelines (ČS, ČSOB, KB, mBank, UniCredit). Final mortgage approval always
+            depends on individual bank assessment, document verification, and credit committee
+            decisions. Variance (Var[X]) reflects cross-bank methodology divergence, not
+            investment risk. This tool does not constitute financial advice.
           </p>
         </div>
 

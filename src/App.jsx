@@ -19,10 +19,14 @@ const INITIAL_FORM = {
   businessAgeMonths: null,
   datumVzniku:       '',
   netIncome:         0,
-  contractType:      '',   // 'indefinite' | 'definite'
-  probationPeriod:   '',   // 'yes' | 'no'
+  contractType:      '',        // 'indefinite' | 'definite'
+  probationPeriod:   '',        // 'yes' | 'no'
+  employmentSector:  '',        // 'health' | 'education' | 'other'
 
-  // Step 2
+  // Step 2 — residence + applicant age (for maturity model)
+  applicantAge:      35,
+
+  // Step 2 — residence
   residenceStatus: '',
   yearsInCZ:       '',
 
@@ -193,9 +197,10 @@ export default function App() {
                         datumVzniku:       r.datumVzniku       ?? prev.datumVzniku,
                       }))}
                       employeeData={{
-                        netIncome:       formData.netIncome,
-                        contractType:    formData.contractType,
-                        probationPeriod: formData.probationPeriod,
+                        netIncome:        formData.netIncome,
+                        contractType:     formData.contractType,
+                        probationPeriod:  formData.probationPeriod,
+                        employmentSector: formData.employmentSector,
                       }}
                       onEmployeeChange={setField}
                       onContinue={handleStep1Continue}
@@ -206,8 +211,10 @@ export default function App() {
                     <Step2Residence
                       value={formData.residenceStatus}
                       yearsValue={formData.yearsInCZ}
+                      ageValue={formData.applicantAge}
                       onChange={(v)      => setField('residenceStatus', v)}
                       onYearsChange={(v) => setField('yearsInCZ', v)}
+                      onAgeChange={(v)   => setField('applicantAge', v)}
                       onBack={goBack}
                       onContinue={handleStep2Continue}
                     />

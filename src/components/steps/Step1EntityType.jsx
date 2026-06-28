@@ -247,8 +247,14 @@ const CONTRACT_TYPES = [
   { value: 'definite',   label: 'Fixed-term (smlouva na dobu určitou)' },
 ]
 
+const SECTORS = [
+  { value: 'health',    label: 'Zdravotnictví',  desc: 'Doctors, nurses, medical staff' },
+  { value: 'education', label: 'Školství',        desc: 'Teachers, academics, university' },
+  { value: 'other',     label: 'Jiné odvětví',    desc: 'Private sector or other field'  },
+]
+
 function EmployeeDetails({ data, onChange }) {
-  const { netIncome = '', contractType = '', probationPeriod = '' } = data
+  const { netIncome = '', contractType = '', probationPeriod = '', employmentSector = '' } = data
 
   return (
     <div className="mt-7 pt-7 border-t border-border space-y-5 animate-fade-up">
@@ -353,6 +359,47 @@ function EmployeeDetails({ data, onChange }) {
             <ChevronDown size={13} className="text-warning-DEFAULT flex-shrink-0 mt-0.5 rotate-[-90deg]" />
             <p className="text-[11px] text-warning-text leading-relaxed">
               Většina bank hypotéku ve zkušební době neschválí. Doporučujeme požádat po jejím ukončení.
+              Výjimka: ČSOB umožňuje pokračovat pro zdravotnictví a školství přes ruční posouzení ústředí.
+            </p>
+          </div>
+        )}
+      </div>
+
+      {/* Employment sector — ČSOB exception applies to Health / Education */}
+      <div>
+        <label className="section-label mb-2 block">Odvětví zaměstnání</label>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          {SECTORS.map(({ value, label, desc }) => (
+            <button
+              key={value}
+              type="button"
+              onClick={() => onChange('employmentSector', value)}
+              className={[
+                'relative text-left rounded-xl border-2 px-4 py-3.5 transition-all duration-150',
+                'focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-600/40',
+                employmentSector === value
+                  ? 'border-brand-600 bg-brand-50'
+                  : 'border-border bg-card hover:border-border-strong',
+              ].join(' ')}
+            >
+              {employmentSector === value && (
+                <span className="absolute top-2.5 right-2.5 w-4 h-4 rounded-full bg-brand-600 flex items-center justify-center">
+                  <Check size={9} className="text-white" strokeWidth={3} />
+                </span>
+              )}
+              <p className={`text-xs font-bold mb-0.5 ${employmentSector === value ? 'text-brand-700' : 'text-ink'}`}>
+                {label}
+              </p>
+              <p className="text-[10px] text-ink-subtle">{desc}</p>
+            </button>
+          ))}
+        </div>
+        {(employmentSector === 'health' || employmentSector === 'education') && (
+          <div className="mt-2 flex items-start gap-2 rounded-lg bg-success-light border border-success-border px-3 py-2.5">
+            <Check size={11} className="text-success-DEFAULT flex-shrink-0 mt-0.5" />
+            <p className="text-[11px] text-success-text leading-relaxed">
+              ČSOB compensating strength rule: zdravotnictví a školství mohou pokračovat
+              i ve zkušební době přes ruční posouzení ústředí.
             </p>
           </div>
         )}

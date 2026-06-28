@@ -115,12 +115,14 @@ function ResidenceOption({ option, selected, onSelect }) {
 export default function Step2Residence({
   value,
   yearsValue,
+  ageValue,
   onChange,
   onYearsChange,
+  onAgeChange,
   onBack,
   onContinue,
 }) {
-  const canContinue = !!value && !!yearsValue
+  const canContinue = !!value && !!yearsValue && ageValue >= 18 && ageValue <= 80
 
   return (
     <FunnelCard
@@ -166,6 +168,39 @@ export default function Step2Residence({
             <option key={v} value={v}>{label}</option>
           ))}
         </select>
+      </div>
+
+      {/* ── Applicant age ─────────────────────────────── */}
+      <div className="mb-7">
+        <label htmlFor="applicantAge" className="section-label mb-2 block">
+          Your current age
+          <span className="text-risk-DEFAULT ml-1">*</span>
+        </label>
+        <div className="relative">
+          <input
+            id="applicantAge"
+            type="number"
+            inputMode="numeric"
+            min={18}
+            max={80}
+            value={ageValue || ''}
+            onChange={(e) => onAgeChange(Number(e.target.value))}
+            placeholder="e.g. 35"
+            className="input-field pr-14 tabular-nums"
+          />
+          <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs text-ink-subtle pointer-events-none font-medium">
+            let
+          </span>
+        </div>
+        <p className="text-[11px] text-ink-subtle mt-1.5 leading-relaxed">
+          Determines maximum loan maturity. Banks require payoff by age 70–75 (KB most generous).
+          {ageValue < 36 && ageValue >= 18 && (
+            <span className="text-brand-600 font-medium"> Under 36 — eligible for První bydlení 90% LTV framework.</span>
+          )}
+          {ageValue >= 60 && (
+            <span className="text-warning-DEFAULT font-medium"> Age 60+ — UCB & mBank reduce maximum payoff age to 65.</span>
+          )}
+        </p>
       </div>
 
       {/* ── Context callout ───────────────────────────── */}
