@@ -20,14 +20,8 @@ const RED_FLAG_KEYWORDS = [
   'CASINO', 'SAZKA', 'HAZARD',
 ]
 
-const ACCEPTED_TYPES    = '.pdf,.csv,.xlsx,.xls'
-const CALENDLY_URL      = 'https://calendly.com/andy-le/15min'
-
-const CALL_BULLETS = [
-  'Zero documents needed — walk through your numbers live',
-  'Personalised to your exact financial and business situation',
-  'Real specialist, not a chatbot or automated scoring tool',
-]
+const ACCEPTED_TYPES = '.pdf,.csv,.xlsx,.xls'
+const CALENDLY_URL   = 'https://calendly.com/andy-le/15min'
 
 function analyzeText(text) {
   const upper = text.toUpperCase()
@@ -171,85 +165,72 @@ function ScanResults({ results, fileName, onReset }) {
   )
 }
 
-// ── Calendly CTA card ──────────────────────────────────
+// ── Premium skip + Calendly box ────────────────────────
 
-function CalendlyCard({ onSkipAndBook }) {
+function SkipCalendlyBox({ onSkipAndBook }) {
   return (
-    <div className="bg-hero rounded-card p-6 text-white">
+    <div className="rounded-2xl border-2 border-brand-100 overflow-hidden bg-gradient-to-br from-brand-50/70 to-white">
 
-      {/* Label */}
-      <p className="section-label text-brand-300 mb-5">
-        Prefer a personal approach?
-      </p>
+      {/* Top accent bar */}
+      <div className="h-[3px] bg-gradient-to-r from-brand-500 to-brand-700" />
 
-      {/* Andy Le profile row */}
-      <div className="flex items-center gap-3 mb-4">
-        <div className="w-10 h-10 rounded-full bg-brand-600 flex items-center justify-center flex-shrink-0 shadow-cta">
-          <span className="font-display text-sm font-extrabold text-white tracking-tight">AL</span>
+      <div className="p-6">
+
+        {/* Icon + headline */}
+        <div className="flex items-start gap-4 mb-5">
+          <div className="w-11 h-11 rounded-xl bg-brand-600 flex items-center justify-center flex-shrink-0 shadow-cta">
+            <Calendar size={20} className="text-white" />
+          </div>
+          <div>
+            <p className="font-display text-[15px] font-extrabold text-ink leading-snug">
+              Don't want to upload your bank statements?
+            </p>
+            <p className="text-sm text-ink-muted mt-1 leading-relaxed">
+              You can still get your full mortgage report!
+            </p>
+          </div>
         </div>
-        <div>
-          <p className="font-display text-sm font-extrabold text-white leading-tight">Andy Le</p>
-          <p className="text-[11px] text-slate-400 mt-0.5">Mortgage &amp; Financial Intelligence Specialist</p>
+
+        {/* Primary CTA — opens Calendly in new tab AND advances funnel */}
+        <a
+          href={CALENDLY_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+          onClick={onSkipAndBook}
+          className={[
+            'flex items-center justify-center gap-2.5 w-full rounded-input mb-4',
+            'bg-brand-600 text-white font-display font-bold text-[15px]',
+            'transition-all duration-200',
+            'hover:bg-brand-700 hover:-translate-y-px hover:shadow-cta-hover',
+            'active:translate-y-0 active:shadow-none',
+          ].join(' ')}
+          style={{ height: '56px' }}
+        >
+          <Calendar size={17} />
+          Skip &amp; Book Free Strategy Call via Calendly
+        </a>
+
+        {/* Trust + meta row */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div className="w-6 h-6 rounded-full bg-brand-600 flex items-center justify-center flex-shrink-0">
+              <span className="font-display text-[9px] font-extrabold text-white tracking-tight">AL</span>
+            </div>
+            <span className="text-xs text-ink-muted font-medium">Andy Le · Mortgage Specialist</span>
+          </div>
+          <span className="text-[11px] text-ink-subtle">Free · 15 min · No commitment</span>
         </div>
+
+        {/* Privacy guarantee — inline inside the box */}
+        <div className="flex items-center gap-2 mt-4 pt-4 border-t border-brand-100/80">
+          <Shield size={12} className="text-success-DEFAULT flex-shrink-0" />
+          <p className="text-[10px] text-ink-subtle leading-relaxed">
+            <span className="font-semibold text-ink-muted">Zero-upload guarantee — </span>
+            your file is read entirely inside this browser tab and never transmitted to any server.
+          </p>
+        </div>
+
       </div>
-
-      {/* Pitch */}
-      <p className="text-sm text-slate-300 leading-relaxed mb-5">
-        Want a <strong className="text-white">100% precise calculation</strong> without uploading
-        documents? Skip this step and book a free 15-minute{' '}
-        <strong className="text-white">Mortgage Intelligence Call</strong> with Andy Le directly.
-      </p>
-
-      {/* Bullets */}
-      <ul className="space-y-2.5 mb-6">
-        {CALL_BULLETS.map((pt) => (
-          <li key={pt} className="flex items-start gap-2.5">
-            <span className="mt-0.5 flex-shrink-0 w-4 h-4 rounded-full bg-success-DEFAULT/20 flex items-center justify-center">
-              <svg width="8" height="8" viewBox="0 0 8 8" fill="none">
-                <path d="M1.5 4L3 5.5L6.5 2" stroke="#10B981" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
-            </span>
-            <span className="text-xs text-slate-300 leading-relaxed">{pt}</span>
-          </li>
-        ))}
-      </ul>
-
-      {/* CTA — opens Calendly in new tab AND advances funnel */}
-      <a
-        href={CALENDLY_URL}
-        target="_blank"
-        rel="noopener noreferrer"
-        onClick={onSkipAndBook}
-        className={[
-          'flex items-center justify-center gap-2 w-full rounded-input',
-          'bg-white text-brand-700 font-display font-bold text-[15px]',
-          'transition-all duration-200',
-          'hover:bg-brand-50 hover:-translate-y-px hover:shadow-cta-hover',
-          'active:translate-y-0',
-        ].join(' ')}
-        style={{ height: '52px' }}
-      >
-        <Calendar size={16} />
-        Skip &amp; Book Call via Calendly
-      </a>
-
-      <p className="text-center text-[10px] text-slate-500 mt-3">
-        Free · 15 minutes · No commitment
-      </p>
-    </div>
-  )
-}
-
-// ── OR divider ─────────────────────────────────────────
-
-function OrDivider() {
-  return (
-    <div className="flex items-center gap-4 my-6">
-      <div className="flex-1 h-px bg-border" />
-      <span className="text-[11px] font-bold text-ink-subtle tracking-[0.12em] uppercase px-1">
-        or
-      </span>
-      <div className="flex-1 h-px bg-border" />
     </div>
   )
 }
@@ -370,35 +351,10 @@ export default function Step5BankStatement({ data, onChange, onBack, onContinue 
         )}
       </div>
 
-      {/* Inline skip link — only when idle */}
-      {(phase === 'idle' || phase === 'drag') && (
-        <p className="text-center text-xs text-ink-subtle mb-5">
-          Don't have it handy?{' '}
-          <button
-            type="button"
-            className="text-brand-600 hover:underline font-medium"
-            onClick={() => { onChange('bankAnalysisStatus', 'skipped'); onContinue() }}
-          >
-            Skip this step →
-          </button>
-        </p>
+      {/* Premium skip + Calendly box — hidden only while scan is in progress */}
+      {phase !== 'scanning' && (
+        <SkipCalendlyBox onSkipAndBook={handleSkipAndBook} />
       )}
-
-      {/* Privacy strip */}
-      <div className="flex items-center gap-3 rounded-xl bg-dark-900/[.03] border border-border px-4 py-3">
-        <Shield size={14} className="text-success-DEFAULT flex-shrink-0" />
-        <p className="text-[11px] text-ink-muted leading-relaxed">
-          <span className="font-semibold text-ink-muted">Zero-upload guarantee — </span>
-          your file is read entirely inside this browser tab. No bytes are transmitted to
-          any server. The document is discarded from memory when you leave this page.
-        </p>
-      </div>
-
-      {/* OR separator */}
-      <OrDivider />
-
-      {/* Calendly premium card */}
-      <CalendlyCard onSkipAndBook={handleSkipAndBook} />
 
     </FunnelCard>
   )
