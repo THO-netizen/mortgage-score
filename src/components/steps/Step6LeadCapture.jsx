@@ -92,6 +92,7 @@ export default function Step6LeadCapture({ data, formData, onChange, onBack, onC
         entityType:        formData?.entityType        ?? '',
         ico:               formData?.ico               ?? '',
         businessName:      formData?.businessName      ?? '',
+        legalFormLabel:    formData?.legalFormLabel    ?? '',
         businessAgeMonths: formData?.businessAgeMonths ?? null,
         datumVzniku:       formData?.datumVzniku       ?? '',
 

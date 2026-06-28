@@ -16,6 +16,7 @@ const INITIAL_FORM = {
   entityType:        '',
   ico:               '',
   businessName:      '',
+  legalFormLabel:    '',
   businessAgeMonths: null,
   datumVzniku:       '',
   netIncome:         0,
@@ -193,6 +194,7 @@ export default function App() {
                         ...prev,
                         ico:               r.ico               ?? prev.ico,
                         businessName:      r.businessName      ?? prev.businessName,
+                        legalFormLabel:    r.legalFormLabel    ?? prev.legalFormLabel,
                         businessAgeMonths: r.businessAgeMonths ?? prev.businessAgeMonths,
                         datumVzniku:       r.datumVzniku       ?? prev.datumVzniku,
                       }))}

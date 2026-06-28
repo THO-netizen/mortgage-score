@@ -16,6 +16,29 @@ function mapLegalForm(pravniForma) {
   return ''
 }
 
+// ARES pravniForma code → English display label
+const LEGAL_FORM_LABELS = {
+  '101': 'Sole Trader (živnostník)',
+  '102': 'Sole Trader (živnostník)',
+  '103': 'Sole Trader — Agriculture',
+  '104': 'Sole Trader — Liberal Profession',
+  '105': 'Sole Trader (OSVČ)',
+  '106': 'Sole Trader (OSVČ)',
+  '107': 'Sole Trader (OSVČ)',
+  '108': 'Sole Trader (OSVČ)',
+  '109': 'Sole Trader (OSVČ)',
+  '112': 'Limited Liability Company (s.r.o.)',
+  '121': 'Joint-Stock Company (a.s.)',
+  '141': 'Cooperative (Družstvo)',
+  '205': 'State Enterprise',
+  '301': 'Branch of Foreign Entity',
+  '325': 'European Company (SE)',
+}
+
+function getLegalFormLabel(code) {
+  return LEGAL_FORM_LABELS[String(code)] ?? `Registered Entity (form ${code})`
+}
+
 function calcAgeMonths(datumVzniku) {
   if (!datumVzniku) return null
   const founded = new Date(datumVzniku)
@@ -36,15 +59,24 @@ function formatAge(months) {
 // ── IČO lookup widget ──────────────────────────────────
 
 function IcoLookup({ onResult }) {
-  const [ico,          setIco]          = useState('')
-  const [status,       setStatus]       = useState('idle')  // idle|loading|found|error
-  const [businessName, setBusinessName] = useState('')
-  const [ageMonths,    setAgeMonths]    = useState(null)
-  const [qualified,    setQualified]    = useState(false)
+  const [ico,            setIco]            = useState('')
+  const [status,         setStatus]         = useState('idle')  // idle|loading|found|error
+  const [businessName,   setBusinessName]   = useState('')
+  const [ageMonths,      setAgeMonths]      = useState(null)
+  const [qualified,      setQualified]      = useState(false)
+  const [legalFormLabel, setLegalFormLabel] = useState('')
+  const [resolvedType,   setResolvedType]   = useState('')
   const abortRef = useRef(null)
 
   useEffect(() => {
-    if (ico.length !== 8) { setStatus('idle'); return }
+    if (ico.length !== 8) {
+      setStatus('idle')
+      setBusinessName('')
+      setAgeMonths(null)
+      setLegalFormLabel('')
+      setResolvedType('')
+      return
+    }
 
     abortRef.current?.abort()
     const ctrl = new AbortController()
@@ -53,6 +85,8 @@ function IcoLookup({ onResult }) {
     setStatus('loading')
     setBusinessName('')
     setAgeMonths(null)
+    setLegalFormLabel('')
+    setResolvedType('')
 
     fetch(
       `https://ares.gov.cz/ekonomicke-subjekty-v-be/rest/ekonomicke-subjekty/${ico}`,
@@ -63,23 +97,26 @@ function IcoLookup({ onResult }) {
         return r.json()
       })
       .then((data) => {
-        const name       = data.obchodniJmeno  ?? ''
+        const name       = data.obchodniJmeno ?? data.nazev ?? ''
         const formCode   = String(data.pravniForma ?? '')
-        const dateStr    = data.datumVzniku    ?? ''
+        const dateStr    = data.datumVzniku ?? ''
         const months     = calcAgeMonths(dateStr)
         const entityType = mapLegalForm(formCode)
+        const formLabel  = getLegalFormLabel(formCode)
 
         setBusinessName(name)
         setAgeMonths(months)
         setQualified(months !== null && months >= 24)
+        setLegalFormLabel(formLabel)
+        setResolvedType(entityType)
         setStatus('found')
 
-        onResult({ ico, businessName: name, businessAgeMonths: months, datumVzniku: dateStr, entityType })
+        onResult({ ico, businessName: name, businessAgeMonths: months, datumVzniku: dateStr, entityType, legalFormLabel: formLabel })
       })
       .catch((err) => {
         if (err.name === 'AbortError') return
         setStatus('error')
-        onResult({ ico, businessName: '', businessAgeMonths: null, datumVzniku: '', entityType: '' })
+        onResult({ ico, businessName: '', businessAgeMonths: null, datumVzniku: '', entityType: '', legalFormLabel: '' })
       })
 
     return () => ctrl.abort()
@@ -88,67 +125,104 @@ function IcoLookup({ onResult }) {
   const handleChange = (e) => {
     const val = e.target.value.replace(/\D/g, '').slice(0, 8)
     setIco(val)
-    if (val.length < 8) { setStatus('idle'); setBusinessName(''); setAgeMonths(null) }
   }
 
-  return (
-    <div className="mb-7 pb-7 border-b border-border">
-      <label htmlFor="ico" className="section-label mb-2 block">
-        Czech Business ID (IČO)
-      </label>
+  const entityBadgeClass = resolvedType === 'osvc' ? 'badge-warning' : 'badge-neutral'
+  const entityBadgeLabel = resolvedType === 'osvc' ? 'OSVČ' : resolvedType === 'sro' ? 's.r.o.' : 'Other'
 
-      <div className="relative">
-        <input
-          id="ico"
-          type="text"
-          inputMode="numeric"
-          value={ico}
-          onChange={handleChange}
-          placeholder="e.g. 12345678"
-          maxLength={8}
-          className="input-field pr-11 tabular-nums tracking-widest"
-        />
-        <span className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none">
-          {status === 'loading' && <Loader2    size={16} className="text-ink-subtle animate-spin" />}
-          {status === 'found'   && <CheckCircle size={16} className="text-success-DEFAULT" />}
-          {status === 'error'   && <XCircle     size={16} className="text-risk-DEFAULT" />}
-        </span>
+  return (
+    <div className="mb-7 pb-7 border-b border-border space-y-4">
+
+      {/* ── Registration Number input ──────────────────── */}
+      <div>
+        <label htmlFor="ico" className="section-label mb-2 block">
+          Registration Number (IČO)
+        </label>
+        <div className="relative">
+          <input
+            id="ico"
+            type="text"
+            inputMode="numeric"
+            value={ico}
+            onChange={handleChange}
+            placeholder="e.g. 12345678"
+            maxLength={8}
+            className="input-field pr-11 tabular-nums tracking-widest"
+          />
+          <span className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none">
+            {status === 'loading' && <Loader2     size={16} className="text-ink-subtle animate-spin" />}
+            {status === 'found'   && <CheckCircle size={16} className="text-success-DEFAULT" />}
+            {status === 'error'   && <XCircle     size={16} className="text-risk-DEFAULT" />}
+          </span>
+        </div>
+        {status === 'loading' && (
+          <p className="text-xs text-ink-muted mt-2">Looking up in ARES registry…</p>
+        )}
+        {status === 'error' && (
+          <div className="flex items-center gap-1.5 mt-2">
+            <XCircle size={12} className="text-risk-DEFAULT flex-shrink-0" />
+            <p className="text-xs text-risk-text">IČO not found — please enter your details manually</p>
+          </div>
+        )}
       </div>
 
-      {status === 'loading' && (
-        <p className="text-xs text-ink-muted mt-2">Looking up in ARES registry…</p>
-      )}
+      {/* ── Auto-populated fields — visible after successful lookup ── */}
+      {status === 'found' && (
+        <div className="space-y-3 animate-fade-up">
 
-      {status === 'found' && businessName && (
-        <div className="mt-3 rounded-xl bg-success-light border border-success-border px-4 py-3 space-y-1.5">
-          <div className="flex items-start gap-2">
-            <CheckCircle size={13} className="text-success-DEFAULT flex-shrink-0 mt-0.5" />
-            <p className="text-xs font-bold text-success-text leading-tight">{businessName}</p>
+          {/* Company / Business Name — read-only */}
+          <div>
+            <label className="section-label mb-1.5 block">Company / Business Name</label>
+            <div className="relative">
+              <input
+                type="text"
+                value={businessName}
+                readOnly
+                className="input-field pr-10 bg-surface cursor-default select-all font-medium"
+              />
+              <CheckCircle
+                size={15}
+                className="absolute right-3.5 top-1/2 -translate-y-1/2 text-success-DEFAULT pointer-events-none"
+              />
+            </div>
           </div>
-          {ageMonths !== null && (
-            <div className="flex items-center gap-2 ml-[21px]">
-              <p className="text-[11px] text-success-text">Founded {formatAge(ageMonths)} ago</p>
-              {qualified ? (
-                <span className="badge-success text-[10px] px-1.5 py-0.5">24-month requirement met</span>
-              ) : (
-                <span className="badge-warning text-[10px] px-1.5 py-0.5">Under 24 months — limited options</span>
+
+          {/* Legal Structure */}
+          <div>
+            <label className="section-label mb-1.5 block">Legal Structure</label>
+            <div className="flex items-center gap-3 rounded-xl border border-border bg-surface px-4 py-3">
+              <span className="flex-1 text-sm font-medium text-ink leading-snug">{legalFormLabel}</span>
+              {resolvedType && (
+                <span className={entityBadgeClass}>{entityBadgeLabel}</span>
               )}
             </div>
+          </div>
+
+          {/* Business age */}
+          {ageMonths !== null && (
+            <div className="flex items-center justify-between rounded-xl border border-border bg-surface px-4 py-3">
+              <span className="text-xs text-ink-muted">Registered</span>
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-semibold text-ink">{formatAge(ageMonths)} ago</span>
+                {qualified
+                  ? <span className="badge-success text-[10px]">24-month requirement met</span>
+                  : <span className="badge-warning text-[10px]">Under 24 months — limited options</span>
+                }
+              </div>
+            </div>
           )}
-          <p className="text-[11px] text-success-text/70 ml-[21px]">
-            Entity type and path selected automatically below
-          </p>
+
+          {/* ARES verification stamp */}
+          <div className="flex items-center gap-2.5 rounded-xl bg-success-light border border-success-border px-4 py-2.5">
+            <CheckCircle size={13} className="text-success-DEFAULT flex-shrink-0" />
+            <p className="text-[11px] font-semibold text-success-text tracking-wide">
+              Verified via Czech Ministry of Finance (ARES)
+            </p>
+          </div>
+
         </div>
       )}
 
-      {status === 'error' && (
-        <div className="flex items-center gap-1.5 mt-2">
-          <XCircle size={12} className="text-risk-DEFAULT flex-shrink-0" />
-          <p className="text-xs text-risk-text">
-            IČO not found — please enter your details manually
-          </p>
-        </div>
-      )}
     </div>
   )
 }
