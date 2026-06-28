@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react'
-import { analytics }       from './services/analytics.js'
-import Header              from './components/layout/Header.jsx'
-import TrustSidebar        from './components/funnel/TrustSidebar.jsx'
-import Step1EntityType     from './components/steps/Step1EntityType.jsx'
-import Step2Residence      from './components/steps/Step2Residence.jsx'
-import Step3Liabilities    from './components/steps/Step3Liabilities.jsx'
-import Step4Property       from './components/steps/Step4Property.jsx'
+import { analytics }        from './services/analytics.js'
+import Header               from './components/layout/Header.jsx'
+import TrustSidebar         from './components/funnel/TrustSidebar.jsx'
+import Step1EntityType      from './components/steps/Step1EntityType.jsx'
+import Step2Residence       from './components/steps/Step2Residence.jsx'
+import Step3Liabilities     from './components/steps/Step3Liabilities.jsx'
+import Step4Property        from './components/steps/Step4Property.jsx'
+import Step5BankStatement   from './components/steps/Step5BankStatement.jsx'
+import Step6LeadCapture     from './components/steps/Step6LeadCapture.jsx'
 
 // ─── Initial form state ───────────────────────────────
 const INITIAL_FORM = {
@@ -30,15 +32,17 @@ const INITIAL_FORM = {
 
   // Step 5 — Bank statement (client-side only)
   bankStatementFile:   null,
-  bankAnalysisStatus:  '',
+  bankAnalysisStatus:  '',  // '' | 'scanning' | 'done' | 'skipped'
   bankAnalysisResults: null,
 
-  // Step 6 — Email gate
-  email: '',
+  // Step 6 — Lead capture
+  leadName:    '',
+  email:       '',
+  leadPhone:   '',
+  gdprConsent: false,
 
-  // Step 7 — Results (derived fields stored for dashboard)
-  creditHistory: '',
-  primaryGoal:   '',
+  // Step 7 — Results (derived scores stored for dashboard)
+  primaryGoal: '',
 }
 
 // ─── Landing page placeholder ─────────────────────────
@@ -149,14 +153,35 @@ export default function App() {
       ? Math.round((loanAmount / formData.purchasePrice) * 100)
       : 0
     analytics.track('step_completed', {
-      stepIndex:       4,
-      stepName:        'Property & LTV',
-      purchasePrice:   formData.purchasePrice,
-      ownFunds:        formData.ownFunds,
+      stepIndex:        4,
+      stepName:         'Property & LTV',
+      purchasePrice:    formData.purchasePrice,
+      ownFunds:         formData.ownFunds,
       loanAmount,
       ltv,
-      propertyPurpose: formData.propertyPurpose,
+      propertyPurpose:  formData.propertyPurpose,
       purchaseTimeline: formData.purchaseTimeline,
+    })
+    goNext()
+  }
+
+  const handleStep5Continue = () => {
+    analytics.track('step_completed', {
+      stepIndex:          5,
+      stepName:           'Bank Statement',
+      status:             formData.bankAnalysisStatus,
+      hasRedFlags:        formData.bankAnalysisResults?.hasRedFlags ?? null,
+      redFlagKeywords:    formData.bankAnalysisResults?.redFlagKeywords ?? [],
+    })
+    goNext()
+  }
+
+  const handleStep6Continue = () => {
+    analytics.track('step_completed', {
+      stepIndex: 6,
+      stepName:  'Lead Capture',
+      hasEmail:  !!formData.email,
+      hasPhone:  !!formData.leadPhone,
     })
     goNext()
   }
@@ -235,14 +260,39 @@ export default function App() {
                     />
                   )}
 
-                  {/* Steps 5–7 added in next sessions */}
-                  {currentStep > 4 && currentStep <= 7 && (
+                  {currentStep === 5 && (
+                    <Step5BankStatement
+                      data={{
+                        bankStatementFile:   formData.bankStatementFile,
+                        bankAnalysisStatus:  formData.bankAnalysisStatus,
+                        bankAnalysisResults: formData.bankAnalysisResults,
+                      }}
+                      onChange={setField}
+                      onBack={goBack}
+                      onContinue={handleStep5Continue}
+                    />
+                  )}
+
+                  {currentStep === 6 && (
+                    <Step6LeadCapture
+                      data={{
+                        leadName:    formData.leadName,
+                        email:       formData.email,
+                        leadPhone:   formData.leadPhone,
+                        gdprConsent: formData.gdprConsent,
+                      }}
+                      onChange={setField}
+                      onBack={goBack}
+                      onContinue={handleStep6Continue}
+                    />
+                  )}
+
+                  {/* Step 7 — Results dashboard, next session */}
+                  {currentStep === 7 && (
                     <div className="card-surface px-8 py-12 text-center">
-                      <p className="section-label mb-3">
-                        Step {currentStep} of 7
-                      </p>
+                      <p className="section-label mb-3">Step 7 of 7</p>
                       <p className="text-ink-muted text-sm">
-                        Coming in the next build session.
+                        Results dashboard — coming in the next build session.
                       </p>
                       <button
                         onClick={goBack}
