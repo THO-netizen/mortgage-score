@@ -25,10 +25,28 @@ const INITIAL_FORM = {
   annualTurnover:           null,  // Integer CZK/year  (tax_return path)
   avgMonthlyCreditTurnover: null,  // Integer CZK/month (flat_tax path)
 
-  // Step 1 — employee fields
+  // Step 1 — employee eligibility gate (hard-block toggles)
+  isProbation:           false,
+  isNoticePeriod:        false,
+  isOnSickLeave:         false,
+  isEmployerDistressed:  false,
+
+  // Step 1 — employee income fields
+  employmentStartDate:   '',     // YYYY-MM
+  netMonthlySalary:      null,   // CZK/mo — replaces netIncome for employees
+  verificationMethod:    '',     // 'payslips' | 'bank_statement' | 'employer_letter'
+  hasMonthlyDiety:       false,
+  monthlyDiety:          null,
+  hasFxIncome:           false,
+  foreignSalaryAmount:   null,
+  foreignSalaryCurrency: 'EUR',
+  hasOwnership:          false,
+  employerOwnershipPct:  null,
+
+  // Kept for backward compat with Step 7 (synced via handleEmployeeChange)
   netIncome:         0,
-  contractType:      '',        // 'indefinite' | 'definite'
-  probationPeriod:   '',        // 'yes' | 'no'
+  contractType:      '',        // 'indefinite' | 'definite' | 'agency' | 'dpc'
+  probationPeriod:   '',        // 'yes' | 'no'  (synced from isProbation)
   employmentSector:  '',        // 'health' | 'education' | 'other'
 
   // Step 2 — residence + applicant age (for maturity model)
@@ -95,6 +113,15 @@ export default function App() {
   // ── Form helpers ─────────────────────────────────────
   const setField = (field, value) =>
     setFormData((prev) => ({ ...prev, [field]: value }))
+
+  // Employee field handler — syncs legacy fields for Step 7 backward compat
+  const handleEmployeeChange = (field, value) =>
+    setFormData((prev) => {
+      const next = { ...prev, [field]: value }
+      if (field === 'netMonthlySalary') next.netIncome = Number(value) || 0
+      if (field === 'isProbation')      next.probationPeriod = value ? 'yes' : 'no'
+      return next
+    })
 
   // ── Navigation ───────────────────────────────────────
   const scrollTop = () => window.scrollTo({ top: 0, behavior: 'smooth' })
@@ -206,12 +233,24 @@ export default function App() {
                         datumVzniku:       r.datumVzniku       ?? prev.datumVzniku,
                       }))}
                       employeeData={{
-                        netIncome:        formData.netIncome,
-                        contractType:     formData.contractType,
-                        probationPeriod:  formData.probationPeriod,
-                        employmentSector: formData.employmentSector,
+                        isProbation:           formData.isProbation,
+                        isNoticePeriod:        formData.isNoticePeriod,
+                        isOnSickLeave:         formData.isOnSickLeave,
+                        isEmployerDistressed:  formData.isEmployerDistressed,
+                        contractType:          formData.contractType,
+                        employmentStartDate:   formData.employmentStartDate,
+                        netMonthlySalary:      formData.netMonthlySalary,
+                        verificationMethod:    formData.verificationMethod,
+                        hasMonthlyDiety:       formData.hasMonthlyDiety,
+                        monthlyDiety:          formData.monthlyDiety,
+                        hasFxIncome:           formData.hasFxIncome,
+                        foreignSalaryAmount:   formData.foreignSalaryAmount,
+                        foreignSalaryCurrency: formData.foreignSalaryCurrency,
+                        hasOwnership:          formData.hasOwnership,
+                        employerOwnershipPct:  formData.employerOwnershipPct,
+                        employmentSector:      formData.employmentSector,
                       }}
-                      onEmployeeChange={setField}
+                      onEmployeeChange={handleEmployeeChange}
                       businessData={{
                         taxRegime:                formData.taxRegime,
                         annualTurnover:           formData.annualTurnover,

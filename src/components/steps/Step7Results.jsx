@@ -63,12 +63,13 @@ function buildFactors(f, simNetIncome) {
     propertyPurpose = '', purchaseTimeline = '',
     bankAnalysisStatus = '', bankAnalysisResults = null,
     businessName = '', businessAgeMonths = null,
-    contractType = '', probationPeriod = '', employmentSector = '',
+    contractType = '', probationPeriod = '', isProbation = false, employmentSector = '',
     applicantAge = 35,
   } = f
 
   // Use sim income if formData has none (non-employee path)
-  const incomeForCalc = (f.netIncome > 0 ? f.netIncome : simNetIncome) || 0
+  const resolvedIncome = f.netMonthlySalary > 0 ? f.netMonthlySalary : f.netIncome
+  const incomeForCalc = (resolvedIncome > 0 ? resolvedIncome : simNetIncome) || 0
 
   const profile = computeMortgageProfile({ ...f, netIncome: incomeForCalc })
   const { existingDebt, ltvPct, maxLTVPct, dtiRatio, maxDTIVal, maturity,
@@ -91,10 +92,11 @@ function buildFactors(f, simNetIncome) {
   const businessOrEmploymentFactor = isEmployee ? {
     title:  'Employment Status',
     icon:   Briefcase,
-    detail: contractType === 'indefinite' ? 'Indefinite contract (HPP)' : contractType === 'definite' ? 'Fixed-term contract' : 'Contract not specified',
+    detail: { indefinite: 'Indefinite contract (HPP)', definite: 'Fixed-term contract', agency: 'Agency / temp worker', dpc: 'DPČ / DPP agreement' }[contractType] ?? 'Contract not specified',
     desc: (() => {
       const parts = []
-      if (probationPeriod === 'yes') {
+      const inProbation = isProbation || probationPeriod === 'yes'
+      if (inProbation) {
         if (employmentSector === 'health' || employmentSector === 'education')
           parts.push('Probation — ČSOB exception applies (Healthcare/Education); manual HQ underwriting route.')
         else
@@ -103,15 +105,17 @@ function buildFactors(f, simNetIncome) {
         parts.push('Not in probation — standard underwriting applies.')
       }
       if (contractType === 'definite') parts.push('Fixed-term: 20% income haircut applied per ČS/ČSOB/KB methodology.')
+      if (contractType === 'agency')   parts.push('Agency contract: 25% income haircut; higher variance across banks.')
+      if (contractType === 'dpc')      parts.push('DPČ/DPP: treated as supplemental income; 30% haircut applied.')
       if (contractType === 'indefinite') parts.push('Indefinite contract — preferred by all 19 covered banks.')
       const sectorLabel = { health: 'Healthcare', education: 'Education', other: 'Private sector' }[employmentSector] ?? 'Not specified'
       parts.push(`Sector: ${sectorLabel}.`)
       return parts.join(' ')
     })(),
     status: (() => {
-      if (redFlags.includes('probation')) return 'risk'
+      if (redFlags.includes('probation') || redFlags.includes('notice_period') || redFlags.includes('sick_leave') || redFlags.includes('employer_distressed')) return 'risk'
       if (flags.includes('probation_csob_exception')) return 'review'
-      if (contractType === 'definite') return 'review'
+      if (contractType === 'definite' || contractType === 'agency' || contractType === 'dpc') return 'review'
       if (contractType === 'indefinite') return 'strong'
       return 'review'
     })(),
@@ -312,7 +316,8 @@ function ScoreGauge({ score, color }) {
 // ── Risk Matrix ────────────────────────────────────────
 
 function RiskMatrix({ formData, simNetIncome }) {
-  const incomeForCalc = (formData.netIncome > 0 ? formData.netIncome : simNetIncome) || 0
+  const resolvedIncome = formData.netMonthlySalary > 0 ? formData.netMonthlySalary : formData.netIncome
+  const incomeForCalc = (resolvedIncome > 0 ? resolvedIncome : simNetIncome) || 0
   const profile = computeMortgageProfile({ ...formData, netIncome: incomeForCalc })
   const { riskStatus, eX, eXStress, varX, bottleneck, ltvPct, maxLTVPct, dtiRatio, maxDTIVal,
     dstiAtEX, tentativeDSTI, maturity, ltvBreached, dtiBreached, flags, redFlags } = profile
@@ -475,7 +480,7 @@ function ScenarioSimulator({ formData, onIncomeChange }) {
     downPct:   Math.min(99, Math.max(5, initDown)),
     rate:      4.5,
     years:     20,
-    netIncome: formData.netIncome > 0 ? formData.netIncome : 80_000,
+    netIncome: (formData.netMonthlySalary || formData.netIncome) > 0 ? (formData.netMonthlySalary || formData.netIncome) : 80_000,
   })
 
   const upd = (k, v) => {

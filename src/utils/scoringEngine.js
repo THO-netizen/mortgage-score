@@ -38,6 +38,14 @@ export const VAR_COEFF = {
   flat_tax:           0.18,   // Paušální daň — NACE methodology diverges most
 }
 
+// FX → CZK spot rates (conservative reference; updated quarterly)
+export const FX_RATES_CZK = {
+  EUR: 25.0,
+  USD: 23.0,
+  GBP: 29.5,
+  CHF: 26.5,
+}
+
 // NACE net coefficients for flat-tax (paušální daň) income calculation
 export const NACE_COEFFICIENTS = {
   it_consulting: 0.40,   // IT, consulting, liberal professions
@@ -144,9 +152,21 @@ export function computeEffectiveIncome(formData) {
   const {
     entityType              = '',
     netIncome               = 0,
+    netMonthlySalary        = null,
     contractType            = '',
     probationPeriod         = '',
+    isProbation             = false,
+    isNoticePeriod          = false,
+    isOnSickLeave           = false,
+    isEmployerDistressed    = false,
     employmentSector        = '',
+    hasMonthlyDiety         = false,
+    monthlyDiety            = null,
+    hasFxIncome             = false,
+    foreignSalaryAmount     = null,
+    foreignSalaryCurrency   = 'EUR',
+    hasOwnership            = false,
+    employerOwnershipPct    = null,
     businessAgeMonths       = null,
     taxRegime               = '',
     annualTurnover          = null,
@@ -155,12 +175,20 @@ export function computeEffectiveIncome(formData) {
 
   const flags    = []
   const redFlags = []
-  let income  = Number(netIncome)
   let haircut = 1.0
 
   // ── Zaměstnanec ────────────────────────────────────────────────────────
   if (entityType === 'zamestnanec') {
-    if (probationPeriod === 'yes') {
+    // Use new field with fallback to legacy
+    const salary = Number(netMonthlySalary ?? netIncome ?? 0)
+
+    // Hard blocks
+    const inProbation = isProbation || probationPeriod === 'yes'
+    if (isNoticePeriod)       redFlags.push('notice_period')
+    if (isOnSickLeave)        redFlags.push('sick_leave')
+    if (isEmployerDistressed) redFlags.push('employer_distressed')
+
+    if (inProbation) {
       if (employmentSector === 'health' || employmentSector === 'education') {
         flags.push('probation_csob_exception')
       } else {
@@ -168,19 +196,53 @@ export function computeEffectiveIncome(formData) {
       }
     }
 
-    if (contractType === 'definite') {
-      haircut = 0.80
-      flags.push('fixed_term_20pct_haircut')
+    // Contract type haircuts
+    if      (contractType === 'definite') { haircut = 0.80; flags.push('fixed_term_20pct_haircut') }
+    else if (contractType === 'agency')   { haircut = 0.75; flags.push('agency_contract_haircut')  }
+    else if (contractType === 'dpc')      { haircut = 0.70; flags.push('dpc_contract_haircut')     }
+
+    // FX income → CZK (85% of spot rate per ČS methodology)
+    const fxRate  = FX_RATES_CZK[foreignSalaryCurrency] ?? FX_RATES_CZK.EUR
+    const fxCZK   = hasFxIncome ? Number(foreignSalaryAmount || 0) * fxRate * 0.85 : 0
+    const diet    = hasMonthlyDiety ? Number(monthlyDiety || 0) * 0.5 : 0
+    const ownPct  = hasOwnership ? Number(employerOwnershipPct || 0) : 0
+
+    // Per-bank effective incomes (before haircut)
+    const csBase    = salary + diet + fxCZK
+    const csobBase  = ownPct > 25 ? salary * 0.85 : salary
+    const mbankBase = salary + diet  // mBank: domestic diet only, no FX
+    const ucbBase   = ownPct > 33 ? 0 : salary  // UCB: hard cap at 33%
+
+    // ČSOB blocked in probation (unless exception)
+    const csobEligible = !inProbation || flags.includes('probation_csob_exception')
+
+    const perBankIncome = {
+      cs:    Math.round(csBase    * haircut),
+      csob:  csobEligible ? Math.round(csobBase  * haircut) : 0,
+      mbank: Math.round(mbankBase * haircut),
+      ucb:   Math.round(ucbBase   * haircut),
     }
 
+    if (fxCZK > 0) flags.push('fx_income_included')
+    if (ownPct > 25) flags.push(ownPct > 33 ? 'ucb_ownership_hard_cap' : 'csob_ownership_haircut')
+
+    // Cross-bank E[X]: mean of eligible (non-zero) bank incomes
+    const eligibleIncomes = Object.values(perBankIncome).filter(v => v > 0)
+    const effectiveIncome = eligibleIncomes.length > 0
+      ? Math.round(eligibleIncomes.reduce((a, b) => a + b, 0) / eligibleIncomes.length)
+      : 0
+
     return {
-      baseIncome:      income,
-      effectiveIncome: Math.round(income * haircut),
+      baseIncome: salary,
+      effectiveIncome,
       haircut,
       flags,
       redFlags,
+      perBankIncome,
     }
   }
+
+  let income = Number(netIncome)
 
   // ── OSVČ / s.r.o. ──────────────────────────────────────────────────────
   if (entityType === 'osvc' || entityType === 'sro') {
@@ -235,19 +297,31 @@ export function computeEffectiveIncome(formData) {
 
 export function computeVarianceCoeff(formData) {
   const {
-    entityType        = '',
-    contractType      = '',
-    probationPeriod   = '',
-    employmentSector  = '',
-    businessAgeMonths = null,
-    taxRegime         = '',
+    entityType            = '',
+    contractType          = '',
+    probationPeriod       = '',
+    isProbation           = false,
+    employmentSector      = '',
+    hasFxIncome           = false,
+    foreignSalaryAmount   = null,
+    businessAgeMonths     = null,
+    taxRegime             = '',
   } = formData
 
   if (entityType === 'zamestnanec') {
-    if (probationPeriod === 'yes') return 0.20
-    if (contractType    === 'definite') return VAR_COEFF.fixed_term
-    const isPublic = employmentSector === 'health' || employmentSector === 'education'
-    return isPublic ? VAR_COEFF.stable_employee : VAR_COEFF.standard_employee
+    const inProbation = isProbation || probationPeriod === 'yes'
+    if (inProbation) return 0.20
+
+    let v
+    if      (contractType === 'definite') v = VAR_COEFF.fixed_term                    // 0.12
+    else if (contractType === 'agency')   v = VAR_COEFF.fixed_term * 1.10             // 0.132
+    else if (contractType === 'dpc')      v = VAR_COEFF.fixed_term * 1.20             // 0.144
+    else {
+      const isPublic = employmentSector === 'health' || employmentSector === 'education'
+      v = isPublic ? VAR_COEFF.stable_employee : VAR_COEFF.standard_employee
+    }
+    if (hasFxIncome && Number(foreignSalaryAmount || 0) > 0) v += 0.05
+    return Math.min(0.35, v)
   }
 
   if (entityType === 'sro') {
