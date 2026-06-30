@@ -93,9 +93,9 @@ export default function Step4Property({ data, onChange, onBack, onContinue }) {
 
   return (
     <FunnelCard
-      stepLabel="Step 4 of 7 · Property & Cash Reserves"
-      title="What property are you planning to purchase?"
-      subtitle="Your Loan-to-Value (LTV) ratio is the single most critical number Czech banks assess for Self-employed (OSVČ) and Company Director (s.r.o.) applicants. Adjust the sliders to see it update live."
+      stepLabel="Step 4 of 4 · Property & Financing"
+      title="Property parameters and financing structure"
+      subtitle="LTV, purchase price, and own funds are used to calculate maximum eligible loan amount under ČNB regulation."
       footer={
         <ActionBar
           canContinue={canContinue}

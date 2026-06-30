@@ -25,9 +25,9 @@ export default function Step3Liabilities({ data, onChange, onBack, onContinue })
 
   return (
     <FunnelCard
-      stepLabel="Step 3 of 7 · Financial Obligations"
-      title="What are your existing monthly obligations?"
-      subtitle="Czech banks aggregate every fixed financial commitment before assessing borrowing capacity. Enter 0 if a category doesn't apply to you."
+      stepLabel="Step 3 of 4 · Existing Debt"
+      title="Existing monthly debt obligations"
+      subtitle="Existing obligations are factored into DSTI calculation. Enter 0 for categories that do not apply."
       footer={
         <ActionBar
           canContinue

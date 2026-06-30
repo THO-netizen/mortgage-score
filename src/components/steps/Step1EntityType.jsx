@@ -1609,7 +1609,7 @@ export default function Step1EntityType({ value, onChange, onIcoResult, numberOf
 
   return (
     <FunnelCard
-      stepLabel="Step 1 of 7 · Business Structure"
+      stepLabel="Step 1 of 4 · Income Profile"
       title="How do you earn income in Czechia?"
       subtitle="Your income structure determines your document requirements and which banks can assess your application. All three paths are fully supported."
       footer={

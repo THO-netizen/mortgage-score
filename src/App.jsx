@@ -1,15 +1,15 @@
-import { useState, useEffect } from 'react'
-import { analytics }        from './services/analytics.js'
-import Header               from './components/layout/Header.jsx'
-import TrustSidebar         from './components/funnel/TrustSidebar.jsx'
-import Step1EntityType      from './components/steps/Step1EntityType.jsx'
-import Step2Residence       from './components/steps/Step2Residence.jsx'
-import Step3Liabilities     from './components/steps/Step3Liabilities.jsx'
-import Step4Property        from './components/steps/Step4Property.jsx'
-import Step5BankStatement   from './components/steps/Step5BankStatement.jsx'
-import Step6LeadCapture     from './components/steps/Step6LeadCapture.jsx'
-import Step7Results           from './components/steps/Step7Results.jsx'
-import TestimonialsCarousel  from './components/testimonials/TestimonialsCarousel.jsx'
+import { useState, useCallback, useEffect } from 'react'
+import { analytics }           from './services/analytics.js'
+import Header                  from './components/layout/Header.jsx'
+import TrustSidebar            from './components/funnel/TrustSidebar.jsx'
+import HeroAnalysis            from './components/landing/HeroAnalysis.jsx'
+import Step1EntityType         from './components/steps/Step1EntityType.jsx'
+import Step2Residence          from './components/steps/Step2Residence.jsx'
+import Step3Liabilities        from './components/steps/Step3Liabilities.jsx'
+import Step4Property           from './components/steps/Step4Property.jsx'
+import ProcessingScreen        from './components/funnel/ProcessingScreen.jsx'
+import Step7Results            from './components/steps/Step7Results.jsx'
+import TestimonialsCarousel    from './components/testimonials/TestimonialsCarousel.jsx'
 
 // ─── Initial form state ───────────────────────────────
 const INITIAL_FORM = {
@@ -106,26 +106,12 @@ const INITIAL_FORM = {
   gdprConsent: false,
 }
 
-// ─── Landing page placeholder ─────────────────────────
-function LandingPlaceholder({ onStart }) {
-  return (
-    <main className="min-h-screen bg-hero flex items-center justify-center px-4">
-      <div className="text-center max-w-xl animate-fade-up">
-        <h1 className="font-display text-4xl sm:text-5xl font-black text-white leading-tight tracking-tight mb-10">
-          Check Your Czech Mortgage
-          <br />
-          <span className="text-brand-400">Eligibility</span>
-        </h1>
-        <button onClick={onStart} className="btn-cta mx-auto text-base px-10" type="button">
-          Start Free Check
-        </button>
-        <p className="mt-4 text-xs text-slate-500">
-          No impact on credit score
-        </p>
-      </div>
-    </main>
-  )
-}
+// ─── Step routing constants ────────────────────────────
+// 0: landing  1-4: data collection  5: processing  6: results
+const STEP_LANDING    = 0
+const STEP_RESULTS    = 6
+const STEP_PROCESSING = 5
+const TOTAL_DATA_STEPS = 4
 
 // ─── Main App ─────────────────────────────────────────
 export default function App() {
@@ -162,19 +148,19 @@ export default function App() {
   }
 
   const handleStep1Continue = () => {
-    analytics.track('step_completed', { stepIndex: 1, stepName: 'Entity Type', entityType: formData.entityType })
+    analytics.track('step_completed', { stepIndex: 1, stepName: 'Income Profile', entityType: formData.entityType })
     goNext()
   }
 
   const handleStep2Continue = () => {
-    analytics.track('step_completed', { stepIndex: 2, stepName: 'Residence Status', residenceStatus: formData.residenceStatus, yearsInCZ: formData.yearsInCZ })
+    analytics.track('step_completed', { stepIndex: 2, stepName: 'Residence', residenceStatus: formData.residenceStatus, yearsInCZ: formData.yearsInCZ })
     goNext()
   }
 
   const handleStep3Continue = () => {
     const cc5 = Math.round(formData.creditCardLimits * 0.05)
     analytics.track('step_completed', {
-      stepIndex: 3, stepName: 'Liabilities',
+      stepIndex: 3, stepName: 'Existing Debt',
       monthlyLoanPayments: formData.monthlyLoanPayments,
       creditCardLimits:    formData.creditCardLimits,
       creditCard5pct:      cc5,
@@ -190,56 +176,46 @@ export default function App() {
     const ltv = formData.purchasePrice > 0
       ? Math.round((loanAmount / formData.purchasePrice) * 100) : 0
     analytics.track('step_completed', {
-      stepIndex: 4, stepName: 'Property & LTV',
+      stepIndex: 4, stepName: 'Property & Financing',
       purchasePrice:    formData.purchasePrice,
       ownFunds:         formData.ownFunds,
       loanAmount, ltv,
       propertyPurpose:  formData.propertyPurpose,
       purchaseTimeline: formData.purchaseTimeline,
     })
-    goNext()
+    goNext()  // → step 5 = processing screen
   }
 
-  const handleStep5Continue = () => {
-    analytics.track('step_completed', {
-      stepIndex: 5, stepName: 'Consultation Booking',
-      booked:    formData.bankAnalysisStatus === 'skipped',
-    })
-    goNext()
-  }
-
-  const handleStep6Continue = () => {
-    analytics.track('step_completed', {
-      stepIndex: 6, stepName: 'Lead Capture',
-      hasEmail:  !!formData.email,
-      hasPhone:  !!formData.leadPhone,
-    })
-    goNext()  // → step 7 = Results Dashboard
-  }
+  // Called by ProcessingScreen when animation completes
+  const handleProcessingComplete = useCallback(() => {
+    analytics.track('step_completed', { stepIndex: 5, stepName: 'Processing' })
+    goToStep(STEP_RESULTS)
+  }, [])
 
   // ── Layout flags ─────────────────────────────────────
-  const isLanding = currentStep === 0
-  const isFunnel  = currentStep >= 1 && currentStep <= 6
-  const isResults = currentStep === 7
+  const isLanding    = currentStep === STEP_LANDING
+  const isFunnel     = currentStep >= 1 && currentStep <= TOTAL_DATA_STEPS
+  const isProcessing = currentStep === STEP_PROCESSING
+  const isResults    = currentStep === STEP_RESULTS
 
   // ── Render ───────────────────────────────────────────
   return (
     <div className="min-h-screen bg-surface">
 
-      {/* Header — visible for all funnel and results steps */}
-      {!isLanding && (
-        <Header currentStep={Math.min(currentStep, 7)} totalSteps={7} />
+      {/* Header — only during data-collection steps (progress 1-4 of 4) */}
+      {isFunnel && (
+        <Header currentStep={currentStep} totalSteps={TOTAL_DATA_STEPS} />
       )}
 
       {/* ── Landing ──────────────────────────────────── */}
       {isLanding && (
         <>
-          <LandingPlaceholder onStart={handleStart} />
+          <HeroAnalysis onStart={handleStart} />
           <TestimonialsCarousel />
         </>
       )}
 
-      {/* ── Funnel steps 1-6 (8+4 col grid) ─────────── */}
+      {/* ── Funnel steps 1–4 (8+4 col grid) ─────────── */}
       {isFunnel && (
         <main className="py-8 sm:py-12">
           <div className="max-w-6xl mx-auto px-4 sm:px-6">
@@ -262,7 +238,6 @@ export default function App() {
                         businessAgeMonths:      r.businessAgeMonths ?? prev.businessAgeMonths,
                         datumVzniku:            r.datumVzniku       ?? prev.datumVzniku,
                         icoActiveStatus:        r.icoActiveStatus   ?? prev.icoActiveStatus,
-                        // Auto-fill existence months from ARES for both OSVČ and s.r.o.
                         companyExistenceMonths: r.businessAgeMonths ?? prev.companyExistenceMonths,
                       }))}
                       employeeData={{
@@ -288,11 +263,9 @@ export default function App() {
                         taxRegime:                   formData.taxRegime,
                         annualTurnover:              formData.annualTurnover,
                         avgMonthlyCreditTurnover:    formData.avgMonthlyCreditTurnover,
-                        // ARES-verified identity
                         businessName:                formData.businessName,
                         datumVzniku:                 formData.datumVzniku,
                         icoActiveStatus:             formData.icoActiveStatus,
-                        // ESSO v2 fields
                         companyIncomeStream:         formData.companyIncomeStream,
                         companyOwnershipPct:         formData.companyOwnershipPct,
                         familyOwnershipPctAggregate: formData.familyOwnershipPctAggregate,
@@ -352,30 +325,6 @@ export default function App() {
                     />
                   )}
 
-                  {currentStep === 5 && (
-                    <Step5BankStatement
-                      formData={formData}
-                      onChange={setField}
-                      onBack={goBack}
-                      onContinue={handleStep5Continue}
-                    />
-                  )}
-
-                  {currentStep === 6 && (
-                    <Step6LeadCapture
-                      data={{
-                        leadName:    formData.leadName,
-                        email:       formData.email,
-                        leadPhone:   formData.leadPhone,
-                        gdprConsent: formData.gdprConsent,
-                      }}
-                      formData={formData}
-                      onChange={setField}
-                      onBack={goBack}
-                      onContinue={handleStep6Continue}
-                    />
-                  )}
-
                 </div>
               </div>
 
@@ -388,13 +337,18 @@ export default function App() {
         </main>
       )}
 
-      {/* ── Results Dashboard (full-width, step 7) ─── */}
+      {/* ── Processing screen (step 5) — full-screen, no header ── */}
+      {isProcessing && (
+        <ProcessingScreen onComplete={handleProcessingComplete} />
+      )}
+
+      {/* ── Results Dashboard (step 6) — full-width ── */}
       {isResults && (
         <>
           <Step7Results
             formData={formData}
-            onBack={goBack}
-            onRestart={() => { setFormData(INITIAL_FORM); goToStep(0) }}
+            onBack={() => goToStep(STEP_LANDING)}
+            onRestart={() => { setFormData(INITIAL_FORM); goToStep(STEP_LANDING) }}
           />
           <TestimonialsCarousel />
         </>

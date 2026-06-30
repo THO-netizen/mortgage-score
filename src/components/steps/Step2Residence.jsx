@@ -126,7 +126,7 @@ export default function Step2Residence({
 
   return (
     <FunnelCard
-      stepLabel="Step 2 of 7 · Residence Status"
+      stepLabel="Step 2 of 4 · Residence & Background"
       title="What is your residence status in Czechia?"
       subtitle="This is the single most important eligibility factor. Czech banks apply fundamentally different underwriting criteria based on your residence title."
       footer={

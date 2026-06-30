@@ -11,6 +11,8 @@ import {
   monthlyPayment, annuityFactor,
   getMaxLTV, getMaxDTI, calcMaxMaturity,
 } from '../../utils/scoringEngine.js'
+import HowItWorks        from '../results/HowItWorks.jsx'
+import InlineLeadCapture from '../results/InlineLeadCapture.jsx'
 
 // ── Constants ──────────────────────────────────────────
 
@@ -825,8 +827,14 @@ export default function Step7Results({ formData, onBack, onRestart }) {
           </button>
         </div>
 
+        {/* ── How this evaluation works ─────────────── */}
+        <HowItWorks />
+
+        {/* ── Optional: email assessment ───────────── */}
+        <InlineLeadCapture formData={formData} />
+
         {/* ── Regulatory footer ────────────────────── */}
-        <div className="flex items-start gap-2 pt-2 pb-4">
+        <div className="flex items-start gap-2 pt-2 pb-4 mt-4">
           <Info size={12} className="text-ink-subtle flex-shrink-0 mt-0.5" />
           <p className="text-[11px] text-ink-subtle leading-relaxed">
             This assessment is indicative only and reflects 2026 Czech bank underwriting
