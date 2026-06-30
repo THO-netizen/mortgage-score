@@ -76,18 +76,24 @@ export default function Step4Property({ data, onChange, onBack, onContinue }) {
   const ltv          = purchasePrice > 0 ? (loanAmount / purchasePrice) * 100 : 0
   const ownFundsPct  = purchasePrice > 0 ? (safeOwnFunds / purchasePrice) * 100 : 0
 
+  const isInvestment = propertyPurpose === 'investment'
+  const maxLTVPct    = isInvestment ? 70 : 80
+  const amberLTVPct  = isInvestment ? 65 : 70
+
   const ltvColor =
-    ltv >= 80 ? 'text-risk-DEFAULT' :
-    ltv >= 70 ? 'text-warning-DEFAULT' :
+    ltv > maxLTVPct   ? 'text-risk-DEFAULT'    :
+    ltv > amberLTVPct ? 'text-warning-DEFAULT'  :
     'text-success-DEFAULT'
 
   const metricBorder =
-    ltv >= 80 ? 'border-risk-border   bg-risk-light'    :
-    ltv >= 70 ? 'border-warning-border bg-warning-light' :
+    ltv > maxLTVPct   ? 'border-risk-border bg-risk-light'       :
+    ltv > amberLTVPct ? 'border-warning-border bg-warning-light'  :
     'border-success-border bg-success-light'
 
   const minOwnFundsNeeded =
-    ltv > 80 ? Math.ceil(purchasePrice * 0.20) - safeOwnFunds : 0
+    ltv > maxLTVPct
+      ? Math.ceil(purchasePrice * ((100 - maxLTVPct) / 100)) - safeOwnFunds
+      : 0
 
   const canContinue = !!propertyPurpose && !!purchaseTimeline
 
@@ -162,42 +168,45 @@ export default function Step4Property({ data, onChange, onBack, onContinue }) {
       </div>
 
       {/* ── Contextual LTV message ─────────────────────── */}
-      {ltv > 80 && (
+      {ltv > maxLTVPct && (
         <div className="flex items-start gap-3 rounded-xl bg-risk-light border border-risk-border p-4 mb-6">
           <AlertTriangle size={15} className="text-risk-DEFAULT flex-shrink-0 mt-0.5" />
           <div>
             <p className="text-xs font-semibold text-risk-text mb-0.5">
-              LTV Exceeds CNB Limit for Self-Employed Applicants
+              {isInvestment
+                ? 'LTV Exceeds Investment Property Cap (70%)'
+                : 'LTV Exceeds ČNB Standard Limit (80%)'}
             </p>
             <p className="text-xs text-risk-text leading-relaxed">
-              The Czech National Bank (ČNB) caps mortgage LTV at <strong>80%</strong> for
-              Self-employed (OSVČ) and Company Directors (s.r.o.). You need at least{' '}
-              <strong>{formatCZK(minOwnFundsNeeded)}</strong> more in confirmed own funds
-              (Vlastní zdroje) before any Czech bank can consider this application.
+              {isInvestment
+                ? <>Czech banks cap investment / rental property LTV at <strong>70%</strong>. You need at least <strong>{formatCZK(minOwnFundsNeeded)}</strong> more in confirmed own funds (Vlastní zdroje) to meet this limit.</>
+                : <>The Czech National Bank (ČNB) caps mortgage LTV at <strong>80%</strong>. You need at least <strong>{formatCZK(minOwnFundsNeeded)}</strong> more in confirmed own funds (Vlastní zdroje) before any Czech bank can consider this application.</>
+              }
             </p>
           </div>
         </div>
       )}
 
-      {ltv > 70 && ltv <= 80 && (
+      {ltv > amberLTVPct && ltv <= maxLTVPct && (
         <div className="flex items-start gap-3 rounded-xl bg-warning-light border border-warning-border p-4 mb-6">
           <AlertTriangle size={15} className="text-warning-DEFAULT flex-shrink-0 mt-0.5" />
           <p className="text-xs text-warning-text leading-relaxed">
-            <strong>70–80% LTV</strong> is accepted by most banks but limits your rate
-            options. Some lenders apply a risk premium above 75% LTV for self-employed
-            applicants — bringing this below 70% typically unlocks the best fixed rates.
+            {isInvestment
+              ? <><strong>{ltv.toFixed(0)}% LTV</strong> is approaching the 70% investment property cap. Increasing own funds will provide headroom and may improve available rate options.</>
+              : <><strong>70–80% LTV</strong> is accepted by most banks but limits your rate options. Some lenders apply a risk premium above 75% LTV — bringing this below 70% typically unlocks the best fixed rates.</>
+            }
           </p>
         </div>
       )}
 
-      {ltv > 0 && ltv <= 70 && (
+      {ltv > 0 && ltv <= amberLTVPct && (
         <div className="flex items-start gap-3 rounded-xl bg-success-light border border-success-border p-4 mb-6">
           <CheckCircle size={15} className="text-success-DEFAULT flex-shrink-0 mt-0.5" />
           <p className="text-xs text-success-text leading-relaxed">
-            <strong>Strong LTV position.</strong> Below 70% LTV unlocks competitive fixed
-            rates across all 19 covered Czech banks and signals low collateral risk to
-            underwriters — the optimal position for Self-employed (OSVČ) and Company Director
-            (s.r.o.) applications.
+            <strong>Strong LTV position.</strong>{' '}
+            {isInvestment
+              ? 'Below 65% LTV on an investment property signals low collateral risk and gives you the strongest negotiating position for rate and terms.'
+              : 'Below 70% LTV unlocks competitive fixed rates across covered Czech banks and signals low collateral risk to underwriters.'}
           </p>
         </div>
       )}
