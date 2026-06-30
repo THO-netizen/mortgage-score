@@ -1,17 +1,18 @@
 import { useEffect, useState } from 'react'
+import { Lock, Shield } from 'lucide-react'
 
 const PHASES = [
-  { text: 'Analyzing financial profile…',              ms: 850  },
-  { text: 'Simulating Czech bank underwriting logic…', ms: 950  },
-  { text: 'Evaluating DTI / DSTI / LTV ratios…',       ms: 900  },
+  { text: 'Analyzing financial profile…',                    ms: 850  },
+  { text: 'Calculating DTI and LTV risk parameters…',        ms: 950  },
+  { text: 'Validating against 2026 ČNB regulatory guidelines…', ms: 900 },
 ]
 
 const TOTAL_MS = PHASES.reduce((s, p) => s + p.ms, 0)
 
 export default function ProcessingScreen({ onComplete }) {
-  const [phaseIdx,  setPhaseIdx]  = useState(0)
-  const [progress,  setProgress]  = useState(0)
-  const [done,      setDone]      = useState(false)
+  const [phaseIdx, setPhaseIdx] = useState(0)
+  const [progress, setProgress] = useState(0)
+  const [done,     setDone]     = useState(false)
 
   useEffect(() => {
     const start = Date.now()
@@ -32,7 +33,7 @@ export default function ProcessingScreen({ onComplete }) {
       clearInterval(progressId)
       setProgress(100)
       setDone(true)
-      setTimeout(onComplete, 400)
+      setTimeout(onComplete, 500)
     }, TOTAL_MS)
 
     return () => {
@@ -44,72 +45,59 @@ export default function ProcessingScreen({ onComplete }) {
 
   return (
     <main className="min-h-screen bg-dark-900 flex items-center justify-center px-4">
-      <div className="w-full max-w-md">
+      <div className="w-full max-w-sm animate-fade-up">
 
-        {/* Terminal window */}
-        <div className="bg-dark-800 border border-white/10 rounded-2xl overflow-hidden shadow-hero-card animate-fade-up">
-
-          {/* Title bar */}
-          <div className="flex items-center gap-2 px-4 py-3 bg-dark-900/80 border-b border-white/10">
-            <span className="w-2.5 h-2.5 rounded-full bg-[#FF5F57]" />
-            <span className="w-2.5 h-2.5 rounded-full bg-[#FEBC2E]" />
-            <span className="w-2.5 h-2.5 rounded-full bg-[#28C840]" />
-            <span className="ml-3 text-[11px] text-slate-500 font-mono tracking-wide">
-              mortgage_score — underwriting_simulation
-            </span>
+        {/* Score icon */}
+        <div className="flex justify-center mb-10">
+          <div className="w-16 h-16 rounded-2xl bg-brand-600/15 border border-brand-500/20 flex items-center justify-center">
+            <Shield size={28} className="text-brand-400" />
           </div>
-
-          {/* Terminal body */}
-          <div className="px-6 py-7 font-mono min-h-[148px] space-y-3">
-            {PHASES.map((phase, i) => (
-              i <= phaseIdx && (
-                <div key={i} className="flex items-start gap-2.5 animate-fade-in">
-                  <span className={[
-                    'text-[12px] flex-shrink-0 mt-px',
-                    done || i < phaseIdx ? 'text-success-DEFAULT' : 'text-brand-400',
-                  ].join(' ')}>
-                    {done || i < phaseIdx ? '✓' : '›'}
-                  </span>
-                  <span className={[
-                    'text-[12px] leading-relaxed',
-                    i === phaseIdx && !done ? 'text-white' : 'text-slate-500',
-                  ].join(' ')}>
-                    {phase.text}
-                    {i === phaseIdx && !done && (
-                      <span className="inline-block w-2 h-3.5 bg-brand-400 ml-1 align-middle animate-ping-soft opacity-80" />
-                    )}
-                  </span>
-                </div>
-              )
-            ))}
-            {done && (
-              <div className="flex items-start gap-2.5 animate-fade-in">
-                <span className="text-[12px] text-success-DEFAULT flex-shrink-0 mt-px">✓</span>
-                <span className="text-[12px] text-success-DEFAULT">
-                  Analysis complete. Generating output…
-                </span>
-              </div>
-            )}
-          </div>
-
-          {/* Progress */}
-          <div className="px-6 pb-6">
-            <div className="h-[3px] bg-dark-900 rounded-full overflow-hidden mb-2">
-              <div
-                className="h-full bg-brand-500 rounded-full transition-all duration-100 ease-linear"
-                style={{ width: `${progress}%` }}
-              />
-            </div>
-            <p className="text-[11px] text-slate-600 font-mono text-right tabular-nums">
-              {progress}%
-            </p>
-          </div>
-
         </div>
 
-        <p className="text-center text-slate-600 text-[11px] mt-6 font-mono leading-relaxed">
-          Running simulation against Czech ČNB underwriting parameters.
-        </p>
+        {/* Status text */}
+        <div className="text-center mb-10" style={{ minHeight: '3rem' }}>
+          {PHASES.map((phase, i) => (
+            i === phaseIdx && !done && (
+              <p
+                key={i}
+                className="text-white text-[15px] font-medium leading-relaxed animate-fade-in"
+              >
+                {phase.text}
+              </p>
+            )
+          ))}
+          {done && (
+            <p className="text-success-DEFAULT text-[15px] font-medium animate-fade-in">
+              Assessment complete.
+            </p>
+          )}
+        </div>
+
+        {/* Progress bar */}
+        <div className="mb-3">
+          <div className="h-[2px] bg-white/8 rounded-full overflow-hidden">
+            <div
+              className="h-full rounded-full transition-all duration-100 ease-linear"
+              style={{
+                width: `${progress}%`,
+                background: done
+                  ? '#10B981'
+                  : 'linear-gradient(90deg, #3B82F6, #6366F1)',
+              }}
+            />
+          </div>
+        </div>
+
+        {/* Percentage */}
+        <div className="flex justify-end mb-10">
+          <span className="text-[11px] text-slate-600 tabular-nums">{progress}%</span>
+        </div>
+
+        {/* Trust badge */}
+        <div className="flex items-center justify-center gap-2 text-slate-600 text-[11px]">
+          <Lock size={10} className="flex-shrink-0" />
+          <span>Secure analytical environment. Data processed locally.</span>
+        </div>
 
       </div>
     </main>
