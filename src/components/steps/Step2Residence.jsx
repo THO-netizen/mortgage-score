@@ -193,7 +193,7 @@ export default function Step2Residence({
           </span>
         </div>
         <p className="text-[11px] text-ink-subtle mt-1.5 leading-relaxed">
-          Determines maximum loan maturity. Banks typically require full repayment by age 70–75. Under 36 — eligible for 90% LTV primary housing options.
+          Determines maximum loan maturity. Banks typically require full repayment by age 75. Under 36 — eligible for 90% mortgage, 10% required.
           {ageValue >= 60 && (
             <span className="text-warning-DEFAULT font-medium"> Age 60+ — UCB &amp; mBank reduce maximum payoff age to 65.</span>
           )}
