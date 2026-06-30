@@ -1,9 +1,8 @@
 import { useState } from 'react'
 import { AlertTriangle, CheckCircle } from 'lucide-react'
-import FunnelCard     from '../funnel/FunnelCard.jsx'
-import ActionBar      from '../funnel/ActionBar.jsx'
-import CurrencySlider from '../ui/CurrencySlider.jsx'
-import { formatCZK }  from '../../utils/formatters.js'
+import FunnelCard    from '../funnel/FunnelCard.jsx'
+import ActionBar     from '../funnel/ActionBar.jsx'
+import { formatCZK } from '../../utils/formatters.js'
 
 const PROPERTY_PURPOSES = [
   { value: '',           label: 'Select purpose…'        },
@@ -75,13 +74,15 @@ export default function Step4Property({ data, onChange, onBack, onContinue }) {
     applicantAge     = 35,
   } = data
 
-  // Local display value for the own-funds text field (allows free typing)
-  const [ownFundsRaw, setOwnFundsRaw] = useState(String(ownFunds ?? ''))
+  // Local display values for text fields (allow free typing before parsing)
+  const [purchasePriceRaw, setPurchasePriceRaw] = useState(String(purchasePrice ?? ''))
+  const [ownFundsRaw,      setOwnFundsRaw]      = useState(String(ownFunds ?? ''))
 
-  const parsedOwnFunds = Math.max(0, Number(ownFundsRaw.replace(/\s/g, '')) || 0)
-  const loanAmount     = Math.max(0, purchasePrice - parsedOwnFunds)
-  const ltv            = purchasePrice > 0 ? (loanAmount / purchasePrice) * 100 : 0
-  const ownFundsPct    = purchasePrice > 0 ? (parsedOwnFunds / purchasePrice) * 100 : 0
+  const parsedPurchasePrice = Math.max(0, Number(purchasePriceRaw.replace(/\s/g, '')) || 0)
+  const parsedOwnFunds      = Math.max(0, Number(ownFundsRaw.replace(/\s/g, '')) || 0)
+  const loanAmount          = Math.max(0, parsedPurchasePrice - parsedOwnFunds)
+  const ltv         = parsedPurchasePrice > 0 ? (loanAmount / parsedPurchasePrice) * 100 : 0
+  const ownFundsPct = parsedPurchasePrice > 0 ? (parsedOwnFunds / parsedPurchasePrice) * 100 : 0
 
   const isInvestment    = propertyPurpose === 'investment'
   const firstHomeEligible = !isInvestment && Number(applicantAge) < FIRST_HOME_AGE_LIMIT
@@ -103,7 +104,7 @@ export default function Step4Property({ data, onChange, onBack, onContinue }) {
 
   const minOwnFundsNeeded =
     ltv > maxLTVPct
-      ? Math.ceil(purchasePrice * ((100 - maxLTVPct) / 100)) - parsedOwnFunds
+      ? Math.ceil(parsedPurchasePrice * ((100 - maxLTVPct) / 100)) - parsedOwnFunds
       : 0
 
   const canContinue = !!propertyPurpose && !!purchaseTimeline
@@ -122,17 +123,40 @@ export default function Step4Property({ data, onChange, onBack, onContinue }) {
       }
     >
 
-      {/* ── Purchase price slider ──────────────────────── */}
-      <div className="mb-8">
-        <CurrencySlider
-          id="purchasePrice"
-          label="Purchase Price"
-          value={purchasePrice}
-          onChange={(v) => onChange('purchasePrice', v)}
-          min={1_000_000}
-          max={25_000_000}
-          step={100_000}
-        />
+      {/* ── Purchase price text input ─────────────────── */}
+      <div className="mb-7">
+        <label htmlFor="purchasePrice" className="section-label mb-1 block">
+          Purchase Price (Kupní cena)
+        </label>
+        <div className="relative">
+          <input
+            id="purchasePrice"
+            type="text"
+            inputMode="numeric"
+            value={purchasePriceRaw}
+            placeholder="e.g. 5 500 000"
+            onChange={(e) => {
+              const raw    = e.target.value.replace(/[^\d\s]/g, '')
+              setPurchasePriceRaw(raw)
+              const parsed = Math.max(0, Number(raw.replace(/\s/g, '')) || 0)
+              onChange('purchasePrice', parsed)
+            }}
+            onBlur={() => {
+              if (parsedPurchasePrice > 0) {
+                setPurchasePriceRaw(parsedPurchasePrice.toLocaleString('cs-CZ'))
+              }
+            }}
+            className="input-field pr-16"
+          />
+          <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[12px] font-semibold text-ink-subtle pointer-events-none">
+            CZK
+          </span>
+        </div>
+        {parsedPurchasePrice > 0 && (
+          <p className="text-[12px] font-semibold text-ink mt-1.5 tabular-nums">
+            = {formatCZK(parsedPurchasePrice)}
+          </p>
+        )}
       </div>
 
       {/* ── Own funds text input ───────────────────────── */}
