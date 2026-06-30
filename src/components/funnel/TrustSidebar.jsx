@@ -1,51 +1,9 @@
 import { Shield, BookOpen, Lightbulb } from 'lucide-react'
 
-const securityPoints = [
-  'Zero-exposure data architecture',
-  'Private, local-first assessment',
-  'Bank-grade methodology standards',
-  'No account registration required',
-]
-
 
 export default function TrustSidebar() {
   return (
     <aside className="hidden lg:flex flex-col gap-4 sticky top-24">
-
-      {/* ── Mortgage Intelligence & Security (dark card) ── */}
-      <div className="bg-hero rounded-card p-6 text-white">
-        <div className="flex items-center gap-3 mb-5">
-          <div className="w-9 h-9 rounded-xl bg-white/10 flex items-center justify-center flex-shrink-0">
-            <Shield size={16} className="text-white" />
-          </div>
-          <div>
-            <p className="font-display font-bold text-sm leading-tight">
-              Mortgage Intelligence &amp; Security
-            </p>
-            <p className="text-slate-400 text-xs mt-0.5">
-              Built for expat &amp; self-employed applicants
-            </p>
-          </div>
-        </div>
-
-        <ul className="space-y-2.5 mb-5">
-          {securityPoints.map((pt) => (
-            <li key={pt} className="flex items-start gap-2.5">
-              <span className="mt-0.5 flex-shrink-0 w-4 h-4 rounded-full bg-success-DEFAULT/20 flex items-center justify-center">
-                <svg width="8" height="8" viewBox="0 0 8 8" fill="none">
-                  <path d="M1.5 4L3 5.5L6.5 2" stroke="#10B981" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
-              </span>
-              <span className="text-xs text-slate-300 leading-relaxed">{pt}</span>
-            </li>
-          ))}
-        </ul>
-
-        <p className="text-[11px] text-slate-400 leading-relaxed border-t border-white/10 pt-4">
-          We transform complex Czech financial data into clear mortgage insights. Our
-          mission is to evaluate your borrowing capacity with total discretion and precision.
-        </p>
-      </div>
 
       {/* ── Advisor profile (light card) ─────────────── */}
       <div className="card-surface p-6">
