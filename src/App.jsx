@@ -79,6 +79,11 @@ const INITIAL_FORM = {
   sroOwnershipPct:   null,
   sroProfitShare:    null,
 
+  // NACE-derived income recognition (set via IČO ARES lookup)
+  primaryNace:       '',    // raw NACE code from ARES (e.g. '6201')
+  naceSector:        '',    // mapped Czech sector label (e.g. 'IT a technologie')
+  turnoverIncomePct: null,  // income recognition % (40|50|60|70); null = use engine default
+
   // Step 2 — residence + applicant age (for maturity model)
   applicantAge:      35,
 
@@ -243,6 +248,9 @@ export default function App() {
                         datumVzniku:            r.datumVzniku       ?? prev.datumVzniku,
                         icoActiveStatus:        r.icoActiveStatus   ?? prev.icoActiveStatus,
                         companyExistenceMonths: r.businessAgeMonths ?? prev.companyExistenceMonths,
+                        primaryNace:            r.primaryNace       ?? prev.primaryNace,
+                        naceSector:             r.naceSector        ?? prev.naceSector,
+                        turnoverIncomePct:      r.turnoverIncomePct ?? prev.turnoverIncomePct,
                       }))}
                       employeeData={{
                         isProbation:           formData.isProbation,
@@ -270,6 +278,8 @@ export default function App() {
                         businessName:                formData.businessName,
                         datumVzniku:                 formData.datumVzniku,
                         icoActiveStatus:             formData.icoActiveStatus,
+                        naceSector:                  formData.naceSector,
+                        turnoverIncomePct:           formData.turnoverIncomePct,
                         companyIncomeStream:         formData.companyIncomeStream,
                         companyOwnershipPct:         formData.companyOwnershipPct,
                         familyOwnershipPctAggregate: formData.familyOwnershipPctAggregate,

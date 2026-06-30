@@ -3,8 +3,9 @@ import {
   Briefcase, Building2, UserCheck, ExternalLink,
   Check, Loader2, CheckCircle, XCircle, ChevronDown, AlertTriangle,
 } from 'lucide-react'
-import FunnelCard from '../funnel/FunnelCard.jsx'
-import ActionBar  from '../funnel/ActionBar.jsx'
+import FunnelCard          from '../funnel/FunnelCard.jsx'
+import ActionBar           from '../funnel/ActionBar.jsx'
+import { mapNaceToSector } from '../../utils/scoringEngine.js'
 
 // ── ARES legal-form → entity-type mapping ──────────────
 const OSVC_FORMS = new Set(['101', '102', '103', '104', '105', '106', '107', '108', '109'])
@@ -67,6 +68,9 @@ function IcoLookup({ onResult }) {
   const [legalFormLabel,  setLegalFormLabel]  = useState('')
   const [resolvedType,    setResolvedType]    = useState('')
   const [activeStatus,    setActiveStatus]    = useState('')   // raw stavEkonSubjektu from ARES
+  const [naceSector,      setNaceSector]      = useState('')
+  const [nacePct,         setNacePct]         = useState(null)
+  const [primaryNace,     setPrimaryNace]     = useState('')
   const abortRef = useRef(null)
 
   const resetResult = () => {
@@ -76,6 +80,9 @@ function IcoLookup({ onResult }) {
     setLegalFormLabel('')
     setResolvedType('')
     setActiveStatus('')
+    setNaceSector('')
+    setNacePct(null)
+    setPrimaryNace('')
   }
 
   const handleChange = (e) => {
@@ -116,18 +123,26 @@ function IcoLookup({ onResult }) {
         // stavEkonSubjektu: 'AKTIVNÍ' | 'ZANIKLÝ' | 'POZASTAVENÝ' | etc.
         const icoStatus    = data.stavEkonSubjektu ?? 'AKTIVNÍ'
 
+        // NACE — primary business activity code (first in array, any length)
+        const rawNace  = (data.czNace ?? [])[0] ?? ''
+        const { pct: nPct, sector: nSector } = mapNaceToSector(rawNace)
+
         setBusinessName(name)
         setAgeMonths(months)
         setQualified(months !== null && months >= 24)
         setLegalFormLabel(formLabel)
         setResolvedType(entityType)
         setActiveStatus(icoStatus)
+        setPrimaryNace(rawNace)
+        setNaceSector(nSector)
+        setNacePct(nPct)
         setStatus(icoStatus === 'AKTIVNÍ' ? 'found' : 'inactive')
 
         onResult({
           ico: icoInput, businessName: name, businessAgeMonths: months,
           datumVzniku: dateStr, entityType, legalFormLabel: formLabel,
           icoActiveStatus: icoStatus,
+          primaryNace: rawNace, naceSector: nSector, turnoverIncomePct: nPct,
         })
       })
       .catch((err) => {
@@ -256,6 +271,19 @@ function IcoLookup({ onResult }) {
             </div>
           )}
 
+          {/* NACE business sector — shown for OSVČ */}
+          {resolvedType === 'osvc' && naceSector && (
+            <div className="flex items-center justify-between rounded-xl border border-border bg-surface px-4 py-3">
+              <div>
+                <span className="text-xs text-ink-muted block mb-0.5">Business sector (NACE)</span>
+                <span className="text-xs font-semibold text-ink">{naceSector}</span>
+              </div>
+              {nacePct !== null && (
+                <span className="badge-success text-[10px]">{nacePct}% income recognition</span>
+              )}
+            </div>
+          )}
+
         </div>
       )}
 
@@ -375,6 +403,9 @@ function BusinessIncomeSection({ data, onChange }) {
     datumVzniku              = '',
     companyExistenceMonths   = null,
     icoActiveStatus          = '',
+    // NACE-derived income recognition
+    naceSector               = '',
+    turnoverIncomePct        = null,
   } = data
 
   const [turnoverTouched, setTurnoverTouched]   = useState(false)
@@ -548,6 +579,28 @@ function BusinessIncomeSection({ data, onChange }) {
               line 101–102. For Company Directors (s.r.o.), use the company's total annual
               revenues from the Profit &amp; Loss statement (Výsledovka).
             </p>
+          )}
+
+          {/* NACE-derived income estimate */}
+          {Number(annualTurnover) >= 1 && turnoverIncomePct !== null && (
+            <div className="mt-3 rounded-xl bg-brand-50 border border-brand-100 p-4 animate-fade-up">
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-[10px] font-bold text-brand-700 uppercase tracking-wide">
+                  Estimated Recognised Income
+                </p>
+                <span className="badge-success text-[10px]">{turnoverIncomePct}% of turnover</span>
+              </div>
+              {naceSector && (
+                <p className="text-[11px] text-brand-600 mb-2">{naceSector}</p>
+              )}
+              <p className="font-display text-2xl font-black text-brand-800 tabular-nums">
+                {Math.round(Number(annualTurnover) * turnoverIncomePct / 100 / 12).toLocaleString('cs-CZ')}
+                <span className="text-sm font-semibold text-brand-600 ml-1.5">CZK / month</span>
+              </p>
+              <p className="text-[10px] text-brand-500 mt-1">
+                {Number(annualTurnover).toLocaleString('cs-CZ')} × {turnoverIncomePct}% ÷ 12 months
+              </p>
+            </div>
           )}
         </div>
       )}

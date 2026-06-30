@@ -53,13 +53,54 @@ export const FX_RATES_CZK = {
   CHF: 26.5,
 }
 
-// NACE net coefficients for flat-tax (paušální daň) income calculation
-export const NACE_COEFFICIENTS = {
-  it_consulting: 0.40,   // IT, consulting, liberal professions
-  liberal:       0.35,   // lawyers, doctors, accountants
-  trade:         0.25,
-  craft:         0.20,
-  default:       0.30,
+// ─── NACE sector → income recognition table ──────────────────────────────────
+// Maps NACE division codes (2-digit prefix) to Czech mortgage income recognition
+// percentages (tabulka uznatelných příjmů z obratu).  Upper bound is always used.
+
+function buildNaceSectorTable() {
+  const t = {}
+  const set = (divs, pct, sector) => divs.forEach(d => { t[d] = { pct, sector } })
+
+  // 70% — Finance, IT, Marketing, Consulting, Law, Arts, Research, Health
+  set([64, 65, 66],             70, 'Finance a účetnictví')
+  set([58, 59, 60, 61, 62, 63], 70, 'IT a technologie')
+  set([73],                     70, 'Marketing a reklama')
+  set([69, 70, 71, 85],         70, 'Poradenství a vzdělávání')
+  set([72],                     70, 'Výzkum a vývoj')
+  set([90, 91, 92, 93],         70, 'Umění, kultura a sport')
+  set([75, 86, 87, 88],         70, 'Zdravotnictví')
+
+  // 60% — Security, Real Estate
+  set([68],                     60, 'Realitní trh a nemovitosti')
+  set([80],                     60, 'Ochrana a bezpečnost')
+
+  // 50% — Automotive, Transport, Beauty/Fashion/Design, Construction, Manufacturing
+  set([45],                     50, 'Automobilový průmysl')
+  set([49, 50, 51, 52, 53],     50, 'Doprava a logistika')
+  set([74, 96],                 50, 'Móda, design a péče o tělo')
+  set([41, 42, 43],             50, 'Stavebnictví a řemeslné práce')
+  for (let d = 5; d <= 33; d++) t[d] = { pct: 50, sector: 'Výroba a průmysl' }
+  for (let d = 35; d <= 39; d++) t[d] = { pct: 50, sector: 'Výroba a průmysl' }
+
+  // 40% — Retail/Wholesale, Agriculture, Gastronomy, Direct sales
+  set([1, 2, 3],                40, 'Zemědělství a lesnictví')
+  set([46, 47],                 40, 'Maloobchod a velkoobchod')
+  set([55, 56],                 40, 'Gastronomie a pohostinství')
+
+  return t
+}
+
+export const NACE_SECTOR_TABLE = buildNaceSectorTable()
+
+/**
+ * Maps a raw NACE code (any length string) to { pct, sector }.
+ * pct is the income recognition % (40/50/60/70), sector is the Czech label.
+ * Returns { pct: null, sector: '' } when no match.
+ */
+export function mapNaceToSector(naceCode) {
+  if (!naceCode) return { pct: null, sector: '' }
+  const div = parseInt(String(naceCode).slice(0, 2), 10)
+  return NACE_SECTOR_TABLE[div] ?? { pct: null, sector: '' }
 }
 
 // ─── Core math helpers ───────────────────────────────────────────────────────
@@ -182,6 +223,7 @@ export function computeEffectiveIncome(formData) {
     annualTurnover           = null,
     avgMonthlyCreditTurnover = null,
     icoActiveStatus          = '',   // ARES stavEkonSubjektu — '' | 'AKTIVNÍ' | other
+    turnoverIncomePct        = null, // NACE-derived income recognition % (40|50|60|70), null = use default
     // s.r.o. ESSO v2 fields (numeric)
     companyIncomeStream      = '',
     companyOwnershipPct      = null,
@@ -326,7 +368,10 @@ export function computeEffectiveIncome(formData) {
       income = Math.min(Math.max(0, gross - LIVING_MIN_CZK), FLAT_TAX_INCOME_CAP)
       flags.push('flat_tax_method')
     } else if (taxRegime === 'tax_return' && turnover >= 1) {
-      const turnoverMonthly = Math.round(turnover * TURNOVER_COEFF_DEFAULT / 12)
+      const coeff = (turnoverIncomePct !== null && turnoverIncomePct > 0)
+        ? turnoverIncomePct / 100
+        : TURNOVER_COEFF_DEFAULT
+      const turnoverMonthly = Math.round(turnover * coeff / 12)
       if (turnoverMonthly > income) {
         income = turnoverMonthly
         flags.push('turnover_method')
