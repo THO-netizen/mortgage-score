@@ -267,6 +267,19 @@ function IcoLookup({ onResult }) {
 
 const ENTITY_OPTIONS = [
   {
+    value:    'zamestnanec',
+    Icon:     UserCheck,
+    title:    'Employed',
+    subtitle: 'Salary employee · Contract worker · Expat hire',
+    desc:     'You receive a regular salary from a Czech or foreign employer. Income verified via payslips and employer confirmation.',
+    docs: [
+      'Last 3 payslips (výplatní pásky)',
+      'Employer income confirmation letter',
+      'Employment contract — type and duration',
+    ],
+    note: 'Fastest path — automated scoring by most banks',
+  },
+  {
     value:    'osvc',
     Icon:     Briefcase,
     title:    'Self-employed (OSVČ)',
@@ -291,19 +304,6 @@ const ENTITY_OPTIONS = [
       'UBO beneficial ownership declaration',
     ],
     note: 'Both company and personal documents required',
-  },
-  {
-    value:    'zamestnanec',
-    Icon:     UserCheck,
-    title:    'Employed',
-    subtitle: 'Salary employee · Contract worker · Expat hire',
-    desc:     'You receive a regular salary from a Czech or foreign employer. Income verified via payslips and employer confirmation.',
-    docs: [
-      'Last 3 payslips (výplatní pásky)',
-      'Employer income confirmation letter',
-      'Employment contract — type and duration',
-    ],
-    note: 'Fastest path — automated scoring by most banks',
   },
 ]
 
@@ -603,10 +603,10 @@ function BusinessIncomeSection({ data, onChange }) {
 // ── Employee detail fields ─────────────────────────────
 
 const CONTRACT_TYPES = [
-  { value: 'indefinite', label: 'Indefinite period (HPP)',    info: 'Preferred by all banks — no haircut' },
-  { value: 'definite',   label: 'Fixed-term contract',         info: '20% income haircut applied'         },
-  { value: 'agency',     label: 'Agency / temp worker',        info: 'Higher variance; limited lenders'   },
-  { value: 'dpc',        label: 'DPČ / DPP agreement',        info: 'Treated as supplemental income'     },
+  { value: 'indefinite', label: 'Indefinite period (HPP)' },
+  { value: 'definite',   label: 'Fixed-term contract'      },
+  { value: 'agency',     label: 'Agency / temp worker'     },
+  { value: 'dpc',        label: 'DPČ / DPP agreement'     },
 ]
 
 const SECTORS = [
@@ -1242,31 +1242,29 @@ function EmployeeDetails({ data, onChange }) {
     isOnSickLeave         = false,
     isEmployerDistressed  = false,
     contractType          = '',
-    employmentStartDate   = '',
+    contractEndDate       = '',
     netMonthlySalary      = null,
-    verificationMethod    = '',
     hasMonthlyDiety       = false,
     monthlyDiety          = null,
     hasFxIncome           = false,
     foreignSalaryAmount   = null,
     foreignSalaryCurrency = 'EUR',
-    hasOwnership          = false,
-    employerOwnershipPct  = null,
+    hasBonus              = false,
+    bonusAmount           = null,
+    bonusFrequency        = 'yearly',
     employmentSector      = '',
   } = data
 
-  const lookbackMonths = (() => {
-    if (!employmentStartDate) return null
-    const [y, m] = employmentStartDate.split('-').map(Number)
-    const now = new Date()
-    const months = (now.getFullYear() - y) * 12 + (now.getMonth() + 1 - m)
-    return Math.max(0, Math.min(24, months))
-  })()
+  const anyAdvisory    = isProbation || isNoticePeriod || isOnSickLeave || isEmployerDistressed
 
-  const anyHardBlock   = isProbation || isNoticePeriod || isOnSickLeave || isEmployerDistressed
+  const isContractExpiringSoon = (() => {
+    if (contractType !== 'definite' || !contractEndDate) return false
+    const now = new Date()
+    const twoMo = new Date(now.getFullYear(), now.getMonth() + 2, 1)
+    const threshold = twoMo.toISOString().slice(0, 7)
+    return contractEndDate <= threshold
+  })()
   const csobException  = isProbation && (employmentSector === 'health' || employmentSector === 'education')
-  const ownershipPct   = Number(employerOwnershipPct || 0)
-  const maxMonthStr    = new Date().toISOString().slice(0, 7)
 
   return (
     <div className="mt-7 pt-7 border-t border-border space-y-5 animate-fade-up">
@@ -1296,40 +1294,38 @@ function EmployeeDetails({ data, onChange }) {
           ].map(({ field, label }) => {
             const active = !!data[field]
             return (
-              <div key={field} className={[
-                'flex items-center justify-between rounded-xl border px-4 py-3',
-                active ? 'bg-risk-light border-risk-border' : 'border-border bg-card',
-              ].join(' ')}>
-                <p className={`text-xs font-medium ${active ? 'text-risk-text' : 'text-ink'}`}>{label}</p>
-                <Toggle on={active} onToggle={() => onChange(field, !active)} danger />
+              <div key={field} className="flex items-center justify-between rounded-xl border border-border bg-card px-4 py-3">
+                <p className="text-xs font-medium text-ink">{label}</p>
+                <Toggle on={active} onToggle={() => onChange(field, !active)} />
               </div>
             )
           })}
         </div>
       </div>
 
-      {/* ČSOB exception or hard-block warning */}
-      {csobException && (
-        <div className="rounded-xl bg-warning-light border border-warning-border px-4 py-3 animate-fade-up">
-          <p className="text-xs font-semibold text-warning-text mb-1">ČSOB Exception: Healthcare / Education</p>
-          <p className="text-[11px] text-warning-text leading-relaxed">
-            ČSOB allows Healthcare and Education employees to proceed during probation via manual
-            headquarters underwriting. All other banks will decline until probation ends.
-          </p>
-        </div>
-      )}
-      {anyHardBlock && !csobException && (
-        <div className="rounded-xl bg-risk-light border border-risk-border px-4 py-3 animate-fade-up">
+      {/* Advisory — shown when any condition is active */}
+      {anyAdvisory && (
+        <div className="rounded-xl bg-brand-50 border border-brand-100 px-4 py-3 animate-fade-up">
           <div className="flex items-start gap-2">
-            <AlertTriangle size={14} className="text-risk-DEFAULT flex-shrink-0 mt-0.5" />
+            <AlertTriangle size={14} className="text-brand-600 flex-shrink-0 mt-0.5" />
             <div>
-              <p className="text-xs font-semibold text-risk-text mb-1">Hard Block — Approval Unlikely</p>
-              <p className="text-[11px] text-risk-text leading-relaxed">
-                One or more conditions above will cause automatic decline at most banks.
-                Resolve before applying. You can continue to see your projected capacity.
+              <p className="text-xs font-semibold text-brand-700 mb-1">Advisory</p>
+              <p className="text-[11px] text-brand-700 leading-relaxed">
+                Important: Some lenders may view these conditions as non-standard. We recommend
+                discussing these details during your free strategy call so we can assess your
+                specific situation and find the right banking partner.
               </p>
             </div>
           </div>
+        </div>
+      )}
+      {csobException && (
+        <div className="rounded-xl bg-brand-50 border border-brand-100 px-4 py-3 animate-fade-up">
+          <p className="text-xs font-semibold text-brand-700 mb-1">ČSOB Note: Healthcare / Education</p>
+          <p className="text-[11px] text-brand-700 leading-relaxed">
+            ČSOB allows Healthcare and Education employees to proceed during probation via manual
+            headquarters underwriting. Discuss this route during your strategy call.
+          </p>
         </div>
       )}
 
@@ -1366,7 +1362,7 @@ function EmployeeDetails({ data, onChange }) {
       <div>
         <label className="section-label mb-2 block">Employment Contract Type</label>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          {CONTRACT_TYPES.map(({ value, label, info }) => (
+          {CONTRACT_TYPES.map(({ value, label }) => (
             <button
               key={value}
               type="button"
@@ -1384,36 +1380,44 @@ function EmployeeDetails({ data, onChange }) {
                   <Check size={9} className="text-white" strokeWidth={3} />
                 </span>
               )}
-              <p className={`text-xs font-bold mb-0.5 ${contractType === value ? 'text-brand-700' : 'text-ink'}`}>{label}</p>
-              <p className={`text-[10px] ${contractType === value ? 'text-brand-500' : 'text-ink-subtle'}`}>{info}</p>
+              <p className={`text-xs font-bold ${contractType === value ? 'text-brand-700' : 'text-ink'}`}>{label}</p>
             </button>
           ))}
         </div>
       </div>
 
-      {/* ── Employment start date ─────────────────────────── */}
-      <div>
-        <label htmlFor="employmentStartDate" className="section-label mb-2 block">
-          Employment Start Date
-        </label>
-        <input
-          id="employmentStartDate"
-          type="month"
-          value={employmentStartDate}
-          onChange={(e) => onChange('employmentStartDate', e.target.value)}
-          max={maxMonthStr}
-          className="input-field"
-        />
-        {lookbackMonths !== null && (
-          <p className="text-[11px] text-ink-subtle mt-1.5">
-            Income lookback:{' '}
-            <strong className={lookbackMonths < 3 ? 'text-risk-text' : 'text-ink'}>{lookbackMonths} months</strong>
-            {lookbackMonths < 3 && ' — insufficient history; minimum 3 months required by all banks.'}
-            {lookbackMonths >= 3 && lookbackMonths < 12 && ' — short tenure; some banks apply additional review.'}
-            {lookbackMonths >= 12 && ' — sufficient for standard assessment.'}
-          </p>
-        )}
-      </div>
+      {/* ── Fixed-term end date ──────────────────────────── */}
+      {contractType === 'definite' && (
+        <div className="animate-fade-up">
+          <label htmlFor="contractEndDate" className="section-label mb-2 block">
+            Contract End Date
+          </label>
+          <input
+            id="contractEndDate"
+            type="month"
+            value={contractEndDate}
+            onChange={(e) => onChange('contractEndDate', e.target.value)}
+            min={new Date().toISOString().slice(0, 7)}
+            className="input-field"
+          />
+          {isContractExpiringSoon && (
+            <div className="mt-3 rounded-xl bg-brand-50 border border-brand-100 px-4 py-3 animate-fade-up">
+              <div className="flex items-start gap-2">
+                <AlertTriangle size={14} className="text-brand-600 flex-shrink-0 mt-0.5" />
+                <div>
+                  <p className="text-xs font-semibold text-brand-700 mb-1">Advisory — Contract Expiring Soon</p>
+                  <p className="text-[11px] text-brand-700 leading-relaxed">
+                    Your fixed-term contract ends within 2 months. Some lenders may request
+                    evidence of renewal or an offer of extension. We recommend discussing this
+                    during your free strategy call so we can identify the right banking partner
+                    for your situation.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* ── Net monthly salary ───────────────────────────── */}
       <div>
@@ -1437,28 +1441,7 @@ function EmployeeDetails({ data, onChange }) {
           </span>
         </div>
         <p className="text-[11px] text-ink-subtle mt-1.5">
-          Net monthly take-home pay after taxes and social deductions — average of the last 3–6 months.
-        </p>
-      </div>
-
-      {/* ── Verification method ──────────────────────────── */}
-      <div>
-        <label htmlFor="verificationMethod" className="section-label mb-2 block">
-          Income Verification Method
-        </label>
-        <select
-          id="verificationMethod"
-          value={verificationMethod}
-          onChange={(e) => onChange('verificationMethod', e.target.value)}
-          className="select-field"
-        >
-          <option value="">Select method…</option>
-          <option value="payslips">Payslips (výplatní pásky) — last 3 months</option>
-          <option value="bank_statement">Bank statement income credits</option>
-          <option value="employer_letter">Employer income confirmation letter</option>
-        </select>
-        <p className="text-[11px] text-ink-subtle mt-1.5">
-          Most banks require at least 3 payslips. Digital nomads may use bank statement credits.
+          Enter your clean monthly salary after taxes and social deductions. Do not include bonuses, 13th/14th salaries, or irregular income.
         </p>
       </div>
 
@@ -1540,48 +1523,57 @@ function EmployeeDetails({ data, onChange }) {
         )}
       </div>
 
-      {/* ── Employer ownership stake ─────────────────────── */}
+      {/* ── Bonus income ──────────────────────────────────── */}
       <div>
         <div className="flex items-center justify-between rounded-xl border border-border bg-card px-4 py-3">
           <div>
-            <p className="text-xs font-semibold text-ink">Do you own a stake in your employer?</p>
-            <p className="text-[11px] text-ink-subtle mt-0.5">Affects ČSOB and UCB ownership-based assessment</p>
+            <p className="text-xs font-semibold text-ink">Do you receive a bonus?</p>
+            <p className="text-[11px] text-ink-subtle mt-0.5">Performance or contractual bonus income</p>
           </div>
           <Toggle
-            on={hasOwnership}
+            on={hasBonus}
             onToggle={() => {
-              onChange('hasOwnership', !hasOwnership)
-              if (hasOwnership) onChange('employerOwnershipPct', null)
+              onChange('hasBonus', !hasBonus)
+              if (hasBonus) onChange('bonusAmount', null)
             }}
           />
         </div>
-        {hasOwnership && (
-          <div className="mt-2 animate-fade-up">
+        {hasBonus && (
+          <div className="mt-2 animate-fade-up grid grid-cols-[140px_1fr] gap-2">
+            <select
+              value={bonusFrequency}
+              onChange={(e) => onChange('bonusFrequency', e.target.value)}
+              className="select-field"
+            >
+              <option value="yearly">Yearly</option>
+              <option value="monthly">Monthly</option>
+            </select>
             <div className="relative">
               <input
                 type="number"
                 inputMode="numeric"
-                min={1}
-                max={100}
-                value={employerOwnershipPct ?? ''}
-                onChange={(e) => onChange('employerOwnershipPct', e.target.value === '' ? null : Math.min(100, Math.max(0, Number(e.target.value))))}
-                placeholder="e.g. 40"
-                className="input-field pr-10 tabular-nums"
+                min={0}
+                value={bonusAmount ?? ''}
+                onChange={(e) => onChange('bonusAmount', e.target.value === '' ? null : Number(e.target.value))}
+                placeholder={bonusFrequency === 'yearly' ? 'e.g. 120 000' : 'e.g. 10 000'}
+                className="input-field pr-20 tabular-nums"
               />
-              <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs text-ink-subtle pointer-events-none font-medium">%</span>
+              <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs text-ink-subtle pointer-events-none font-medium whitespace-nowrap">
+                CZK / {bonusFrequency === 'yearly' ? 'yr' : 'mo'}
+              </span>
             </div>
-            {ownershipPct > 33 && (
-              <p className="text-xs text-risk-text mt-1.5">
-                Above 33% — UCB will treat you as self-employed. ČSOB applies a 15% income haircut.
-              </p>
-            )}
-            {ownershipPct > 25 && ownershipPct <= 33 && (
-              <p className="text-xs text-warning-text mt-1.5">
-                Above 25% — ČSOB applies a 15% income haircut.
-              </p>
-            )}
           </div>
         )}
+        {hasBonus && Number(bonusAmount) > 0 && (() => {
+          const monthly = bonusFrequency === 'yearly'
+            ? Math.round(Number(bonusAmount) / 12)
+            : Number(bonusAmount)
+          return (
+            <p className="text-[11px] text-ink-subtle mt-1.5">
+              Recognised at 50% by most banks — equivalent to ~{Math.round(monthly * 0.5).toLocaleString('cs-CZ')} CZK/mo added to your assessed income.
+            </p>
+          )
+        })()}
       </div>
 
     </div>

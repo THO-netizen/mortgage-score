@@ -88,7 +88,7 @@ function buildFactors(f, simNetIncome) {
   const RL = {
     eu: 'EU / EEA Citizen', permanent: 'Permanent Residence',
     longterm5plus: 'Long-term 5+ yrs', longterm: 'Long-term Residence',
-    employment: 'Employment Permit', other: 'Other / Student',
+    employment: 'Long-term (Work/Business)', other: 'Other / Student',
   }
   const YL = { 'less1': '<1 yr', '1-2': '1–2 yrs', '2-5': '2–5 yrs', '5-10': '5–10 yrs', '10plus': '10+ yrs' }
   const PL = { primary: 'Primary Residence', investment: 'Investment / Rental', holiday: 'Holiday Home' }
@@ -111,7 +111,12 @@ function buildFactors(f, simNetIncome) {
       } else {
         parts.push('Not in probation — standard underwriting applies.')
       }
-      if (contractType === 'definite') parts.push('Fixed-term: 20% income haircut applied per ČS/ČSOB/KB methodology.')
+      if (contractType === 'definite') {
+        if (flags.includes('fixed_term_expiring_soon'))
+          parts.push('Fixed-term contract expiring soon — lenders may request evidence of renewal. Advisor review recommended.')
+        else
+          parts.push('Fixed-term contract — assessed identically to indefinite HPP when end date is >2 months away.')
+      }
       if (contractType === 'agency')   parts.push('Agency contract: 25% income haircut; higher variance across banks.')
       if (contractType === 'dpc')      parts.push('DPČ/DPP: treated as supplemental income; 30% haircut applied.')
       if (contractType === 'indefinite') parts.push('Indefinite contract — preferred by all 19 covered banks.')
@@ -122,7 +127,8 @@ function buildFactors(f, simNetIncome) {
     status: (() => {
       if (redFlags.includes('probation') || redFlags.includes('notice_period') || redFlags.includes('sick_leave') || redFlags.includes('employer_distressed')) return 'risk'
       if (flags.includes('probation_csob_exception')) return 'review'
-      if (contractType === 'definite' || contractType === 'agency' || contractType === 'dpc') return 'review'
+      if (contractType === 'agency' || contractType === 'dpc') return 'review'
+      if (contractType === 'definite') return flags.includes('fixed_term_expiring_soon') ? 'review' : 'strong'
       if (contractType === 'indefinite') return 'strong'
       return 'review'
     })(),
@@ -220,12 +226,12 @@ function buildFactors(f, simNetIncome) {
       desc: !residenceStatus ? 'Not specified'
         : residenceStatus === 'eu' || residenceStatus === 'permanent'
           ? 'Full access — all 19 covered Czech banks eligible with no extra conditions.'
-          : residenceStatus === 'longterm5plus' || residenceStatus === 'longterm'
+          : residenceStatus === 'longterm5plus' || residenceStatus === 'longterm' || residenceStatus === 'employment'
           ? 'Limited access — ~60% of banks eligible; specialist pre-filtering required.'
           : 'Restricted — very few lenders consider this visa category.',
       status: !residenceStatus ? 'review'
         : (residenceStatus === 'eu' || residenceStatus === 'permanent') ? 'strong'
-        : (residenceStatus === 'longterm5plus' || residenceStatus === 'longterm') ? 'good'
+        : (residenceStatus === 'longterm5plus' || residenceStatus === 'longterm' || residenceStatus === 'employment') ? 'good'
         : 'risk',
     },
     {

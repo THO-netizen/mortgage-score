@@ -13,7 +13,7 @@ import Step7Results         from './components/steps/Step7Results.jsx'
 // ─── Initial form state ───────────────────────────────
 const INITIAL_FORM = {
   // Step 1 — entity type + shared
-  entityType:        '',
+  entityType:        'zamestnanec',
   ico:               '',
   businessName:      '',
   legalFormLabel:    '',
@@ -35,20 +35,20 @@ const INITIAL_FORM = {
   isEmployerDistressed:  false,
 
   // Step 1 — employee income fields
-  employmentStartDate:   '',     // YYYY-MM
-  netMonthlySalary:      null,   // CZK/mo — replaces netIncome for employees
-  verificationMethod:    '',     // 'payslips' | 'bank_statement' | 'employer_letter'
+  netMonthlySalary:      null,   // CZK/mo — clean base salary after taxes
   hasMonthlyDiety:       false,
   monthlyDiety:          null,
   hasFxIncome:           false,
   foreignSalaryAmount:   null,
   foreignSalaryCurrency: 'EUR',
-  hasOwnership:          false,
-  employerOwnershipPct:  null,
+  hasBonus:              false,
+  bonusAmount:           null,
+  bonusFrequency:        'yearly',  // 'yearly' | 'monthly'
 
   // Kept for backward compat with Step 7 (synced via handleEmployeeChange)
   netIncome:         0,
   contractType:      '',        // 'indefinite' | 'definite' | 'agency' | 'dpc'
+  contractEndDate:   '',        // YYYY-MM — only relevant for 'definite'
   probationPeriod:   '',        // 'yes' | 'no'  (synced from isProbation)
   employmentSector:  '',        // 'health' | 'education' | 'other'
 
@@ -262,16 +262,16 @@ export default function App() {
                         isOnSickLeave:         formData.isOnSickLeave,
                         isEmployerDistressed:  formData.isEmployerDistressed,
                         contractType:          formData.contractType,
-                        employmentStartDate:   formData.employmentStartDate,
+                        contractEndDate:       formData.contractEndDate,
                         netMonthlySalary:      formData.netMonthlySalary,
-                        verificationMethod:    formData.verificationMethod,
                         hasMonthlyDiety:       formData.hasMonthlyDiety,
                         monthlyDiety:          formData.monthlyDiety,
                         hasFxIncome:           formData.hasFxIncome,
                         foreignSalaryAmount:   formData.foreignSalaryAmount,
                         foreignSalaryCurrency: formData.foreignSalaryCurrency,
-                        hasOwnership:          formData.hasOwnership,
-                        employerOwnershipPct:  formData.employerOwnershipPct,
+                        hasBonus:              formData.hasBonus,
+                        bonusAmount:           formData.bonusAmount,
+                        bonusFrequency:        formData.bonusFrequency,
                         employmentSector:      formData.employmentSector,
                       }}
                       onEmployeeChange={handleEmployeeChange}

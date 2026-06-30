@@ -8,13 +8,17 @@
 export const CNB_DSTI_MAX    = 0.45    // Hard ČNB ceiling
 export const LIVING_MIN_CZK  = 4_860   // Životní minimum, single adult (CZK/mo)
 
+// Age-based eligibility thresholds (2026 standards)
+export const FIRST_HOME_LTV_AGE_THRESHOLD = 36   // Strictly under this age → 90% LTV eligible
+export const PAYOFF_AGE_MAX               = 75   // Absolute generous cap (KB); drives E[X] maturity
+
 // Bank payoff age caps (Rozhodující osoba)
 export const PAYOFF_AGES = {
   ucb:   70,   // UniCredit Bank — restrictive; 65 if applicant ≥60
   mbank: 70,   // mBank — same
   cs:    72,   // Česká spořitelna
   csob:  72,   // ČSOB
-  kb:    75,   // Komerční banka — most generous
+  kb:    75,   // Komerční banka — most generous (= PAYOFF_AGE_MAX)
 }
 
 // Turnover-to-income coefficient for tax_return pathway (§7.6.1 conservative default)
@@ -84,8 +88,8 @@ export function monthlyPayment(principal, annualRatePct, years) {
  *   - Holiday: treated as 80% (limited lender set)
  */
 export function getMaxLTV(propertyPurpose, applicantAge) {
-  if (propertyPurpose === 'investment') return 70
-  if (applicantAge < 36)               return 90
+  if (propertyPurpose === 'investment')                       return 70
+  if (applicantAge < FIRST_HOME_LTV_AGE_THRESHOLD)           return 90
   return 80
 }
 
@@ -107,9 +111,8 @@ export function getMaxDTI(propertyPurpose) {
  * mBank extended exception: 40 years (480 months) ONLY IF:
  *   LTV ≤80% AND DSTI ≤45% AND DTI ≤8.5
  *
- * Age constraint (conservative, UCB/mBank base):
- *   Payoff by age 70. If applicant ≥60 → UCB/mBank cap to payoff age 65.
- * KB is most generous at 75 (returned separately for display).
+ * Age constraint: payoff by PAYOFF_AGE_MAX (75, KB standard — most generous).
+ * Conservative reference (UCB/mBank): payoff by 70, or 65 if applicant ≥60.
  */
 export function calcMaxMaturity(applicantAge, ltvPct, dstiPct, dtiRatio) {
   const standardMax = 360   // 30 years
@@ -118,14 +121,16 @@ export function calcMaxMaturity(applicantAge, ltvPct, dstiPct, dtiRatio) {
   const canExtend = ltvPct <= 80 && dstiPct <= 45 && dtiRatio <= 8.5
   const policyMax = canExtend ? extendedMax : standardMax
 
-  // UCB/mBank most restrictive payoff age
+  // Generous cap (KB / PAYOFF_AGE_MAX = 75) — drives E[X] and displayed max term
+  const payoffAgeGenerous     = PAYOFF_AGE_MAX                               // 75
+  // Conservative reference (UCB / mBank) — returned for per-bank context only
   const payoffAgeConservative = applicantAge >= 60 ? 65 : 70
-  const payoffAgeGenerous     = PAYOFF_AGES.kb      // 75
 
-  const monthsConservative = Math.max(0, (payoffAgeConservative - applicantAge) * 12)
   const monthsGenerous     = Math.max(0, (payoffAgeGenerous     - applicantAge) * 12)
+  const monthsConservative = Math.max(0, (payoffAgeConservative - applicantAge) * 12)
 
-  const maxMonths = Math.min(policyMax, monthsConservative)
+  // maxMonths uses the generous (75) cap as the absolute ceiling
+  const maxMonths = Math.min(policyMax, monthsGenerous)
 
   return {
     maxMonths,
@@ -154,6 +159,7 @@ export function computeEffectiveIncome(formData) {
     netIncome               = 0,
     netMonthlySalary        = null,
     contractType            = '',
+    contractEndDate         = '',
     probationPeriod         = '',
     isProbation             = false,
     isNoticePeriod          = false,
@@ -165,8 +171,9 @@ export function computeEffectiveIncome(formData) {
     hasFxIncome             = false,
     foreignSalaryAmount     = null,
     foreignSalaryCurrency   = 'EUR',
-    hasOwnership            = false,
-    employerOwnershipPct    = null,
+    hasBonus                = false,
+    bonusAmount             = null,
+    bonusFrequency          = 'yearly',
     businessAgeMonths        = null,
     taxRegime                = '',
     annualTurnover           = null,
@@ -214,34 +221,49 @@ export function computeEffectiveIncome(formData) {
     }
 
     // Contract type haircuts
-    if      (contractType === 'definite') { haircut = 0.80; flags.push('fixed_term_20pct_haircut') }
-    else if (contractType === 'agency')   { haircut = 0.75; flags.push('agency_contract_haircut')  }
-    else if (contractType === 'dpc')      { haircut = 0.70; flags.push('dpc_contract_haircut')     }
+    if (contractType === 'definite') {
+      // Treated identically to indefinite — no haircut. Check if expiring soon.
+      if (contractEndDate) {
+        const now = new Date()
+        const twoMo = new Date(now.getFullYear(), now.getMonth() + 2, 1)
+        if (contractEndDate <= twoMo.toISOString().slice(0, 7)) {
+          flags.push('fixed_term_expiring_soon')
+        }
+      }
+    } else if (contractType === 'agency') {
+      haircut = 0.75; flags.push('agency_contract_haircut')
+    } else if (contractType === 'dpc') {
+      haircut = 0.70; flags.push('dpc_contract_haircut')
+    }
 
     // FX income → CZK (85% of spot rate per ČS methodology)
     const fxRate  = FX_RATES_CZK[foreignSalaryCurrency] ?? FX_RATES_CZK.EUR
     const fxCZK   = hasFxIncome ? Number(foreignSalaryAmount || 0) * fxRate * 0.85 : 0
     const diet    = hasMonthlyDiety ? Number(monthlyDiety || 0) * 0.5 : 0
-    const ownPct  = hasOwnership ? Number(employerOwnershipPct || 0) : 0
 
-    // Per-bank effective incomes (before haircut)
-    const csBase    = salary + diet + fxCZK
-    const csobBase  = ownPct > 25 ? salary * 0.85 : salary
-    const mbankBase = salary + diet  // mBank: domestic diet only, no FX
-    const ucbBase   = ownPct > 33 ? 0 : salary  // UCB: hard cap at 33%
+    // Bonus: 50% recognition — standard conservative cross-bank haircut for variable income
+    const bonusMonthly = hasBonus
+      ? (bonusFrequency === 'yearly' ? Number(bonusAmount || 0) / 12 : Number(bonusAmount || 0))
+      : 0
+    const bonusRecognised = Math.round(bonusMonthly * 0.50)
+
+    // Per-bank effective incomes (before contract haircut)
+    const csBase    = salary + diet + fxCZK + bonusRecognised
+    const mbankBase = salary + diet + bonusRecognised  // mBank: no FX
+    const baseBonus = salary + bonusRecognised
 
     // ČSOB blocked in probation (unless exception)
     const csobEligible = !inProbation || flags.includes('probation_csob_exception')
 
     const perBankIncome = {
       cs:    Math.round(csBase    * haircut),
-      csob:  csobEligible ? Math.round(csobBase  * haircut) : 0,
+      csob:  csobEligible ? Math.round(baseBonus * haircut) : 0,
       mbank: Math.round(mbankBase * haircut),
-      ucb:   Math.round(ucbBase   * haircut),
+      ucb:   Math.round(baseBonus * haircut),
     }
 
-    if (fxCZK > 0) flags.push('fx_income_included')
-    if (ownPct > 25) flags.push(ownPct > 33 ? 'ucb_ownership_hard_cap' : 'csob_ownership_haircut')
+    if (fxCZK > 0)       flags.push('fx_income_included')
+    if (bonusMonthly > 0) flags.push('bonus_income_included')
 
     // Cross-bank E[X]: mean of eligible (non-zero) bank incomes
     const eligibleIncomes = Object.values(perBankIncome).filter(v => v > 0)
@@ -430,7 +452,7 @@ export function computeVarianceCoeff(formData) {
     if (inProbation) return 0.20
 
     let v
-    if      (contractType === 'definite') v = VAR_COEFF.fixed_term                    // 0.12
+    if      (contractType === 'definite') v = VAR_COEFF.standard_employee              // same as indefinite
     else if (contractType === 'agency')   v = VAR_COEFF.fixed_term * 1.10             // 0.132
     else if (contractType === 'dpc')      v = VAR_COEFF.fixed_term * 1.20             // 0.144
     else {
@@ -579,7 +601,7 @@ export function computeMortgageProfile(formData) {
   } else if (
     tentativeDSTI > 35 ||
     flags.includes('under_24mo_15pct_haircut') ||
-    flags.includes('fixed_term_20pct_haircut') ||
+    flags.includes('fixed_term_expiring_soon') ||
     flags.includes('transition_path_required') ||
     flags.includes('sro_medium_risk_50pct_cap') ||
     flags.includes('sro_full_audit_required') ||
@@ -629,7 +651,7 @@ export function computeScore(formData) {
   let s = 0
 
   // Residence (20 pts)
-  s += { eu: 20, permanent: 20, longterm5plus: 14, longterm: 9, employment: 4, other: 2 }[residenceStatus] ?? 6
+  s += { eu: 20, permanent: 20, longterm5plus: 14, longterm: 9, employment: 9, other: 2 }[residenceStatus] ?? 6
 
   // Czech tenure (10 pts)
   s += { '10plus': 10, '5-10': 8, '2-5': 6, '1-2': 4, 'less1': 2 }[yearsInCZ] ?? 5
@@ -663,7 +685,7 @@ export function computeScore(formData) {
 
   if (bankAnalysisResults?.hasRedFlags)              s = Math.max(0, s - 15)
   if (p.redFlags.includes('probation'))              s = Math.max(0, s - 18)
-  if (p.flags.includes('fixed_term_20pct_haircut'))  s = Math.max(0, s - 5)
+  if (p.flags.includes('fixed_term_expiring_soon'))  s = Math.max(0, s - 3)
   if (p.ltvBreached)                                 s = Math.max(0, s - 20)
   if (p.dtiBreached)                                 s = Math.max(0, s - 18)
 

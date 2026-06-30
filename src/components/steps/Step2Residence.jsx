@@ -29,9 +29,9 @@ const RESIDENCE_OPTIONS = [
   },
   {
     value:   'employment',
-    label:   'Employment or Business Permit',
-    desc:    'Work or business visa only — not a residence title (pobyt)',
-    risk:    'high',
+    label:   'Long-term Residence (Work/Business Permit)',
+    desc:    'Work or business visa with long-term stay entitlement (pobyt za účelem zaměstnání / podnikání)',
+    risk:    'med',
   },
   {
     value:   'other',
@@ -193,12 +193,9 @@ export default function Step2Residence({
           </span>
         </div>
         <p className="text-[11px] text-ink-subtle mt-1.5 leading-relaxed">
-          Determines maximum loan maturity. Banks require payoff by age 70–75 (KB most generous).
-          {ageValue < 36 && ageValue >= 18 && (
-            <span className="text-brand-600 font-medium"> Under 36 — eligible for První bydlení 90% LTV framework.</span>
-          )}
+          Determines maximum loan maturity. Banks typically require full repayment by age 70–75. Under 36 — eligible for 90% LTV primary housing options.
           {ageValue >= 60 && (
-            <span className="text-warning-DEFAULT font-medium"> Age 60+ — UCB & mBank reduce maximum payoff age to 65.</span>
+            <span className="text-warning-DEFAULT font-medium"> Age 60+ — UCB &amp; mBank reduce maximum payoff age to 65.</span>
           )}
         </p>
       </div>
@@ -208,7 +205,7 @@ export default function Step2Residence({
         <Info size={16} className="text-brand-600 flex-shrink-0 mt-0.5" />
         <p className="text-xs text-brand-700 leading-relaxed">
           <span className="font-semibold">Why this matters: </span>
-          EU citizens and permanent residents have access to all 19 covered Czech
+          EU citizens and permanent residents have access to all 6 major Czech
           banks with no additional conditions. Non-EU long-term permit holders are
           eligible at approximately 60% of lenders. Employment and student permits
           are declined by the majority of Czech banks — specialist pre-filtering is

@@ -111,20 +111,12 @@ export default function Step6LeadCapture({ data, formData, onChange, onBack, onC
 
         // Employee income — new fields
         contract_type:            formData?.contractType          ?? '',
-        employment_start_yyyymm:  formData?.employmentStartDate   ?? '',
         net_monthly_salary_czk:   formData?.netMonthlySalary      ?? '',
-        verification_method:      formData?.verificationMethod    ?? '',
-        income_lookback_months:   (() => {
-          const d = formData?.employmentStartDate
-          if (!d) return ''
-          const [y, m] = d.split('-').map(Number)
-          const now = new Date()
-          return Math.max(0, Math.min(24, (now.getFullYear() - y) * 12 + (now.getMonth() + 1 - m)))
-        })(),
         monthly_diety_czk:        formData?.monthlyDiety          ?? '',
         foreign_salary_amount:    formData?.foreignSalaryAmount   ?? '',
         foreign_salary_currency:  formData?.foreignSalaryCurrency ?? '',
-        employer_ownership_pct:   formData?.employerOwnershipPct  ?? '',
+        bonus_amount_czk:         formData?.bonusAmount           ?? '',
+        bonus_frequency:          formData?.bonusFrequency        ?? '',
 
         // Legacy fields (kept for backward compat)
         contractType:    formData?.contractType    ?? '',
