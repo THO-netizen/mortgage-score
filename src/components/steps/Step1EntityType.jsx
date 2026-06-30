@@ -1635,12 +1635,10 @@ export default function Step1EntityType({ value, onChange, onIcoResult, numberOf
       {/* ── Number of applicants — applies to all income types ── */}
       <div className="mt-6 pt-6 border-t border-border">
         <p className="section-label mb-3 block">Number of applicants</p>
-        <div className="grid grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 gap-3 max-w-xs">
           {[
-            { n: 1, sub: 'Solo'    },
-            { n: 2, sub: 'Joint'   },
-            { n: 3, sub: '3 people'},
-            { n: 4, sub: '4 people'},
+            { n: 1, sub: 'Solo'  },
+            { n: 2, sub: 'Joint' },
           ].map(({ n, sub }) => {
             const active = numberOfApplicants === n
             return (
@@ -1670,6 +1668,9 @@ export default function Step1EntityType({ value, onChange, onIcoResult, numberOf
             Joint applications combine incomes. Each applicant's documents and identity will be verified individually by the bank. Household living costs are factored into the DSTI calculation per applicant.
           </p>
         )}
+        <p className="text-[11px] text-ink-subtle mt-3 leading-relaxed">
+          <span className="font-semibold text-ink">Note:</span> If you are married, mortgage applications in Czechia generally require both spouses to be included as joint applicants.
+        </p>
       </div>
 
       {/* IČO lookup — slides in below cards when OSVČ or s.r.o. is selected */}
