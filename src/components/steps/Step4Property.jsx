@@ -64,12 +64,15 @@ function LTVBar({ ltv }) {
   )
 }
 
+const FIRST_HOME_AGE_LIMIT = 36  // ČNB — strictly under 36 → up to 90% LTV eligible
+
 export default function Step4Property({ data, onChange, onBack, onContinue }) {
   const {
     purchasePrice    = 5_500_000,
     ownFunds         = 1_200_000,
     propertyPurpose  = '',
     purchaseTimeline = '',
+    applicantAge     = 35,
   } = data
 
   // Local display value for the own-funds text field (allows free typing)
@@ -80,9 +83,13 @@ export default function Step4Property({ data, onChange, onBack, onContinue }) {
   const ltv            = purchasePrice > 0 ? (loanAmount / purchasePrice) * 100 : 0
   const ownFundsPct    = purchasePrice > 0 ? (parsedOwnFunds / purchasePrice) * 100 : 0
 
-  const isInvestment = propertyPurpose === 'investment'
-  const maxLTVPct    = isInvestment ? 70 : 80
-  const amberLTVPct  = isInvestment ? 65 : 70
+  const isInvestment    = propertyPurpose === 'investment'
+  const firstHomeEligible = !isInvestment && Number(applicantAge) < FIRST_HOME_AGE_LIMIT
+
+  // Hard cap: investment → 70%, eligible young buyers → 90%, standard → 80%
+  const maxLTVPct   = isInvestment ? 70 : (firstHomeEligible ? 90 : 80)
+  // Amber starts at 65% (investment) or 70% (all standard cases)
+  const amberLTVPct = isInvestment ? 65 : 70
 
   const ltvColor =
     ltv > maxLTVPct   ? 'text-risk-DEFAULT'    :
@@ -205,12 +212,14 @@ export default function Step4Property({ data, onChange, onBack, onContinue }) {
             <p className="text-xs font-semibold text-risk-text mb-0.5">
               {isInvestment
                 ? 'LTV Exceeds Investment Property Cap (70%)'
-                : 'LTV Exceeds ČNB Standard Limit (80%)'}
+                : `LTV Exceeds ČNB Limit (${maxLTVPct}%)`}
             </p>
             <p className="text-xs text-risk-text leading-relaxed">
               {isInvestment
                 ? <>Czech banks cap investment / rental property LTV at <strong>70%</strong>. You need at least <strong>{formatCZK(minOwnFundsNeeded)}</strong> more in confirmed own funds (Vlastní zdroje) to meet this limit.</>
-                : <>The Czech National Bank (ČNB) caps mortgage LTV at <strong>80%</strong>. You need at least <strong>{formatCZK(minOwnFundsNeeded)}</strong> more in confirmed own funds (Vlastní zdroje) before any Czech bank can consider this application.</>
+                : firstHomeEligible
+                  ? <>The maximum LTV under the První bydlení framework (applicants under 36) is <strong>90%</strong>. You need at least <strong>{formatCZK(minOwnFundsNeeded)}</strong> more in confirmed own funds to reach this threshold.</>
+                  : <>The Czech National Bank (ČNB) caps mortgage LTV at <strong>80%</strong> for standard applicants. You need at least <strong>{formatCZK(minOwnFundsNeeded)}</strong> more in confirmed own funds (Vlastní zdroje) to qualify.</>
               }
             </p>
           </div>
@@ -222,8 +231,10 @@ export default function Step4Property({ data, onChange, onBack, onContinue }) {
           <AlertTriangle size={15} className="text-warning-DEFAULT flex-shrink-0 mt-0.5" />
           <p className="text-xs text-warning-text leading-relaxed">
             {isInvestment
-              ? <><strong>{ltv.toFixed(0)}% LTV</strong> is approaching the 70% investment property cap. Increasing own funds will provide headroom and may improve available rate options.</>
-              : <><strong>70–80% LTV</strong> is accepted by most banks but limits your rate options. Some lenders apply a risk premium above 75% LTV — bringing this below 70% typically unlocks the best fixed rates.</>
+              ? <><strong>{ltv.toFixed(0)}% LTV</strong> is approaching the 70% investment property cap. Increasing own funds provides headroom and may improve available rate options.</>
+              : firstHomeEligible && ltv > 80
+                ? <><strong>{ltv.toFixed(0)}% LTV</strong> — as an applicant under 36, you may be eligible for up to 90% LTV under the První bydlení framework. Approval depends on individual lender assessment and income qualification.</>
+                : <><strong>70–80% LTV</strong> is accepted by most banks but limits your rate options. Some lenders apply a risk premium above 75% LTV — bringing this below 70% typically unlocks the best fixed rates.</>
             }
           </p>
         </div>
@@ -236,7 +247,10 @@ export default function Step4Property({ data, onChange, onBack, onContinue }) {
             <strong>Strong LTV position.</strong>{' '}
             {isInvestment
               ? 'Below 65% LTV on an investment property signals low collateral risk and gives you the strongest negotiating position for rate and terms.'
-              : 'Below 70% LTV unlocks competitive fixed rates across covered Czech banks and signals low collateral risk to underwriters.'}
+              : firstHomeEligible
+                ? 'Below 70% LTV is well within limits for all Czech banks. As an applicant under 36, you also retain the option to apply up to 90% LTV under the První bydlení framework if needed.'
+                : 'Below 70% LTV unlocks competitive fixed rates across covered Czech banks and signals low collateral risk to underwriters.'
+            }
           </p>
         </div>
       )}

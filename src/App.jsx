@@ -322,6 +322,7 @@ export default function App() {
                         ownFunds:         formData.ownFunds,
                         propertyPurpose:  formData.propertyPurpose,
                         purchaseTimeline: formData.purchaseTimeline,
+                        applicantAge:     formData.applicantAge,
                       }}
                       onChange={setField}
                       onBack={goBack}
