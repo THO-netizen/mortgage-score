@@ -112,13 +112,13 @@ function LandingPlaceholder({ onStart }) {
         <h1 className="font-display text-4xl sm:text-5xl font-black text-white leading-tight tracking-tight mb-10">
           Check Your Czech Mortgage
           <br />
-          <span className="text-brand-400">Eligibility in 3 Minutes</span>
+          <span className="text-brand-400">Eligibility</span>
         </h1>
         <button onClick={onStart} className="btn-cta mx-auto text-base px-10" type="button">
           Start Free Check
         </button>
         <p className="mt-4 text-xs text-slate-500">
-          No impact on credit score · Takes ~4 minutes
+          No impact on credit score
         </p>
       </div>
     </main>
