@@ -40,9 +40,9 @@ const STATUS_CFG = {
 }
 
 const RISK_MATRIX_CFG = {
-  zelena:   { label: 'Green Light',  labelEn: 'Zelená',   color: '#10B981', bg: 'bg-success-light',  border: 'border-success-border',  text: 'text-success-text'  },
-  oranzova: { label: 'Amber Review', labelEn: 'Oranžová', color: '#F59E0B', bg: 'bg-warning-light',  border: 'border-warning-border',  text: 'text-warning-text'  },
-  cervena:  { label: 'Red Flag',     labelEn: 'Červená',  color: '#EF4444', bg: 'bg-risk-light',     border: 'border-risk-border',     text: 'text-risk-text'     },
+  zelena:   { label: 'Strong Profile',        color: '#10B981', bg: 'bg-success-light',  border: 'border-success-border',  text: 'text-success-text'  },
+  oranzova: { label: 'Review Suggested',      color: '#F59E0B', bg: 'bg-warning-light',  border: 'border-warning-border',  text: 'text-warning-text'  },
+  cervena:  { label: 'Significant Constraint',color: '#EF4444', bg: 'bg-risk-light',     border: 'border-risk-border',     text: 'text-risk-text'     },
 }
 
 // ── scoreCfg ──────────────────────────────────────────
@@ -396,15 +396,15 @@ function RiskMatrix({ formData, simNetIncome }) {
           <div className="flex items-center gap-3">
             <div className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: cfg.color }} />
             <div>
-              <p className="text-[10px] font-bold tracking-widest uppercase text-ink-subtle mb-0.5">Risk Matrix</p>
+              <p className="text-[10px] font-bold tracking-widest uppercase text-ink-subtle mb-0.5">Loan Assessment</p>
               <p className={`font-display text-xl font-black ${cfg.text}`}>
-                {cfg.label} <span className="text-sm font-semibold opacity-70">— {cfg.labelEn}</span>
+                {cfg.label}
               </p>
             </div>
           </div>
           {incomeForCalc > 0 && (
             <div className="text-right">
-              <p className="text-[10px] text-ink-subtle mb-0.5">E[X] Expected Loan</p>
+              <p className="text-[10px] text-ink-subtle mb-0.5">Expected Loan</p>
               <p className={`font-display text-2xl font-black tabular-nums ${cfg.text}`}>
                 {eX > 0 ? formatCZKShort(eX) : '—'}
               </p>
@@ -432,13 +432,10 @@ function RiskMatrix({ formData, simNetIncome }) {
               <span className="font-semibold text-ink">Limiting factor:</span> {bottleneckDesc}
             </p>
           </div>
-          {incomeForCalc > 0 && eX > 0 && (
+          {incomeForCalc > 0 && eX > 0 && eXStress > 0 && (
             <div className="flex items-center gap-4 text-xs flex-shrink-0">
               <span className="text-ink-muted">
-                Stress <span className="font-bold tabular-nums text-warning-text">{formatCZKShort(eXStress)}</span>
-              </span>
-              <span className="text-ink-muted">
-                Var[X] <span className="font-bold tabular-nums">±{formatCZKShort(varX)}</span>
+                Stress test <span className="font-bold tabular-nums text-warning-text">{formatCZKShort(eXStress)}</span>
               </span>
             </div>
           )}
@@ -486,19 +483,15 @@ function ReadinessCard({ factor }) {
       {eX !== undefined && netIncome > 0 && eX > 0 && (
         <div className="mt-3 pt-3 border-t border-border space-y-1.5">
           <div className="flex justify-between text-xs">
-            <span className="text-ink-muted">E[X] @ 4.5% / {maturity?.maxYears ?? 20} yr</span>
+            <span className="text-ink-muted">Expected loan @ 4.5% / {maturity?.maxYears ?? 20} yr</span>
             <span className="font-bold text-ink tabular-nums">{formatCZK(eX)}</span>
           </div>
           <div className="flex justify-between text-xs">
-            <span className="text-ink-muted">Stress E[X] @ 6.5%</span>
+            <span className="text-ink-muted">Stress test @ 6.5%</span>
             <span className="font-semibold text-warning-text tabular-nums">{formatCZK(eXStress)}</span>
           </div>
           <div className="flex justify-between text-xs">
-            <span className="text-ink-muted">Var[X] bank spread</span>
-            <span className="font-semibold text-ink-muted tabular-nums">±{formatCZKShort(varX)}</span>
-          </div>
-          <div className="flex justify-between text-xs">
-            <span className="text-ink-muted">DSTI at E[X]</span>
+            <span className="text-ink-muted">Debt service ratio</span>
             <span className={`font-semibold tabular-nums ${dstiAtEX > 45 ? 'text-risk-DEFAULT' : 'text-ink-muted'}`}>
               {dstiAtEX.toFixed(1)}%
             </span>
@@ -594,7 +587,7 @@ function ScenarioSimulator({ formData, onIncomeChange }) {
         </div>
         <input type="range" min={20_000} max={500_000} step={5_000} value={s.netIncome}
           onChange={(e) => upd('netIncome', Number(e.target.value))} className="slider-field" />
-        <p className="text-[11px] text-ink-subtle mt-1">Updates E[X] and the Bonity factor card above in real time.</p>
+        <p className="text-[11px] text-ink-subtle mt-1">Updates the loan capacity estimate in real time.</p>
       </div>
 
       {/* Results */}
@@ -827,9 +820,8 @@ export default function Step7Results({ formData, onBack, onRestart }) {
                 Your result is based on Czech bank logic.
               </h2>
               <p className="text-sm text-ink-muted mb-4 max-w-md leading-relaxed">
-                This simulation runs your profile through the DTI, DSTI, and LTV parameters
-                Czech banks apply in 2026 — calibrated for expat and self-employed applicants.
-                Expand the sections below to understand each dimension.
+                This simulation runs your profile through the same parameters Czech banks apply
+                in 2026. Expand the sections below to understand each dimension of your assessment.
               </p>
               <span className={`badge ${cfg.badge} text-xs`}>{cfg.label}</span>
             </div>
@@ -943,10 +935,9 @@ export default function Step7Results({ formData, onBack, onRestart }) {
           <Info size={12} className="text-ink-subtle flex-shrink-0 mt-0.5" />
           <p className="text-[11px] text-ink-subtle leading-relaxed">
             This assessment is indicative only and reflects 2026 Czech bank underwriting
-            guidelines (ČS, ČSOB, KB, mBank, UniCredit). Final mortgage approval always
+            guidelines. Final mortgage approval always
             depends on individual bank assessment, document verification, and credit committee
-            decisions. Variance (Var[X]) reflects cross-bank methodology divergence, not
-            investment risk. This tool does not constitute financial advice.
+            decisions. This tool does not constitute financial advice.
           </p>
         </div>
 
