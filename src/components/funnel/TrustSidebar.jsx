@@ -1,4 +1,4 @@
-import { Shield, BookOpen, Lightbulb } from 'lucide-react'
+import { BookOpen, Lightbulb } from 'lucide-react'
 
 
 export default function TrustSidebar() {
@@ -56,22 +56,15 @@ export default function TrustSidebar() {
       <div className="card-surface p-6">
         <div className="flex items-center gap-2 mb-3">
           <BookOpen size={13} className="text-ink-subtle" />
-          <p className="section-label">Scoring methodology</p>
+          <p className="section-label">Assessment Methodology</p>
         </div>
         <p className="text-xs text-ink-muted leading-relaxed">
-          Calibrated against Czech National Bank (CNB) regulations and live
-          underwriting criteria from 19 active Czech mortgage lenders.
-          Updated quarterly by specialist mortgage brokers.
+          Built around standard Czech mortgage evaluation factors, including income
+          stability, debt-to-income (DTI), debt service ratios (DSTI), and
+          loan-to-value (LTV) considerations. Designed to help expats and
+          self-employed applicants better understand mortgage readiness before
+          approaching a lender.
         </p>
-        <div className="mt-4 pt-4 border-t border-border">
-          <div className="flex items-center gap-2">
-            <Shield size={12} className="text-brand-500 flex-shrink-0" />
-            <p className="text-[11px] text-ink-subtle italic">
-              Not a sales tool. Built by Czech mortgage specialists
-              for international clients.
-            </p>
-          </div>
-        </div>
       </div>
 
     </aside>
