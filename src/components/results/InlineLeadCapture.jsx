@@ -1,8 +1,7 @@
 import { useState } from 'react'
 import { Mail, Phone, User, ChevronDown, Download } from 'lucide-react'
 
-const EMAIL_RE      = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-const FORMSPREE_URL = 'https://formspree.io/f/maqgjlbn'
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
 const GF_URL    = 'https://docs.google.com/forms/d/e/1FAIpQLSddO9mI3_GJL4W4TzS2atu4vbKAIiI2TUEVRN__GaQJeqeogA/formResponse'
 const GF_FIELDS = {
@@ -67,35 +66,6 @@ export default function InlineLeadCapture({ formData }) {
         [GF_FIELDS.email]:   email,
         [GF_FIELDS.phone]:   phone,
       }).toString(),
-    }).catch(() => {})
-
-    fetch(FORMSPREE_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        name, email, phone,
-        number_of_applicants: formData?.numberOfApplicants ?? 1,
-        entityType:           formData?.entityType         ?? '',
-        contract_type:        formData?.contractType       ?? '',
-        net_monthly_salary_czk: formData?.netMonthlySalary ?? '',
-        bonus_amount_czk:     formData?.bonusAmount        ?? '',
-        bonus_frequency:      formData?.bonusFrequency     ?? '',
-        residenceStatus:      formData?.residenceStatus    ?? '',
-        yearsInCZ:            formData?.yearsInCZ          ?? '',
-        monthlyLoanPayments:  formData?.monthlyLoanPayments ?? 0,
-        creditCardLimits:     formData?.creditCardLimits   ?? 0,
-        monthlyLeasing:       formData?.monthlyLeasing     ?? 0,
-        otherObligations:     formData?.otherObligations   ?? 0,
-        purchasePrice:        formData?.purchasePrice      ?? 0,
-        ownFunds:             formData?.ownFunds           ?? 0,
-        propertyPurpose:      formData?.propertyPurpose    ?? '',
-        purchaseTimeline:     formData?.purchaseTimeline   ?? '',
-        tax_regime:           formData?.taxRegime          ?? '',
-        annual_turnover_czk:  formData?.annualTurnover     ?? '',
-        company_income_streams: formData?.companyIncomeStream ?? '',
-        company_ownership_pct:  formData?.companyOwnershipPct ?? '',
-        _subject: `Assessment export — ${name} (${email})`,
-      }),
     }).catch(() => {})
 
     setTimeout(() => {

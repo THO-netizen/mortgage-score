@@ -746,8 +746,7 @@ function SummaryCard({ profile, formData }) {
 
 // ── Soft Lock Gate ────────────────────────────────────
 
-const FORMSPREE_ENDPOINT = 'https://formspree.io/f/maqgjlbn'
-const GFORM_ENDPOINT     = 'https://docs.google.com/forms/d/e/1FAIpQLSddO9mI3_GJL4W4TzS2atu4vbKAIiI2TUEVRN__GaQJeqeogA/formResponse'
+const GFORM_ENDPOINT = 'https://docs.google.com/forms/d/e/1FAIpQLSddO9mI3_GJL4W4TzS2atu4vbKAIiI2TUEVRN__GaQJeqeogA/formResponse'
 
 const GATE_SECTIONS = [
   { title: 'Score breakdown',         sub: '10 eligibility factors evaluated' },
@@ -757,9 +756,8 @@ const GATE_SECTIONS = [
 ]
 
 function SoftLockGate({ onUnlock, formData }) {
-  const [form, setForm]           = useState({ name: '', email: '', phone: '' })
+  const [form, setForm]             = useState({ name: '', email: '', phone: '' })
   const [submitting, setSubmitting] = useState(false)
-  const [error, setError]           = useState('')
 
   const set = (k) => (e) => setForm((p) => ({ ...p, [k]: e.target.value }))
 
@@ -767,25 +765,9 @@ function SoftLockGate({ onUnlock, formData }) {
     e.preventDefault()
     if (!form.name.trim() || !form.email.trim()) return
     setSubmitting(true)
-    setError('')
 
-    // Formspree — fire and forget
-    fetch(FORMSPREE_ENDPOINT, {
-      method:  'POST',
-      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-      body: JSON.stringify({
-        name:            form.name,
-        email:           form.email,
-        phone:           form.phone || '',
-        source:          'soft_lock_gate',
-        entityType:      formData.entityType,
-        residenceStatus: formData.residenceStatus,
-        purchasePrice:   formData.purchasePrice,
-      }),
-    }).catch(() => {})
-
-    // Google Forms — fire and forget
-    const gf = new URLSearchParams()
+    // Google Forms — fire and forget (no-cors; opaque response is expected)
+    const gf    = new URLSearchParams()
     const parts = form.name.trim().split(' ')
     gf.append('entry.1796948790', parts[0])
     gf.append('entry.1494908840', parts.slice(1).join(' ') || parts[0])
@@ -883,8 +865,6 @@ function SoftLockGate({ onUnlock, formData }) {
               className="input-field"
             />
           </div>
-
-          {error && <p className="text-xs text-risk-DEFAULT">{error}</p>}
 
           <button
             type="submit"

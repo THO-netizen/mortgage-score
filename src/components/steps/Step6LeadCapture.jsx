@@ -3,8 +3,7 @@ import { Mail, Phone, User, ChevronRight, FileText } from 'lucide-react'
 import FunnelCard from '../funnel/FunnelCard.jsx'
 import ActionBar  from '../funnel/ActionBar.jsx'
 
-const EMAIL_RE      = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-const FORMSPREE_URL = 'https://formspree.io/f/maqgjlbn'
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
 // Google Forms — extracted entry IDs from FB_PUBLIC_LOAD_DATA_
 // Form: "Mortgage Score Leads"
@@ -89,76 +88,7 @@ export default function Step6LeadCapture({ data, formData, onChange, onBack, onC
       body:    gfBody.toString(),
     }).catch(() => {})
 
-    // ── Formspree (full wizard payload — runs in parallel) ──
-    fetch(FORMSPREE_URL, {
-      method:  'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body:    JSON.stringify({
-        name:  leadName,
-        email,
-        phone: leadPhone,
-
-        number_of_applicants: formData?.numberOfApplicants ?? 1,
-        entityType:           formData?.entityType        ?? '',
-        ico:               formData?.ico               ?? '',
-        businessName:      formData?.businessName      ?? '',
-        legalFormLabel:    formData?.legalFormLabel    ?? '',
-        businessAgeMonths: formData?.businessAgeMonths ?? null,
-        datumVzniku:       formData?.datumVzniku       ?? '',
-
-        tax_regime:                      formData?.taxRegime                    ?? 'N/A',
-        annual_turnover_czk:             formData?.annualTurnover               ?? '',
-        avg_monthly_credit_turnover_czk: formData?.avgMonthlyCreditTurnover    ?? '',
-
-        // Employee income — new fields
-        contract_type:            formData?.contractType          ?? '',
-        net_monthly_salary_czk:   formData?.netMonthlySalary      ?? '',
-        monthly_diety_czk:        formData?.monthlyDiety          ?? '',
-        foreign_salary_amount:    formData?.foreignSalaryAmount   ?? '',
-        foreign_salary_currency:  formData?.foreignSalaryCurrency ?? '',
-        bonus_amount_czk:         formData?.bonusAmount           ?? '',
-        bonus_frequency:          formData?.bonusFrequency        ?? '',
-
-        // Legacy fields (kept for backward compat)
-        contractType:    formData?.contractType    ?? '',
-        probationPeriod: formData?.probationPeriod ?? '',
-        netIncome:       formData?.netIncome       ?? 0,
-
-        residenceStatus: formData?.residenceStatus ?? '',
-        yearsInCZ:       formData?.yearsInCZ       ?? '',
-
-        monthlyLoanPayments: formData?.monthlyLoanPayments ?? 0,
-        creditCardLimits:    formData?.creditCardLimits    ?? 0,
-        monthlyLeasing:      formData?.monthlyLeasing      ?? 0,
-        otherObligations:    formData?.otherObligations    ?? 0,
-
-        purchasePrice:    formData?.purchasePrice    ?? 0,
-        ownFunds:         formData?.ownFunds         ?? 0,
-        propertyPurpose:  formData?.propertyPurpose  ?? '',
-        purchaseTimeline: formData?.purchaseTimeline ?? '',
-
-        bankAnalysisStatus: formData?.bankAnalysisStatus ?? '',
-
-        // s.r.o. ESSO v2 corporate income fields
-        company_income_streams:           formData?.companyIncomeStream          ?? '',
-        company_ownership_pct:            formData?.companyOwnershipPct          ?? '',
-        family_ownership_aggregate_pct:   formData?.familyOwnershipPctAggregate  ?? '',
-        company_existence_months:         formData?.companyExistenceMonths       ?? '',
-        company_after_tax_result_czk:     formData?.companyAfterTaxResult        ?? '',
-        company_equity_czk:               formData?.companyEquity                ?? '',
-        dividends_paid_3yr_czk:           formData?.dividendsPaidLast3Years      ?? '',
-        annual_gross_revenues_czk:        formData?.annualGrossRevenues          ?? '',
-        expense_lump_sum_pct:             formData?.expenseLumpSumPct            ?? '',
-        director_contract_exists:         formData?.directorContractExists       ?? false,
-        sro_director_salary_czk:          formData?.sroDirectorSalary            ?? '',
-        sro_director_fees_czk:            formData?.sroDirectorFees              ?? '',
-
-        _subject: `Mortgage prescoring — ${leadName} (${email})`,
-      }),
-    }).catch(() => {})
-
-    // Advance immediately — both fetches run in background
-    // no-cors gives no readable response; Formspree captures full data async
+    // Advance immediately — Google Forms runs in background
     setTimeout(() => {
       setSubmitting(false)
       onContinue()
