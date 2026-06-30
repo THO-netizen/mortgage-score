@@ -8,7 +8,8 @@ import Step3Liabilities     from './components/steps/Step3Liabilities.jsx'
 import Step4Property        from './components/steps/Step4Property.jsx'
 import Step5BankStatement   from './components/steps/Step5BankStatement.jsx'
 import Step6LeadCapture     from './components/steps/Step6LeadCapture.jsx'
-import Step7Results         from './components/steps/Step7Results.jsx'
+import Step7Results           from './components/steps/Step7Results.jsx'
+import TestimonialsCarousel  from './components/testimonials/TestimonialsCarousel.jsx'
 
 // ─── Initial form state ───────────────────────────────
 const INITIAL_FORM = {
@@ -231,7 +232,12 @@ export default function App() {
       )}
 
       {/* ── Landing ──────────────────────────────────── */}
-      {isLanding && <LandingPlaceholder onStart={handleStart} />}
+      {isLanding && (
+        <>
+          <LandingPlaceholder onStart={handleStart} />
+          <TestimonialsCarousel />
+        </>
+      )}
 
       {/* ── Funnel steps 1-6 (8+4 col grid) ─────────── */}
       {isFunnel && (
@@ -384,11 +390,14 @@ export default function App() {
 
       {/* ── Results Dashboard (full-width, step 7) ─── */}
       {isResults && (
-        <Step7Results
-          formData={formData}
-          onBack={goBack}
-          onRestart={() => { setFormData(INITIAL_FORM); goToStep(0) }}
-        />
+        <>
+          <Step7Results
+            formData={formData}
+            onBack={goBack}
+            onRestart={() => { setFormData(INITIAL_FORM); goToStep(0) }}
+          />
+          <TestimonialsCarousel />
+        </>
       )}
 
     </div>
