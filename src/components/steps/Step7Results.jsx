@@ -833,6 +833,27 @@ export default function Step7Results({ formData, onBack, onRestart }) {
         {/* ── Optional: email assessment ───────────── */}
         <InlineLeadCapture formData={formData} />
 
+        {/* ── Consultation CTA ─────────────────────── */}
+        <div className="rounded-2xl border border-border bg-surface px-6 py-5 mt-6 flex flex-col sm:flex-row sm:items-center gap-4">
+          <div className="flex-1">
+            <p className="text-[13px] font-semibold text-ink mb-0.5">
+              Discuss this assessment
+            </p>
+            <p className="text-[11px] text-ink-subtle leading-relaxed">
+              Review your financial profile with a professional to understand
+              the simulation model outcomes.
+            </p>
+          </div>
+          <a
+            href="https://calendly.com/andy-le/15min"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex-shrink-0 inline-flex items-center justify-center gap-2 rounded-xl border border-border-strong bg-card text-ink text-[13px] font-semibold px-5 py-2.5 hover:border-brand-400 hover:text-brand-700 hover:bg-brand-50 transition-all duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-600/30"
+          >
+            Review findings
+          </a>
+        </div>
+
         {/* ── Regulatory footer ────────────────────── */}
         <div className="flex items-start gap-2 pt-2 pb-4 mt-4">
           <Info size={12} className="text-ink-subtle flex-shrink-0 mt-0.5" />
