@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import {
-  Briefcase, Building2, UserCheck,
+  Briefcase, Building2, UserCheck, ExternalLink,
   Check, Loader2, CheckCircle, XCircle, ChevronDown, AlertTriangle,
 } from 'lucide-react'
 import FunnelCard from '../funnel/FunnelCard.jsx'
@@ -293,17 +293,15 @@ const ENTITY_OPTIONS = [
     note: 'Simpler document path — one set of financials',
   },
   {
-    value:    'sro',
+    value:    'other',
     Icon:     Building2,
-    title:    'Company Director (s.r.o.)',
-    subtitle: 'Limited company owner · Director · Shareholder',
-    desc:     'You receive income as a director, employee, or dividend recipient of a Czech Limited Company (s.r.o. / spol. s r.o.).',
-    docs: [
-      'Corporate financials (DPPO) — last 2 years',
-      'Director salary slips or dividend history',
-      'UBO beneficial ownership declaration',
-    ],
-    note: 'Both company and personal documents required',
+    title:    'Other / Complex situation',
+    subtitle: 'International residency · Mixed income · Other',
+    desc:     'For complex income structures, international tax residency, or other situations, let\'s discuss your case personally.',
+    docs:     [],
+    note:     'Open a personal consultation',
+    external: true,
+    href:     'https://calendly.com/andy-le/15min',
   },
 ]
 
@@ -1576,14 +1574,35 @@ export default function Step1EntityType({ value, onChange, onIcoResult, numberOf
     >
       {/* Entity selection — 3-column on sm+ */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        {ENTITY_OPTIONS.map((opt) => (
-          <EntityCard
-            key={opt.value}
-            option={opt}
-            selected={value === opt.value}
-            onSelect={() => onChange(opt.value)}
-          />
-        ))}
+        {ENTITY_OPTIONS.map((opt) =>
+          opt.external ? (
+            <a
+              key={opt.value}
+              href={opt.href}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="relative w-full text-left rounded-2xl border-2 border-border bg-card hover:border-border-strong hover:shadow-card-md p-6 transition-all duration-200 flex flex-col"
+            >
+              <div className="w-12 h-12 rounded-xl bg-surface flex items-center justify-center mb-5">
+                <opt.Icon size={22} className="text-ink-muted" />
+              </div>
+              <h3 className="font-display text-xl font-extrabold text-ink leading-tight mb-0.5">{opt.title}</h3>
+              <p className="text-xs text-ink-muted mb-3">{opt.subtitle}</p>
+              <p className="text-sm text-ink-muted leading-relaxed flex-1">{opt.desc}</p>
+              <div className="pt-4 border-t border-border text-xs font-medium text-ink-subtle flex items-center gap-1.5 mt-5">
+                <ExternalLink size={11} />
+                {opt.note}
+              </div>
+            </a>
+          ) : (
+            <EntityCard
+              key={opt.value}
+              option={opt}
+              selected={value === opt.value}
+              onSelect={() => onChange(opt.value)}
+            />
+          )
+        )}
       </div>
 
       {/* ── Number of applicants — applies to all income types ── */}
