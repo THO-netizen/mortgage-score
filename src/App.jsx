@@ -3,6 +3,8 @@ import { analytics }           from './services/analytics.js'
 import Header                  from './components/layout/Header.jsx'
 import TrustSidebar            from './components/funnel/TrustSidebar.jsx'
 import HeroAnalysis            from './components/landing/HeroAnalysis.jsx'
+import HowItWorksSection       from './components/landing/HowItWorksSection.jsx'
+import LandingFooter           from './components/landing/LandingFooter.jsx'
 import Step1EntityType         from './components/steps/Step1EntityType.jsx'
 import Step2Residence          from './components/steps/Step2Residence.jsx'
 import Step3Liabilities        from './components/steps/Step3Liabilities.jsx'
@@ -211,7 +213,9 @@ export default function App() {
       {isLanding && (
         <>
           <HeroAnalysis onStart={handleStart} />
+          <HowItWorksSection onStart={handleStart} />
           <TestimonialsCarousel />
+          <LandingFooter onStart={handleStart} />
         </>
       )}
 
