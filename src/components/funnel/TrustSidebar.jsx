@@ -53,7 +53,7 @@ export default function TrustSidebar() {
         {/* Header */}
         <div className="flex items-center gap-2 mb-5">
           <Lightbulb size={13} className="text-brand-500 flex-shrink-0" />
-          <p className="section-label">Mortgage &amp; Financial Intelligence</p>
+          <p className="section-label">Mortgage &amp; Financial Assessment</p>
         </div>
 
         {/* Avatar + name block */}
@@ -69,26 +69,27 @@ export default function TrustSidebar() {
           <div>
             <p className="font-display text-sm font-extrabold text-ink leading-tight group-hover:text-brand-600 transition-colors duration-150">Andy Le</p>
             <p className="text-[11px] text-ink-muted leading-snug mt-0.5">
-              Mortgage &amp; Financial Intelligence Specialist
+              Mortgage &amp; Property Financing Specialist
             </p>
           </div>
         </a>
 
         {/* Tagline */}
         <p className="text-xs font-semibold text-brand-600 italic mb-4 leading-snug">
-          "Know your mortgage power before the bank does."
+          "Understand your mortgage readiness before speaking to the bank."
         </p>
 
         {/* Bio */}
         <p className="text-xs text-ink-muted leading-relaxed mb-4">
-          At Mortgage Score, we transform complex financial data into clear mortgage
-          insights. We help you evaluate financial health, understand borrowing
-          capacity, and unlock mortgage opportunities with precision.
+          At Mortgage Score, we help expats, freelancers, and business owners
+          understand how Czech lenders evaluate their financial profile. Our goal
+          is to provide clarity on borrowing capacity, risk factors, and mortgage
+          readiness before entering the bank process.
         </p>
 
         {/* Summary line */}
         <p className="text-[11px] text-ink-subtle leading-relaxed pt-4 border-t border-border">
-          Financial clarity, optimized readiness, and data-backed decisions.
+          Financial Clarity, Mortgage Readiness, and Informed Decisions — all in one place.
         </p>
 
       </div>
