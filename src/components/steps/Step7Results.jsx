@@ -763,42 +763,37 @@ function SoftLockGate({ onUnlock, formData }) {
 
   const set = (k) => (e) => setForm((p) => ({ ...p, [k]: e.target.value }))
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault()
     if (!form.name.trim() || !form.email.trim()) return
     setSubmitting(true)
     setError('')
 
-    try {
-      const res = await fetch(FORMSPREE_ENDPOINT, {
-        method:  'POST',
-        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-        body: JSON.stringify({
-          name:            form.name,
-          email:           form.email,
-          phone:           form.phone || '',
-          source:          'soft_lock_gate',
-          entityType:      formData.entityType,
-          residenceStatus: formData.residenceStatus,
-          purchasePrice:   formData.purchasePrice,
-        }),
-      })
-      if (!res.ok) throw new Error('submission_failed')
+    // Formspree — fire and forget
+    fetch(FORMSPREE_ENDPOINT, {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+      body: JSON.stringify({
+        name:            form.name,
+        email:           form.email,
+        phone:           form.phone || '',
+        source:          'soft_lock_gate',
+        entityType:      formData.entityType,
+        residenceStatus: formData.residenceStatus,
+        purchasePrice:   formData.purchasePrice,
+      }),
+    }).catch(() => {})
 
-      // Google Forms — fire and forget
-      const gf = new URLSearchParams()
-      const parts = form.name.trim().split(' ')
-      gf.append('entry.1796948790', parts[0])
-      gf.append('entry.1494908840', parts.slice(1).join(' ') || parts[0])
-      gf.append('entry.80055551',   form.email)
-      gf.append('entry.1807846036', form.phone || '')
-      fetch(GFORM_ENDPOINT, { method: 'POST', mode: 'no-cors', body: gf }).catch(() => {})
+    // Google Forms — fire and forget
+    const gf = new URLSearchParams()
+    const parts = form.name.trim().split(' ')
+    gf.append('entry.1796948790', parts[0])
+    gf.append('entry.1494908840', parts.slice(1).join(' ') || parts[0])
+    gf.append('entry.80055551',   form.email)
+    gf.append('entry.1807846036', form.phone || '')
+    fetch(GFORM_ENDPOINT, { method: 'POST', mode: 'no-cors', body: gf }).catch(() => {})
 
-      onUnlock()
-    } catch {
-      setError('Something went wrong — please try again.')
-      setSubmitting(false)
-    }
+    onUnlock()
   }
 
   const canSubmit = !submitting && form.name.trim() && form.email.trim()
