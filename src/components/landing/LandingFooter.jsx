@@ -9,7 +9,7 @@ export default function LandingFooter({ onStart }) {
       <div className="max-w-3xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
 
         <p className="text-slate-600 text-[11px]">
-          Czech Mortgage Eligibility Analyzer · Simulation model only · Not financial advice
+          Czech Mortgage Eligibility Analyzer
         </p>
 
         <div className="flex items-center gap-5">
