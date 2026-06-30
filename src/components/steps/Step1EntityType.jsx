@@ -408,17 +408,14 @@ function BusinessIncomeSection({ data, onChange }) {
     turnoverIncomePct        = null,
   } = data
 
-  const [turnoverTouched, setTurnoverTouched]   = useState(false)
-  const [creditTouched,   setCreditTouched]     = useState(false)
+  const [turnoverTouched, setTurnoverTouched] = useState(false)
 
   const handleRegimeChange = (newRegime) => {
     onChange('taxRegime', newRegime)
-    if (newRegime === 'tax_return') { onChange('avgMonthlyCreditTurnover', null); setCreditTouched(false) }
-    if (newRegime === 'flat_tax')   { onChange('annualTurnover', null);           setTurnoverTouched(false) }
+    setTurnoverTouched(false)
   }
 
-  const turnoverError = turnoverTouched && taxRegime === 'tax_return' && !(Number(annualTurnover) >= 1)
-  const creditError   = creditTouched   && taxRegime === 'flat_tax'   && !(Number(avgMonthlyCreditTurnover) >= 1)
+  const turnoverError = turnoverTouched && !!taxRegime && !(Number(annualTurnover) >= 1)
 
   // ARES-derived state
   const aresVerified    = !!businessName && !!datumVzniku
@@ -581,6 +578,48 @@ function BusinessIncomeSection({ data, onChange }) {
             </p>
           )}
 
+        </div>
+      )}
+
+      {/* Branch B — Flat tax → Annual Turnover + NACE income estimate */}
+      {taxRegime === 'flat_tax' && (
+        <div className="animate-fade-up">
+          <label htmlFor="annualTurnoverFlat" className="section-label mb-1.5 block">
+            Gross Annual Turnover (Obrat)
+            <span className="text-risk-DEFAULT ml-1">*</span>
+          </label>
+          <p className="text-[10px] font-medium text-ink-muted uppercase tracking-wide mb-2">
+            Enter your gross annual business turnover for the NACE-based income calculation
+          </p>
+          <div className="relative">
+            <input
+              id="annualTurnoverFlat"
+              type="number"
+              inputMode="numeric"
+              min={1}
+              max={999_000_000}
+              step={1}
+              value={annualTurnover ?? ''}
+              onChange={(e) => onChange('annualTurnover', e.target.value === '' ? null : Math.round(Number(e.target.value)))}
+              onBlur={() => setTurnoverTouched(true)}
+              placeholder="e.g. 2 400 000"
+              className={`input-field pr-24 tabular-nums${turnoverError ? ' input-error' : ''}`}
+            />
+            <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs text-ink-subtle pointer-events-none font-medium whitespace-nowrap">
+              CZK / year
+            </span>
+          </div>
+          {turnoverError ? (
+            <p className="text-xs text-risk-text mt-1.5">
+              Required — enter your gross annual business turnover to calculate borrowing capacity.
+            </p>
+          ) : (
+            <p className="text-[11px] text-ink-subtle mt-1.5 leading-relaxed">
+              Enter your total gross annual revenues. The recognised income is calculated automatically
+              using the sector expense ratio (paušální výdaje) derived from your NACE business activity.
+            </p>
+          )}
+
           {/* NACE-derived income estimate */}
           {Number(annualTurnover) >= 1 && turnoverIncomePct !== null && (
             <div className="mt-3 rounded-xl bg-brand-50 border border-brand-100 p-4 animate-fade-up">
@@ -601,48 +640,6 @@ function BusinessIncomeSection({ data, onChange }) {
                 {Number(annualTurnover).toLocaleString('cs-CZ')} × {turnoverIncomePct}% ÷ 12 months
               </p>
             </div>
-          )}
-        </div>
-      )}
-
-      {/* Branch B — Flat tax → Average Monthly Credit Turnover */}
-      {taxRegime === 'flat_tax' && (
-        <div className="animate-fade-up">
-          <label htmlFor="avgMonthlyCreditTurnover" className="section-label mb-1.5 block">
-            Average Monthly Credit Turnover (Kreditní obrat)
-            <span className="text-risk-DEFAULT ml-1">*</span>
-          </label>
-          <p className="text-[10px] font-medium text-ink-muted uppercase tracking-wide mb-2">
-            Average monthly incoming business payments credited to your business account
-          </p>
-          <div className="relative">
-            <input
-              id="avgMonthlyCreditTurnover"
-              type="number"
-              inputMode="numeric"
-              min={1}
-              max={12_500_000}
-              step={1}
-              value={avgMonthlyCreditTurnover ?? ''}
-              onChange={(e) => onChange('avgMonthlyCreditTurnover', e.target.value === '' ? null : Math.round(Number(e.target.value)))}
-              onBlur={() => setCreditTouched(true)}
-              placeholder="e.g. 120 000"
-              className={`input-field pr-28 tabular-nums${creditError ? ' input-error' : ''}`}
-            />
-            <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs text-ink-subtle pointer-events-none font-medium whitespace-nowrap">
-              CZK / month
-            </span>
-          </div>
-          {creditError ? (
-            <p className="text-xs text-risk-text mt-1.5">
-              Required — enter your average monthly credit turnover to calculate borrowing capacity.
-            </p>
-          ) : (
-            <p className="text-[11px] text-ink-subtle mt-1.5 leading-relaxed">
-              Average the last 3–6 months of inbound business payments to your business account
-              (Kreditní obrat). Exclude internal transfers, personal deposits, loan drawdowns,
-              and any one-off non-recurring receipts.
-            </p>
           )}
         </div>
       )}
@@ -1601,7 +1598,7 @@ export default function Step1EntityType({ value, onChange, onIcoResult, numberOf
     !isOSVC || (
       !!businessData?.taxRegime && (
         (businessData.taxRegime === 'tax_return' && Number(businessData.annualTurnover           ?? 0) >= 1) ||
-        (businessData.taxRegime === 'flat_tax'   && Number(businessData.avgMonthlyCreditTurnover ?? 0) >= 1)
+        (businessData.taxRegime === 'flat_tax'   && Number(businessData.annualTurnover ?? 0) >= 1)
       )
     )
   ) && (

@@ -360,18 +360,16 @@ export function computeEffectiveIncome(formData) {
     }
 
     // Income method selection
-    const monthlyCredit = Number(avgMonthlyCreditTurnover ?? 0)
-    const turnover      = Number(annualTurnover ?? 0)
+    const turnover = Number(annualTurnover ?? 0)
 
-    if (taxRegime === 'flat_tax' && monthlyCredit >= 1) {
-      const gross = monthlyCredit * FLAT_TAX_INCOME_COEFF
-      income = Math.min(Math.max(0, gross - LIVING_MIN_CZK), FLAT_TAX_INCOME_CAP)
-      flags.push('flat_tax_method')
-    } else if (taxRegime === 'tax_return' && turnover >= 1) {
+    if (taxRegime === 'flat_tax' && turnover >= 1) {
       const coeff = (turnoverIncomePct !== null && turnoverIncomePct > 0)
         ? turnoverIncomePct / 100
         : TURNOVER_COEFF_DEFAULT
-      const turnoverMonthly = Math.round(turnover * coeff / 12)
+      income = Math.round(turnover * coeff / 12)
+      flags.push('flat_tax_method')
+    } else if (taxRegime === 'tax_return' && turnover >= 1) {
+      const turnoverMonthly = Math.round(turnover * TURNOVER_COEFF_DEFAULT / 12)
       if (turnoverMonthly > income) {
         income = turnoverMonthly
         flags.push('turnover_method')
