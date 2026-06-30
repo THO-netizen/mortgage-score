@@ -3,7 +3,7 @@ import {
   AlertTriangle, CheckCircle, TrendingUp, Home,
   Shield, DollarSign, FileText, BarChart2, Calendar,
   Users, Award, MapPin, RotateCcw, ArrowLeft, Info,
-  Briefcase, Activity,
+  Briefcase, Activity, ChevronDown,
 } from 'lucide-react'
 import { formatCZK, formatCZKShort } from '../../utils/formatters.js'
 import {
@@ -705,13 +705,44 @@ function JourneyTimeline() {
   )
 }
 
+// ── Accordion section ─────────────────────────────────
+
+function AccordionSection({ title, subtitle, icon: Icon, defaultOpen = false, children }) {
+  const [open, setOpen] = useState(defaultOpen)
+  return (
+    <div className="rounded-2xl border border-border bg-card overflow-hidden">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className="w-full flex items-center gap-4 px-6 py-5 hover:bg-surface transition-colors focus:outline-none group"
+      >
+        <div className="w-9 h-9 rounded-lg bg-brand-50 border border-brand-100 flex items-center justify-center flex-shrink-0">
+          <Icon size={16} className="text-brand-600" />
+        </div>
+        <div className="flex-1 text-left min-w-0">
+          <p className="text-[14px] font-semibold text-ink leading-snug">{title}</p>
+          <p className="text-[11px] text-ink-subtle mt-0.5">{subtitle}</p>
+        </div>
+        <ChevronDown
+          size={16}
+          className={`flex-shrink-0 text-ink-subtle transition-transform duration-200 ${open ? 'rotate-180' : ''}`}
+        />
+      </button>
+      {open && (
+        <div className="px-6 pb-6 border-t border-border animate-fade-in">
+          {children}
+        </div>
+      )}
+    </div>
+  )
+}
+
 // ── Main Results Dashboard ────────────────────────────
 
 export default function Step7Results({ formData, onBack, onRestart }) {
   const score = computeScore(formData)
   const cfg   = scoreCfg(score)
 
-  // simNetIncome is owned here so the Risk Matrix and Bonity card stay in sync
   const [simNetIncome, setSimNetIncome] = useState(
     (formData.netMonthlySalary || formData.netIncome) > 0
       ? (formData.netMonthlySalary || formData.netIncome)
@@ -720,142 +751,195 @@ export default function Step7Results({ formData, onBack, onRestart }) {
 
   const factors = buildFactors(formData, simNetIncome)
 
-  return (
-    <main className="py-8 sm:py-12 animate-fade-up">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 space-y-6">
+  // E[X] for sticky header
+  const resolvedIncome    = formData.netMonthlySalary > 0 ? formData.netMonthlySalary : formData.netIncome
+  const incomeForHeader   = (resolvedIncome > 0 ? resolvedIncome : simNetIncome) || 0
+  const headerProfile     = computeMortgageProfile({ ...formData, netIncome: incomeForHeader })
+  const maxLoanForHeader  = headerProfile.eX
 
-        {/* ── Score header ─────────────────────────── */}
+  // ESSO flags
+  const essoProfile  = formData.entityType === 'sro' ? computeMortgageProfile(formData) : null
+  const essoHardBlock = essoProfile?.redFlags.includes('sro_negative_financials') || essoProfile?.redFlags.includes('sro_insufficient_history')
+  const essoMedRisk   = essoProfile && !essoHardBlock && essoProfile.flags.includes('sro_medium_risk_50pct_cap')
+
+  return (
+    <main className="animate-fade-up">
+
+      {/* ── Sticky result header ─────────────────────── */}
+      <div className="sticky top-16 z-40 bg-dark-900/95 backdrop-blur border-b border-white/10">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-3 flex items-center gap-4 sm:gap-6">
+
+          {/* Mini gauge + score */}
+          <div className="flex items-center gap-3 flex-shrink-0">
+            <svg viewBox="0 0 44 44" className="w-9 h-9" aria-hidden="true">
+              <circle cx="22" cy="22" r="16" fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth="3.5" />
+              <circle cx="22" cy="22" r="16" fill="none"
+                stroke={cfg.color} strokeWidth="3.5"
+                strokeDasharray={`${2 * Math.PI * 16 * (score / 100)} ${2 * Math.PI * 16 * (1 - score / 100)}`}
+                strokeLinecap="round"
+                transform="rotate(-90 22 22)"
+              />
+              <text x="22" y="26" textAnchor="middle" fill="white" fontSize="9"
+                fontWeight="800" fontFamily="Manrope, Inter, sans-serif">{score}</text>
+            </svg>
+            <div>
+              <p className="text-[10px] text-slate-500 leading-tight">Score</p>
+              <p className="text-white text-[13px] font-semibold leading-tight">{cfg.label}</p>
+            </div>
+          </div>
+
+          <div className="w-px h-8 bg-white/10 flex-shrink-0 hidden sm:block" />
+
+          {/* Max loan */}
+          {incomeForHeader > 0 && maxLoanForHeader > 0 && (
+            <div className="flex-shrink-0">
+              <p className="text-[10px] text-slate-500 leading-tight">Max loan estimate</p>
+              <p className="text-white font-display font-black text-base tabular-nums leading-tight">
+                {formatCZKShort(maxLoanForHeader)}
+              </p>
+            </div>
+          )}
+
+          {/* Spacer + restart */}
+          <div className="ml-auto flex items-center gap-3">
+            <button
+              onClick={onRestart}
+              className="flex items-center gap-1.5 text-slate-500 hover:text-slate-300 text-[11px] transition-colors"
+            >
+              <RotateCcw size={11} />
+              <span className="hidden sm:inline">Restart analysis</span>
+            </button>
+          </div>
+
+        </div>
+      </div>
+
+      {/* ── Page content ─────────────────────────────── */}
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8 sm:py-12 space-y-6">
+
+        {/* ── Insight trigger ──────────────────────────── */}
         <div className="card-surface p-7 sm:p-9">
           <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6">
             <ScoreGauge score={score} color={cfg.color} />
             <div className="text-center sm:text-left">
-              <p className="section-label mb-2">Czech Mortgage Readiness Score</p>
-              <h2 className="font-display text-3xl sm:text-4xl font-black text-ink mb-2 leading-tight">
-                {cfg.label}
+              <p className="section-label mb-2">Eligibility Assessment</p>
+              <h2 className="font-display text-2xl sm:text-3xl font-black text-ink mb-3 leading-tight">
+                Your result is based on Czech bank logic.
               </h2>
               <p className="text-sm text-ink-muted mb-4 max-w-md leading-relaxed">
-                Computed across 10 eligibility dimensions, Czech National Bank (ČNB) regulatory
-                limits, and 2026 underwriting criteria from Česká spořitelna, ČSOB, Komerční
-                banka, mBank, and UniCredit Bank — calibrated for expat and self-employed applicants.
+                This simulation runs your profile through the DTI, DSTI, and LTV parameters
+                Czech banks apply in 2026 — calibrated for expat and self-employed applicants.
+                Expand the sections below to understand each dimension.
               </p>
               <span className={`badge ${cfg.badge} text-xs`}>{cfg.label}</span>
             </div>
           </div>
         </div>
 
-        {/* ── Risk Matrix ───────────────────────────── */}
-        <section>
-          <div className="flex items-center gap-2 mb-4">
-            <Activity size={15} className="text-brand-600" />
-            <h3 className="font-display text-xl font-extrabold text-ink">Bank Risk Matrix</h3>
+        {/* ── ESSO callouts (s.r.o. only) ─────────────── */}
+        {essoHardBlock && (
+          <div className="flex items-start gap-4 rounded-card border-2 border-risk-border bg-risk-light p-5">
+            <AlertTriangle size={18} className="text-risk-DEFAULT flex-shrink-0 mt-0.5" />
+            <div>
+              <p className="font-display text-base font-bold text-risk-text mb-1">ESSO Assessment — Hard Block</p>
+              <p className="text-sm text-risk-text leading-relaxed">
+                Your corporate financials do not currently meet the standard underwriting criteria
+                for an owned-company income assessment. No income from this source can be recognised
+                under current ESSO methodology. Your advisor will walk you through alternative income
+                pathways during your strategy session.
+              </p>
+            </div>
           </div>
-          <RiskMatrix formData={formData} simNetIncome={simNetIncome} />
-        </section>
-
-        {/* ── ESSO callouts (s.r.o. directors only) ─── */}
-        {formData.entityType === 'sro' && (() => {
-          const p = computeMortgageProfile(formData)
-          const hardBlock = p.redFlags.includes('sro_negative_financials') || p.redFlags.includes('sro_insufficient_history')
-          const medRisk   = !hardBlock && p.flags.includes('sro_medium_risk_50pct_cap')
-          return (
-            <>
-              {hardBlock && (
-                <div className="flex items-start gap-4 rounded-card border-2 border-risk-border bg-risk-light p-5">
-                  <AlertTriangle size={18} className="text-risk-DEFAULT flex-shrink-0 mt-0.5" />
-                  <div>
-                    <p className="font-display text-base font-bold text-risk-text mb-1">
-                      ESSO Assessment — Hard Block
-                    </p>
-                    <p className="text-sm text-risk-text leading-relaxed">
-                      Your corporate financials do not currently meet the standard underwriting criteria
-                      for an owned-company income assessment. No income from this source can be
-                      recognised under current ESSO methodology. Your advisor will walk you through
-                      alternative income pathways during your strategy session.
-                    </p>
-                  </div>
-                </div>
-              )}
-              {medRisk && (
-                <div className="flex items-start gap-4 rounded-card border-2 border-warning-border bg-warning-light p-5">
-                  <AlertTriangle size={18} className="text-warning-DEFAULT flex-shrink-0 mt-0.5" />
-                  <div>
-                    <p className="font-display text-base font-bold text-warning-text mb-1">
-                      ESSO Medium Risk — 50% Income Recognition Cap
-                    </p>
-                    <p className="text-sm text-warning-text leading-relaxed">
-                      Due to current company risk rating (1–2 completed fiscal years), this income
-                      source is recognised at <strong>50%</strong> of the declared base under Czech
-                      bank ESSO methodology. Full recognition becomes available once the company
-                      completes its second full fiscal year.
-                    </p>
-                  </div>
-                </div>
-              )}
-            </>
-          )
-        })()}
-
-        {/* ── 10-Factor Readiness Cards ─────────────── */}
-        <section>
-          <div className="flex items-center gap-2 mb-4">
-            <Shield size={15} className="text-brand-600" />
-            <h3 className="font-display text-xl font-extrabold text-ink">10-Factor Readiness Assessment</h3>
+        )}
+        {essoMedRisk && (
+          <div className="flex items-start gap-4 rounded-card border-2 border-warning-border bg-warning-light p-5">
+            <AlertTriangle size={18} className="text-warning-DEFAULT flex-shrink-0 mt-0.5" />
+            <div>
+              <p className="font-display text-base font-bold text-warning-text mb-1">ESSO Medium Risk — 50% Income Recognition Cap</p>
+              <p className="text-sm text-warning-text leading-relaxed">
+                Due to current company risk rating (1–2 completed fiscal years), this income source
+                is recognised at <strong>50%</strong> of the declared base under Czech bank ESSO
+                methodology. Full recognition becomes available once the company completes its second
+                full fiscal year.
+              </p>
+            </div>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {factors.map((f) => (
-              <ReadinessCard key={f.title} factor={f} />
-            ))}
-          </div>
-        </section>
+        )}
 
-        {/* ── Scenario Simulator ───────────────────── */}
-        <ScenarioSimulator
-          formData={formData}
-          onIncomeChange={setSimNetIncome}
-        />
+        {/* ── 4 accordion sections ─────────────────────── */}
+        <div className="space-y-3">
 
-        {/* ── Journey Timeline ─────────────────────── */}
-        <JourneyTimeline />
+          <AccordionSection
+            title="Score breakdown"
+            subtitle="10 eligibility factors evaluated against Czech bank criteria"
+            icon={Shield}
+            defaultOpen
+          >
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4">
+              {factors.map((f) => <ReadinessCard key={f.title} factor={f} />)}
+            </div>
+          </AccordionSection>
 
-        {/* ── Action buttons ───────────────────────── */}
-        <div className="flex flex-col sm:flex-row items-center gap-3 pt-2">
-          <button onClick={onBack} className="btn-ghost w-full sm:w-auto">
-            <ArrowLeft size={15} /> Back
-          </button>
-          <button onClick={onRestart} className="btn-ghost w-full sm:w-auto">
-            <RotateCcw size={15} /> Start Over
-          </button>
+          <AccordionSection
+            title="Loan capacity estimate"
+            subtitle="Maximum borrowing range, stress test, and scenario analysis"
+            icon={TrendingUp}
+          >
+            <div className="space-y-4 pt-4">
+              <RiskMatrix formData={formData} simNetIncome={simNetIncome} />
+              <ScenarioSimulator formData={formData} onIncomeChange={setSimNetIncome} />
+            </div>
+          </AccordionSection>
+
+          <AccordionSection
+            title="How this was calculated"
+            subtitle="Czech bank underwriting methodology and model parameters"
+            icon={BarChart2}
+          >
+            <div className="pt-2">
+              <HowItWorks />
+            </div>
+          </AccordionSection>
+
+          <AccordionSection
+            title="Next steps"
+            subtitle="Czech mortgage process from pre-scoring to property handover"
+            icon={Calendar}
+          >
+            <div className="pt-4">
+              <JourneyTimeline />
+            </div>
+          </AccordionSection>
+
         </div>
 
-        {/* ── How this evaluation works ─────────────── */}
-        <HowItWorks />
-
-        {/* ── Optional: email assessment ───────────── */}
-        <InlineLeadCapture formData={formData} />
-
-        {/* ── Consultation CTA ─────────────────────── */}
-        <div className="rounded-2xl border border-border bg-surface px-6 py-5 mt-6 flex flex-col sm:flex-row sm:items-center gap-4">
-          <div className="flex-1">
-            <p className="text-[13px] font-semibold text-ink mb-0.5">
-              Discuss this assessment
-            </p>
-            <p className="text-[11px] text-ink-subtle leading-relaxed">
-              Review your financial profile with a professional to understand
-              the simulation model outcomes.
-            </p>
-          </div>
+        {/* ── Primary CTA — Consultation ───────────────── */}
+        <div className="rounded-2xl bg-dark-900 border border-white/10 px-6 sm:px-10 py-8 text-center">
+          <p className="text-[11px] font-bold tracking-widest uppercase text-brand-400 mb-3">
+            Professional Review
+          </p>
+          <h3 className="font-display text-xl sm:text-2xl font-black text-white mb-3 leading-tight">
+            Review findings with a specialist
+          </h3>
+          <p className="text-slate-400 text-sm leading-relaxed mb-7 max-w-md mx-auto">
+            Understand the simulation model outcomes and how they translate
+            into a real Czech bank application for your specific profile.
+          </p>
           <a
             href="https://calendly.com/andy-le/15min"
             target="_blank"
             rel="noopener noreferrer"
-            className="flex-shrink-0 inline-flex items-center justify-center gap-2 rounded-xl border border-border-strong bg-card text-ink text-[13px] font-semibold px-5 py-2.5 hover:border-brand-400 hover:text-brand-700 hover:bg-brand-50 transition-all duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-600/30"
+            className="btn-cta mx-auto"
           >
-            Review findings
+            Schedule a review session
           </a>
         </div>
 
-        {/* ── Regulatory footer ────────────────────── */}
-        <div className="flex items-start gap-2 pt-2 pb-4 mt-4">
+        {/* ── Secondary CTA — Email export ─────────────── */}
+        <InlineLeadCapture formData={formData} />
+
+        {/* ── Regulatory footer ─────────────────────────── */}
+        <div className="flex items-start gap-2 pt-2 pb-8">
           <Info size={12} className="text-ink-subtle flex-shrink-0 mt-0.5" />
           <p className="text-[11px] text-ink-subtle leading-relaxed">
             This assessment is indicative only and reflects 2026 Czech bank underwriting
