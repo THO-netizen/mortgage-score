@@ -95,7 +95,7 @@ function ResidenceOption({ option, selected, onSelect }) {
         >
           {label}
         </span>
-        <span className="block text-xs text-ink-muted mt-0.5 truncate">
+        <span className="block text-xs text-ink-muted mt-0.5 leading-relaxed">
           {desc}
         </span>
       </span>
