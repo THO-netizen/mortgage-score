@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { AlertTriangle, CheckCircle } from 'lucide-react'
 import FunnelCard     from '../funnel/FunnelCard.jsx'
 import ActionBar      from '../funnel/ActionBar.jsx'
@@ -71,10 +72,13 @@ export default function Step4Property({ data, onChange, onBack, onContinue }) {
     purchaseTimeline = '',
   } = data
 
-  const safeOwnFunds = Math.min(ownFunds, purchasePrice)
-  const loanAmount   = Math.max(0, purchasePrice - safeOwnFunds)
-  const ltv          = purchasePrice > 0 ? (loanAmount / purchasePrice) * 100 : 0
-  const ownFundsPct  = purchasePrice > 0 ? (safeOwnFunds / purchasePrice) * 100 : 0
+  // Local display value for the own-funds text field (allows free typing)
+  const [ownFundsRaw, setOwnFundsRaw] = useState(String(ownFunds ?? ''))
+
+  const parsedOwnFunds = Math.max(0, Number(ownFundsRaw.replace(/\s/g, '')) || 0)
+  const loanAmount     = Math.max(0, purchasePrice - parsedOwnFunds)
+  const ltv            = purchasePrice > 0 ? (loanAmount / purchasePrice) * 100 : 0
+  const ownFundsPct    = purchasePrice > 0 ? (parsedOwnFunds / purchasePrice) * 100 : 0
 
   const isInvestment = propertyPurpose === 'investment'
   const maxLTVPct    = isInvestment ? 70 : 80
@@ -92,7 +96,7 @@ export default function Step4Property({ data, onChange, onBack, onContinue }) {
 
   const minOwnFundsNeeded =
     ltv > maxLTVPct
-      ? Math.ceil(purchasePrice * ((100 - maxLTVPct) / 100)) - safeOwnFunds
+      ? Math.ceil(purchasePrice * ((100 - maxLTVPct) / 100)) - parsedOwnFunds
       : 0
 
   const canContinue = !!propertyPurpose && !!purchaseTimeline
@@ -111,32 +115,58 @@ export default function Step4Property({ data, onChange, onBack, onContinue }) {
       }
     >
 
-      {/* ── Sliders ────────────────────────────────────── */}
-      <div className="space-y-8 mb-7">
+      {/* ── Purchase price slider ──────────────────────── */}
+      <div className="mb-8">
         <CurrencySlider
           id="purchasePrice"
           label="Purchase Price"
           value={purchasePrice}
-          onChange={(v) => {
-            onChange('purchasePrice', v)
-            if (safeOwnFunds > v) onChange('ownFunds', v)
-          }}
+          onChange={(v) => onChange('purchasePrice', v)}
           min={1_000_000}
           max={25_000_000}
           step={100_000}
         />
+      </div>
 
-        <CurrencySlider
-          id="ownFunds"
-          label="Available Own Funds (Vlastní zdroje)"
-          sublabel="cash · savings · confirmed gift equity"
-          value={safeOwnFunds}
-          onChange={(v) => onChange('ownFunds', v)}
-          min={0}
-          max={purchasePrice}
-          step={50_000}
-          hint="Include only confirmed liquid funds (Vlastní zdroje) — not expected income, unsold assets, or pending loans"
-        />
+      {/* ── Own funds text input ───────────────────────── */}
+      <div className="mb-7">
+        <label htmlFor="ownFunds" className="section-label mb-1 block">
+          Available Own Funds (Vlastní zdroje)
+        </label>
+        <p className="text-[11px] text-ink-subtle mb-2">cash · savings · confirmed gift equity</p>
+        <div className="relative">
+          <input
+            id="ownFunds"
+            type="text"
+            inputMode="numeric"
+            value={ownFundsRaw}
+            placeholder="e.g. 1 200 000"
+            onChange={(e) => {
+              const raw = e.target.value.replace(/[^\d\s]/g, '')
+              setOwnFundsRaw(raw)
+              const parsed = Math.max(0, Number(raw.replace(/\s/g, '')) || 0)
+              onChange('ownFunds', parsed)
+            }}
+            onBlur={() => {
+              // Reformat on blur
+              if (parsedOwnFunds > 0) {
+                setOwnFundsRaw(parsedOwnFunds.toLocaleString('cs-CZ'))
+              }
+            }}
+            className="input-field pr-16"
+          />
+          <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[12px] font-semibold text-ink-subtle pointer-events-none">
+            CZK
+          </span>
+        </div>
+        <p className="text-[11px] text-ink-subtle mt-2 leading-relaxed">
+          Include only confirmed liquid funds (Vlastní zdroje) — not expected income, unsold assets, or pending loans
+        </p>
+        {parsedOwnFunds > 0 && (
+          <p className="text-[12px] font-semibold text-ink mt-1.5 tabular-nums">
+            = {formatCZK(parsedOwnFunds)}
+          </p>
+        )}
       </div>
 
       {/* ── Live LTV card ──────────────────────────────── */}
