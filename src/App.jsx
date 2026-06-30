@@ -12,8 +12,9 @@ import Step7Results         from './components/steps/Step7Results.jsx'
 
 // ─── Initial form state ───────────────────────────────
 const INITIAL_FORM = {
-  // Step 1 — entity type + shared
-  entityType:        'zamestnanec',
+  // Step 1 — entity type + applicant count
+  entityType:         'zamestnanec',
+  numberOfApplicants: 1,
   ico:               '',
   businessName:      '',
   legalFormLabel:    '',
@@ -245,6 +246,8 @@ export default function App() {
                     <Step1EntityType
                       value={formData.entityType}
                       onChange={(v) => setField('entityType', v)}
+                      numberOfApplicants={formData.numberOfApplicants}
+                      onApplicantCountChange={(n) => setField('numberOfApplicants', n)}
                       onIcoResult={(r) => setFormData((prev) => ({
                         ...prev,
                         ico:                    r.ico               ?? prev.ico,

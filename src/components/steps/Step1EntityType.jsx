@@ -1582,7 +1582,7 @@ function EmployeeDetails({ data, onChange }) {
 
 // ── Main component ─────────────────────────────────────
 
-export default function Step1EntityType({ value, onChange, onIcoResult, employeeData, onEmployeeChange, businessData, onBusinessChange, onContinue }) {
+export default function Step1EntityType({ value, onChange, onIcoResult, numberOfApplicants = 1, onApplicantCountChange, employeeData, onEmployeeChange, businessData, onBusinessChange, onContinue }) {
   const isEmployee = value === 'zamestnanec'
   const isOSVC     = value === 'osvc'
   const isSRODir   = value === 'sro'
@@ -1630,6 +1630,46 @@ export default function Step1EntityType({ value, onChange, onIcoResult, employee
             onSelect={() => onChange(opt.value)}
           />
         ))}
+      </div>
+
+      {/* ── Number of applicants — applies to all income types ── */}
+      <div className="mt-6 pt-6 border-t border-border">
+        <p className="section-label mb-3 block">Number of applicants</p>
+        <div className="grid grid-cols-4 gap-3">
+          {[
+            { n: 1, sub: 'Solo'    },
+            { n: 2, sub: 'Joint'   },
+            { n: 3, sub: '3 people'},
+            { n: 4, sub: '4 people'},
+          ].map(({ n, sub }) => {
+            const active = numberOfApplicants === n
+            return (
+              <button
+                key={n}
+                type="button"
+                onClick={() => onApplicantCountChange(n)}
+                className={[
+                  'relative rounded-xl border-2 py-3.5 text-center transition-all duration-150',
+                  'focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-600/40',
+                  active ? 'border-brand-600 bg-brand-50' : 'border-border bg-card hover:border-border-strong',
+                ].join(' ')}
+              >
+                {active && (
+                  <span className="absolute top-2 right-2 w-3.5 h-3.5 rounded-full bg-brand-600 flex items-center justify-center">
+                    <Check size={8} className="text-white" strokeWidth={3} />
+                  </span>
+                )}
+                <span className={`font-display text-xl font-extrabold block ${active ? 'text-brand-700' : 'text-ink'}`}>{n}</span>
+                <span className={`text-[10px] mt-0.5 block ${active ? 'text-brand-600' : 'text-ink-subtle'}`}>{sub}</span>
+              </button>
+            )
+          })}
+        </div>
+        {numberOfApplicants > 1 && (
+          <p className="text-[11px] text-ink-subtle mt-2 leading-relaxed">
+            Joint applications combine incomes. Each applicant's documents and identity will be verified individually by the bank. Household living costs are factored into the DSTI calculation per applicant.
+          </p>
+        )}
       </div>
 
       {/* IČO lookup — slides in below cards when OSVČ or s.r.o. is selected */}

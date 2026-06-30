@@ -8,6 +8,9 @@
 export const CNB_DSTI_MAX    = 0.45    // Hard ČNB ceiling
 export const LIVING_MIN_CZK  = 4_860   // Životní minimum, single adult (CZK/mo)
 
+// Household expense deducted per applicant from DSTI headroom (životní minimum)
+export const LIVING_EXPENSE_PER_APPLICANT = 4_860   // CZK/mo per person (2026)
+
 // Age-based eligibility thresholds (2026 standards)
 export const FIRST_HOME_LTV_AGE_THRESHOLD = 36   // Strictly under this age → 90% LTV eligible
 export const PAYOFF_AGE_MAX               = 75   // Absolute generous cap (KB); drives E[X] maturity
@@ -513,6 +516,7 @@ export function computeVarianceCoeff(formData) {
 export function computeMortgageProfile(formData) {
   const {
     applicantAge        = 35,
+    numberOfApplicants  = 1,
     purchasePrice       = 0,
     ownFunds            = 0,
     propertyPurpose     = 'primary',
@@ -559,8 +563,11 @@ export function computeMortgageProfile(formData) {
   const af       = annuityFactor(refRate, maturity.maxMonths)
   const afStress = annuityFactor(6.5,    maturity.maxMonths)
 
-  // Monthly headroom under DSTI ceiling
-  const headroom = Math.max(0, effectiveIncome * CNB_DSTI_MAX - existingDebt)
+  // Household living expenses (životní minimum × applicants) — deducted before DSTI
+  const householdExpenses = LIVING_EXPENSE_PER_APPLICANT * Math.max(1, Number(numberOfApplicants))
+
+  // Monthly headroom under DSTI ceiling, net of household living costs
+  const headroom = Math.max(0, effectiveIncome * CNB_DSTI_MAX - existingDebt - householdExpenses)
 
   const eXbyDSTI       = Math.round(headroom * af)
   const eXbyDSTIStress = Math.round(headroom * afStress)
@@ -614,7 +621,7 @@ export function computeMortgageProfile(formData) {
   return {
     // Income
     baseIncome, effectiveIncome, haircut, flags, redFlags, perBankIncome,
-    existingDebt, cc5,
+    existingDebt, cc5, householdExpenses, numberOfApplicants,
     // Loan structure
     loanAmount, ltvPct, maxLTVPct, ltvBreached,
     // DTI

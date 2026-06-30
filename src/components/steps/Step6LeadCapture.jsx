@@ -98,7 +98,8 @@ export default function Step6LeadCapture({ data, formData, onChange, onBack, onC
         email,
         phone: leadPhone,
 
-        entityType:        formData?.entityType        ?? '',
+        number_of_applicants: formData?.numberOfApplicants ?? 1,
+        entityType:           formData?.entityType        ?? '',
         ico:               formData?.ico               ?? '',
         businessName:      formData?.businessName      ?? '',
         legalFormLabel:    formData?.legalFormLabel    ?? '',
