@@ -698,6 +698,217 @@ function JourneyTimeline() {
   )
 }
 
+// ── Summary Card (always visible, pre-gate) ───────────
+
+function SummaryCard({ profile, formData }) {
+  const { riskStatus, eX, eXStress } = profile
+
+  const riskMeta = {
+    zelena:   { label: 'Low Risk',     text: 'text-success-text', bg: 'bg-success-light border-success-border' },
+    oranzova: { label: 'Moderate Risk',text: 'text-warning-text', bg: 'bg-warning-light border-warning-border' },
+    cervena:  { label: 'Higher Risk',  text: 'text-risk-text',    bg: 'bg-risk-light border-risk-border'       },
+  }[riskStatus] ?? { label: 'Under Assessment', text: 'text-ink', bg: 'bg-surface border-border' }
+
+  const entityLabel = {
+    zamestnanec: 'Salaried employment',
+    osvc:        'Self-employed (OSVČ)',
+    sro:         'Company director (s.r.o.)',
+  }[formData.entityType] ?? 'Income assessed'
+
+  return (
+    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+
+      <div className={`rounded-2xl border p-5 ${riskMeta.bg}`}>
+        <p className="text-[10px] font-bold uppercase tracking-widest text-ink-subtle mb-2">Risk Band</p>
+        <p className={`font-display text-2xl font-black ${riskMeta.text}`}>{riskMeta.label}</p>
+        <p className="text-[11px] text-ink-subtle mt-1">Based on your profile inputs</p>
+      </div>
+
+      <div className="rounded-2xl border border-border bg-card p-5">
+        <p className="text-[10px] font-bold uppercase tracking-widest text-ink-subtle mb-2">Borrowing Range</p>
+        <p className="font-display text-2xl font-black text-ink tabular-nums">
+          {eX > 0 ? formatCZKShort(eX) : '—'}
+        </p>
+        {eXStress > 0 && (
+          <p className="text-[11px] text-ink-subtle mt-1">Stress test: {formatCZKShort(eXStress)}</p>
+        )}
+      </div>
+
+      <div className="rounded-2xl border border-border bg-card p-5">
+        <p className="text-[10px] font-bold uppercase tracking-widest text-ink-subtle mb-2">Income Structure</p>
+        <p className="font-display text-sm font-bold text-ink">{entityLabel}</p>
+        <p className="text-[11px] text-ink-subtle mt-1">Czech bank methodology applied</p>
+      </div>
+
+    </div>
+  )
+}
+
+// ── Soft Lock Gate ────────────────────────────────────
+
+const FORMSPREE_ENDPOINT = 'https://formspree.io/f/maqgjlbn'
+const GFORM_ENDPOINT     = 'https://docs.google.com/forms/d/e/1FAIpQLSddO9mI3_GJL4W4TzS2atu4vbKAIiI2TUEVRN__GaQJeqeogA/formResponse'
+
+const GATE_SECTIONS = [
+  { title: 'Score breakdown',         sub: '10 eligibility factors evaluated' },
+  { title: 'Loan capacity estimate',  sub: 'Maximum borrowing range and scenario analysis' },
+  { title: 'How this was calculated', sub: 'Czech bank underwriting methodology' },
+  { title: 'Next steps',              sub: 'From pre-scoring to property handover' },
+]
+
+function SoftLockGate({ onUnlock, formData }) {
+  const [form, setForm]           = useState({ name: '', email: '', phone: '' })
+  const [submitting, setSubmitting] = useState(false)
+  const [error, setError]           = useState('')
+
+  const set = (k) => (e) => setForm((p) => ({ ...p, [k]: e.target.value }))
+
+  const handleSubmit = async (e) => {
+    e.preventDefault()
+    if (!form.name.trim() || !form.email.trim()) return
+    setSubmitting(true)
+    setError('')
+
+    try {
+      const res = await fetch(FORMSPREE_ENDPOINT, {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        body: JSON.stringify({
+          name:            form.name,
+          email:           form.email,
+          phone:           form.phone || '',
+          source:          'soft_lock_gate',
+          entityType:      formData.entityType,
+          residenceStatus: formData.residenceStatus,
+          purchasePrice:   formData.purchasePrice,
+        }),
+      })
+      if (!res.ok) throw new Error('submission_failed')
+
+      // Google Forms — fire and forget
+      const gf = new URLSearchParams()
+      const parts = form.name.trim().split(' ')
+      gf.append('entry.1796948790', parts[0])
+      gf.append('entry.1494908840', parts.slice(1).join(' ') || parts[0])
+      gf.append('entry.80055551',   form.email)
+      gf.append('entry.1807846036', form.phone || '')
+      fetch(GFORM_ENDPOINT, { method: 'POST', mode: 'no-cors', body: gf }).catch(() => {})
+
+      onUnlock()
+    } catch {
+      setError('Something went wrong — please try again.')
+      setSubmitting(false)
+    }
+  }
+
+  const canSubmit = !submitting && form.name.trim() && form.email.trim()
+
+  return (
+    <div>
+      {/* Blurred peek of locked sections */}
+      <div className="rounded-t-2xl border border-b-0 border-border overflow-hidden">
+        <div
+          className="pointer-events-none select-none bg-card px-6 py-4 space-y-3"
+          style={{ filter: 'blur(3px)', opacity: 0.22 }}
+          aria-hidden="true"
+        >
+          {GATE_SECTIONS.map(({ title, sub }) => (
+            <div key={title} className="flex items-center gap-4 py-2">
+              <div className="w-9 h-9 rounded-lg bg-brand-50 border border-brand-100 flex-shrink-0" />
+              <div className="flex-1 min-w-0">
+                <p className="text-[14px] font-semibold text-ink">{title}</p>
+                <p className="text-[11px] text-ink-subtle mt-0.5">{sub}</p>
+              </div>
+              <ChevronDown size={16} className="text-ink-subtle flex-shrink-0" />
+            </div>
+          ))}
+        </div>
+        {/* Fade out the peek */}
+        <div className="h-14 bg-gradient-to-b from-card to-surface" />
+      </div>
+
+      {/* Gate form card — visually connected below */}
+      <div className="rounded-b-2xl border border-t-0 border-border bg-card shadow-lg px-6 sm:px-10 py-8 sm:py-10">
+
+        <p className="text-[10px] font-bold tracking-widest uppercase text-brand-600 mb-3">
+          Full Assessment
+        </p>
+        <h3 className="font-display text-xl sm:text-2xl font-black text-ink mb-3 leading-tight">
+          Access your full mortgage assessment
+        </h3>
+        <p className="text-sm text-ink-muted leading-relaxed mb-7 max-w-lg">
+          We generate a preliminary mortgage assessment based on standard Czech mortgage
+          evaluation criteria. Save your result to access the full breakdown — DTI, DSTI,
+          income structure, and risk factors.
+        </p>
+
+        <form onSubmit={handleSubmit} className="max-w-sm space-y-4">
+
+          <div>
+            <label htmlFor="gate-name" className="section-label mb-1.5 block">
+              Full Name <span className="text-risk-DEFAULT">*</span>
+            </label>
+            <input
+              id="gate-name"
+              type="text"
+              required
+              value={form.name}
+              onChange={set('name')}
+              placeholder="Your full name"
+              className="input-field"
+            />
+          </div>
+
+          <div>
+            <label htmlFor="gate-email" className="section-label mb-1.5 block">
+              Email Address <span className="text-risk-DEFAULT">*</span>
+            </label>
+            <input
+              id="gate-email"
+              type="email"
+              required
+              value={form.email}
+              onChange={set('email')}
+              placeholder="your@email.com"
+              className="input-field"
+            />
+          </div>
+
+          <div>
+            <label htmlFor="gate-phone" className="section-label mb-1.5 block">
+              Phone{' '}
+              <span className="text-ink-subtle font-normal text-[11px]">(optional)</span>
+            </label>
+            <input
+              id="gate-phone"
+              type="tel"
+              value={form.phone}
+              onChange={set('phone')}
+              placeholder="+420 …"
+              className="input-field"
+            />
+          </div>
+
+          {error && <p className="text-xs text-risk-DEFAULT">{error}</p>}
+
+          <button
+            type="submit"
+            disabled={!canSubmit}
+            className="btn-cta w-full justify-center disabled:opacity-50 disabled:cursor-not-allowed mt-2"
+          >
+            {submitting ? 'Sending…' : 'Send me my full assessment'}
+          </button>
+
+          <p className="text-[11px] text-ink-subtle text-center pt-1">
+            No spam. Your data is used only to deliver your report.
+          </p>
+
+        </form>
+      </div>
+    </div>
+  )
+}
+
 // ── Accordion section ─────────────────────────────────
 
 function AccordionSection({ title, subtitle, icon: Icon, defaultOpen = false, children }) {
@@ -736,6 +947,7 @@ export default function Step7Results({ formData, onBack, onRestart }) {
   const score = computeScore(formData)
   const cfg   = scoreCfg(score)
 
+  const [isUnlocked,    setIsUnlocked]    = useState(false)
   const [simNetIncome, setSimNetIncome] = useState(
     (formData.netMonthlySalary || formData.netIncome) > 0
       ? (formData.netMonthlySalary || formData.netIncome)
@@ -744,14 +956,14 @@ export default function Step7Results({ formData, onBack, onRestart }) {
 
   const factors = buildFactors(formData, simNetIncome)
 
-  // E[X] for sticky header
+  // E[X] for sticky header and summary card
   const resolvedIncome    = formData.netMonthlySalary > 0 ? formData.netMonthlySalary : formData.netIncome
   const incomeForHeader   = (resolvedIncome > 0 ? resolvedIncome : simNetIncome) || 0
   const headerProfile     = computeMortgageProfile({ ...formData, netIncome: incomeForHeader })
   const maxLoanForHeader  = headerProfile.eX
 
   // ESSO flags
-  const essoProfile  = formData.entityType === 'sro' ? computeMortgageProfile(formData) : null
+  const essoProfile   = formData.entityType === 'sro' ? computeMortgageProfile(formData) : null
   const essoHardBlock = essoProfile?.redFlags.includes('sro_negative_financials') || essoProfile?.redFlags.includes('sro_insufficient_history')
   const essoMedRisk   = essoProfile && !essoHardBlock && essoProfile.flags.includes('sro_medium_risk_50pct_cap')
 
@@ -821,14 +1033,18 @@ export default function Step7Results({ formData, onBack, onRestart }) {
               </h2>
               <p className="text-sm text-ink-muted mb-4 max-w-md leading-relaxed">
                 This simulation runs your profile through the same parameters Czech banks apply
-                in 2026. Expand the sections below to understand each dimension of your assessment.
+                in 2026. Your risk band and borrowing range are shown below. Save your assessment
+                to unlock the full breakdown.
               </p>
               <span className={`badge ${cfg.badge} text-xs`}>{cfg.label}</span>
             </div>
           </div>
         </div>
 
-        {/* ── ESSO callouts (s.r.o. only) ─────────────── */}
+        {/* ── Summary card (always visible) ───────────────── */}
+        <SummaryCard profile={headerProfile} formData={formData} />
+
+        {/* ── ESSO callouts (s.r.o. only, always visible) ─ */}
         {essoHardBlock && (
           <div className="flex items-start gap-4 rounded-card border-2 border-risk-border bg-risk-light p-5">
             <AlertTriangle size={18} className="text-risk-DEFAULT flex-shrink-0 mt-0.5" />
@@ -858,77 +1074,81 @@ export default function Step7Results({ formData, onBack, onRestart }) {
           </div>
         )}
 
-        {/* ── 4 accordion sections ─────────────────────── */}
-        <div className="space-y-3">
+        {/* ── Soft lock gate OR full content ──────────────── */}
+        {!isUnlocked ? (
+          <SoftLockGate onUnlock={() => setIsUnlocked(true)} formData={formData} />
+        ) : (
+          <>
+            {/* 4 accordions */}
+            <div className="space-y-3 animate-fade-in">
 
-          <AccordionSection
-            title="Score breakdown"
-            subtitle="10 eligibility factors evaluated against Czech bank criteria"
-            icon={Shield}
-            defaultOpen
-          >
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4">
-              {factors.map((f) => <ReadinessCard key={f.title} factor={f} />)}
+              <AccordionSection
+                title="Score breakdown"
+                subtitle="10 eligibility factors evaluated against Czech bank criteria"
+                icon={Shield}
+                defaultOpen
+              >
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4">
+                  {factors.map((f) => <ReadinessCard key={f.title} factor={f} />)}
+                </div>
+              </AccordionSection>
+
+              <AccordionSection
+                title="Loan capacity estimate"
+                subtitle="Maximum borrowing range, stress test, and scenario analysis"
+                icon={TrendingUp}
+              >
+                <div className="space-y-4 pt-4">
+                  <RiskMatrix formData={formData} simNetIncome={simNetIncome} />
+                  <ScenarioSimulator formData={formData} onIncomeChange={setSimNetIncome} />
+                </div>
+              </AccordionSection>
+
+              <AccordionSection
+                title="How this was calculated"
+                subtitle="Czech bank underwriting methodology and model parameters"
+                icon={BarChart2}
+              >
+                <div className="pt-2">
+                  <HowItWorks />
+                </div>
+              </AccordionSection>
+
+              <AccordionSection
+                title="Next steps"
+                subtitle="Czech mortgage process from pre-scoring to property handover"
+                icon={Calendar}
+              >
+                <div className="pt-4">
+                  <JourneyTimeline />
+                </div>
+              </AccordionSection>
+
             </div>
-          </AccordionSection>
 
-          <AccordionSection
-            title="Loan capacity estimate"
-            subtitle="Maximum borrowing range, stress test, and scenario analysis"
-            icon={TrendingUp}
-          >
-            <div className="space-y-4 pt-4">
-              <RiskMatrix formData={formData} simNetIncome={simNetIncome} />
-              <ScenarioSimulator formData={formData} onIncomeChange={setSimNetIncome} />
+            {/* Primary CTA — Consultation */}
+            <div className="rounded-2xl bg-dark-900 border border-white/10 px-6 sm:px-10 py-8 text-center">
+              <p className="text-[11px] font-bold tracking-widest uppercase text-brand-400 mb-3">
+                Professional Review
+              </p>
+              <h3 className="font-display text-xl sm:text-2xl font-black text-white mb-3 leading-tight">
+                Review findings with a specialist
+              </h3>
+              <p className="text-slate-400 text-sm leading-relaxed mb-7 max-w-md mx-auto">
+                Understand the simulation model outcomes and how they translate
+                into a real Czech bank application for your specific profile.
+              </p>
+              <a
+                href="https://calendly.com/andy-le/15min"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="btn-cta mx-auto"
+              >
+                Schedule a review session
+              </a>
             </div>
-          </AccordionSection>
-
-          <AccordionSection
-            title="How this was calculated"
-            subtitle="Czech bank underwriting methodology and model parameters"
-            icon={BarChart2}
-          >
-            <div className="pt-2">
-              <HowItWorks />
-            </div>
-          </AccordionSection>
-
-          <AccordionSection
-            title="Next steps"
-            subtitle="Czech mortgage process from pre-scoring to property handover"
-            icon={Calendar}
-          >
-            <div className="pt-4">
-              <JourneyTimeline />
-            </div>
-          </AccordionSection>
-
-        </div>
-
-        {/* ── Primary CTA — Consultation ───────────────── */}
-        <div className="rounded-2xl bg-dark-900 border border-white/10 px-6 sm:px-10 py-8 text-center">
-          <p className="text-[11px] font-bold tracking-widest uppercase text-brand-400 mb-3">
-            Professional Review
-          </p>
-          <h3 className="font-display text-xl sm:text-2xl font-black text-white mb-3 leading-tight">
-            Review findings with a specialist
-          </h3>
-          <p className="text-slate-400 text-sm leading-relaxed mb-7 max-w-md mx-auto">
-            Understand the simulation model outcomes and how they translate
-            into a real Czech bank application for your specific profile.
-          </p>
-          <a
-            href="https://calendly.com/andy-le/15min"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="btn-cta mx-auto"
-          >
-            Schedule a review session
-          </a>
-        </div>
-
-        {/* ── Secondary CTA — Email export ─────────────── */}
-        <InlineLeadCapture formData={formData} />
+          </>
+        )}
 
         {/* ── Regulatory footer ─────────────────────────── */}
         <div className="flex items-start gap-2 pt-2 pb-8">
