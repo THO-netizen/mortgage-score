@@ -609,11 +609,6 @@ const CONTRACT_TYPES = [
   { value: 'dpc',        label: 'DPČ / DPP agreement'     },
 ]
 
-const SECTORS = [
-  { value: 'health',    label: 'Healthcare',     desc: 'Doctors, nurses, medical staff'  },
-  { value: 'education', label: 'Education',       desc: 'Teachers, academics, university' },
-  { value: 'other',     label: 'Other sector',    desc: 'Private sector or other field'   },
-]
 
 function Toggle({ on, onToggle, danger = false }) {
   return (
@@ -1252,7 +1247,6 @@ function EmployeeDetails({ data, onChange }) {
     hasBonus              = false,
     bonusAmount           = null,
     bonusFrequency        = 'yearly',
-    employmentSector      = '',
   } = data
 
   const anyAdvisory    = isProbation || isNoticePeriod || isOnSickLeave || isEmployerDistressed
@@ -1264,7 +1258,6 @@ function EmployeeDetails({ data, onChange }) {
     const threshold = twoMo.toISOString().slice(0, 7)
     return contractEndDate <= threshold
   })()
-  const csobException  = isProbation && (employmentSector === 'health' || employmentSector === 'education')
 
   return (
     <div className="mt-7 pt-7 border-t border-border space-y-5 animate-fade-up">
@@ -1319,45 +1312,6 @@ function EmployeeDetails({ data, onChange }) {
           </div>
         </div>
       )}
-      {csobException && (
-        <div className="rounded-xl bg-brand-50 border border-brand-100 px-4 py-3 animate-fade-up">
-          <p className="text-xs font-semibold text-brand-700 mb-1">ČSOB Note: Healthcare / Education</p>
-          <p className="text-[11px] text-brand-700 leading-relaxed">
-            ČSOB allows Healthcare and Education employees to proceed during probation via manual
-            headquarters underwriting. Discuss this route during your strategy call.
-          </p>
-        </div>
-      )}
-
-      {/* ── Employment sector ─────────────────────────────── */}
-      <div>
-        <label className="section-label mb-2 block">Employment Sector</label>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          {SECTORS.map(({ value, label, desc }) => (
-            <button
-              key={value}
-              type="button"
-              onClick={() => onChange('employmentSector', value)}
-              className={[
-                'relative text-left rounded-xl border-2 px-4 py-3.5 transition-all duration-150',
-                'focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-600/40',
-                employmentSector === value
-                  ? 'border-brand-600 bg-brand-50'
-                  : 'border-border bg-card hover:border-border-strong',
-              ].join(' ')}
-            >
-              {employmentSector === value && (
-                <span className="absolute top-2.5 right-2.5 w-4 h-4 rounded-full bg-brand-600 flex items-center justify-center">
-                  <Check size={9} className="text-white" strokeWidth={3} />
-                </span>
-              )}
-              <p className={`text-xs font-bold mb-0.5 ${employmentSector === value ? 'text-brand-700' : 'text-ink'}`}>{label}</p>
-              <p className="text-[10px] text-ink-subtle">{desc}</p>
-            </button>
-          ))}
-        </div>
-      </div>
-
       {/* ── Contract type ─────────────────────────────────── */}
       <div>
         <label className="section-label mb-2 block">Employment Contract Type</label>
