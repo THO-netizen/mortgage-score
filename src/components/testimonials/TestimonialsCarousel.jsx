@@ -157,11 +157,10 @@ export default function TestimonialsCarousel() {
             Client Stories
           </p>
           <h2 className="font-display text-3xl sm:text-4xl font-black text-white mb-4 leading-tight tracking-tight">
-            Real Clients. Real Mortgage Success.
+            Real mortgage cases from expats and business owners in Czechia.
           </h2>
           <p className="text-slate-400 max-w-lg mx-auto text-sm leading-relaxed">
-            See how expats, freelancers and business owners successfully financed
-            property in Czechia.
+            See how clients successfully navigated the mortgage process and financed property in the Czech market.
           </p>
         </div>
 
