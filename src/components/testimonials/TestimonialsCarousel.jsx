@@ -4,8 +4,6 @@ import { ChevronLeft, ChevronRight, ExternalLink } from 'lucide-react'
 const TESTIMONIALS = [
   {
     id: 't1',
-    badge: 'Expat',
-    badgeGradient: 'from-brand-600 to-brand-800',
     cardGradient: 'from-blue-700 via-blue-900 to-slate-900',
     headline: 'From Nepal to Homeownership',
     summary: 'After weeks of delays and pressure from the agency, our clients stayed patient and resilient. Today, they are finally holding the keys to their own home.',
@@ -14,8 +12,6 @@ const TESTIMONIALS = [
   },
   {
     id: 't2',
-    badge: 'Expat',
-    badgeGradient: 'from-violet-600 to-purple-800',
     cardGradient: 'from-violet-800 via-purple-900 to-slate-900',
     headline: 'Success Story',
     summary: 'Coming soon — stay tuned for another real client success story.',
@@ -24,8 +20,6 @@ const TESTIMONIALS = [
   },
   {
     id: 't3',
-    badge: 'Expat',
-    badgeGradient: 'from-emerald-600 to-teal-800',
     cardGradient: 'from-emerald-800 via-teal-900 to-slate-900',
     headline: 'Dream Home Secured',
     summary: 'After countless viewings and unexpected obstacles, we found the perfect solution together. Now they are happily settled in their new home.',
@@ -34,8 +28,6 @@ const TESTIMONIALS = [
   },
   {
     id: 't4',
-    badge: 'OSVČ',
-    badgeGradient: 'from-sky-600 to-blue-800',
     cardGradient: 'from-sky-700 via-blue-900 to-slate-900',
     headline: 'Persistence Wins',
     summary: 'When others said financing was impossible, we took matters into our own hands. Mortgage approved and new apartment ready for joy.',
@@ -44,8 +36,6 @@ const TESTIMONIALS = [
   },
   {
     id: 't5',
-    badge: 'Expat',
-    badgeGradient: 'from-indigo-600 to-violet-800',
     cardGradient: 'from-indigo-700 via-indigo-900 to-slate-900',
     headline: 'Overcoming Hurdles',
     summary: 'From daily calls to the mayor to navigating a dozen obstacles, our clients from Turkey finally secured their dream home.',
@@ -54,8 +44,6 @@ const TESTIMONIALS = [
   },
   {
     id: 't6',
-    badge: 's.r.o.',
-    badgeGradient: 'from-teal-600 to-cyan-800',
     cardGradient: 'from-teal-700 via-cyan-900 to-slate-900',
     headline: 'Investment Success',
     summary: 'Congratulations on securing a beautiful investment apartment. Another happy client successfully moved forward.',
@@ -64,8 +52,6 @@ const TESTIMONIALS = [
   },
   {
     id: 't7',
-    badge: 'Expat',
-    badgeGradient: 'from-rose-600 to-pink-800',
     cardGradient: 'from-rose-800 via-pink-900 to-slate-900',
     headline: 'Resilience in Property',
     summary: "We navigated the seller's bankruptcy and other unexpected hurdles during the process. We finally crossed the finish line to ownership.",
@@ -74,7 +60,7 @@ const TESTIMONIALS = [
   },
 ]
 
-function TestimonialCard({ headline, summary, badge, badgeGradient, cardGradient, url, image }) {
+function TestimonialCard({ headline, summary, cardGradient, url, image }) {
   return (
     <a
       href={url}
@@ -87,37 +73,30 @@ function TestimonialCard({ headline, summary, badge, badgeGradient, cardGradient
         'border border-white/10',
         'transition-all duration-300 ease-out',
         'hover:-translate-y-2 hover:shadow-[0_12px_40px_rgba(37,99,235,0.30)]',
-        'group',
+        'group flex flex-col',
       ].join(' ')}
     >
-      {/* Image / gradient header */}
-      <div className="relative h-44 overflow-hidden">
+      {/* Image — fixed height, center-cropped */}
+      <div className="relative w-full h-52 flex-shrink-0 overflow-hidden">
         <div className={`absolute inset-0 bg-gradient-to-br ${cardGradient}`} />
         <img
           src={image}
-          alt=""
-          className="absolute inset-0 w-full h-full object-cover"
+          alt={headline}
+          className="absolute inset-0 w-full h-full object-cover object-center"
           onError={(e) => { e.currentTarget.style.opacity = '0' }}
         />
-        {/* Dark overlay on hover for legibility */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-        {/* Badge */}
-        <div className="absolute top-3 left-3 z-10">
-          <span className={`inline-block text-[10px] font-bold tracking-widest uppercase px-2.5 py-1 rounded-full text-white bg-gradient-to-r ${badgeGradient} shadow`}>
-            {badge}
-          </span>
-        </div>
+        <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
       </div>
 
-      {/* Content */}
-      <div className="bg-dark-800 p-5">
+      {/* Content — fixed min-height keeps all cards the same total size */}
+      <div className="bg-dark-800 p-5 flex flex-col flex-1">
         <h3 className="text-white font-display text-[14px] font-bold leading-snug mb-2.5">
           {headline}
         </h3>
-        <p className="text-slate-400 text-[12px] leading-relaxed mb-4">
+        <p className="text-slate-400 text-[12px] leading-relaxed mb-4 flex-1">
           {summary}
         </p>
-        <div className="flex items-center gap-1.5 text-brand-400 text-[11px] font-semibold group-hover:text-brand-300 transition-colors">
+        <div className="flex items-center gap-1.5 text-brand-400 text-[11px] font-semibold group-hover:text-brand-300 transition-colors mt-auto">
           Read full story
           <ExternalLink size={10} />
         </div>
