@@ -1,4 +1,4 @@
-import { Shield, TrendingUp, Target, BarChart2, BookOpen, Lightbulb } from 'lucide-react'
+import { Shield, BookOpen, Lightbulb } from 'lucide-react'
 
 const securityPoints = [
   'Zero-exposure data architecture',
@@ -7,23 +7,6 @@ const securityPoints = [
   'No account registration required',
 ]
 
-const pillars = [
-  {
-    icon: TrendingUp,
-    title: 'Financial Potential',
-    desc: 'Helping individuals and entrepreneurs understand their numbers',
-  },
-  {
-    icon: Target,
-    title: 'Mortgage Readiness',
-    desc: 'Optimizing your profile before official bank submission',
-  },
-  {
-    icon: BarChart2,
-    title: 'Smarter Decisions',
-    desc: 'Data-backed guidance for property financing',
-  },
-]
 
 export default function TrustSidebar() {
   return (
@@ -97,27 +80,16 @@ export default function TrustSidebar() {
         </p>
 
         {/* Bio */}
-        <p className="text-xs text-ink-muted leading-relaxed mb-5">
-          At Mortgage Score, we transform complex financial data into clear
-          mortgage insights. Our mission is to help you evaluate your financial
-          health, understand your borrowing capacity, and unlock better mortgage
-          opportunities with confidence, speed, and precision.
+        <p className="text-xs text-ink-muted leading-relaxed mb-4">
+          At Mortgage Score, we transform complex financial data into clear mortgage
+          insights. We help you evaluate financial health, understand borrowing
+          capacity, and unlock mortgage opportunities with precision.
         </p>
 
-        {/* Pillars */}
-        <div className="space-y-3 pt-4 border-t border-border">
-          {pillars.map(({ icon: Icon, title, desc }) => (
-            <div key={title} className="flex items-start gap-2.5">
-              <div className="w-6 h-6 rounded-lg bg-brand-50 flex items-center justify-center flex-shrink-0 mt-0.5">
-                <Icon size={12} className="text-brand-600" />
-              </div>
-              <div>
-                <p className="text-[11px] font-semibold text-ink leading-tight">{title}</p>
-                <p className="text-[10px] text-ink-muted leading-relaxed mt-0.5">{desc}</p>
-              </div>
-            </div>
-          ))}
-        </div>
+        {/* Summary line */}
+        <p className="text-[11px] text-ink-subtle leading-relaxed pt-4 border-t border-border">
+          Financial clarity, optimized readiness, and data-backed decisions.
+        </p>
 
       </div>
 
