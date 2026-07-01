@@ -1,7 +1,6 @@
 import { useState, useCallback, useEffect } from 'react'
 import { analytics }           from './services/analytics.js'
 import Header                  from './components/layout/Header.jsx'
-import TrustSidebar            from './components/funnel/TrustSidebar.jsx'
 import HeroAnalysis            from './components/landing/HeroAnalysis.jsx'
 import HowItWorksSection       from './components/landing/HowItWorksSection.jsx'
 import LandingFooter           from './components/landing/LandingFooter.jsx'
@@ -227,11 +226,8 @@ export default function App() {
       {/* ── Funnel steps 1–4 (8+4 col grid) ─────────── */}
       {isFunnel && (
         <main className="py-8 sm:py-12">
-          <div className="max-w-6xl mx-auto px-4 sm:px-6">
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-
-              <div className="lg:col-span-8">
-                <div key={currentStep} className="animate-fade-up">
+          <div className="max-w-2xl mx-auto px-4 sm:px-6">
+            <div key={currentStep} className="animate-fade-up">
 
                   {currentStep === 1 && (
                     <Step1EntityType
@@ -339,13 +335,6 @@ export default function App() {
                       onContinue={handleStep4Continue}
                     />
                   )}
-
-                </div>
-              </div>
-
-              <div className="lg:col-span-4">
-                <TrustSidebar />
-              </div>
 
             </div>
           </div>
