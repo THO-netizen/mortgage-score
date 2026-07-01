@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { BarChart2, Clock, Lock, Shield, X } from 'lucide-react'
+import { Clock, X } from 'lucide-react'
 
 // ── How-it-works modal ────────────────────────────────
 
@@ -121,8 +121,7 @@ export default function HeroAnalysis({ onStart }) {
 
           {/* Sub */}
           <p className="text-slate-400 text-sm sm:text-[15px] max-w-md mx-auto mb-10 leading-relaxed">
-            A 4-step profile analysis based on Czech bank underwriting parameters.
-            No documents required.
+            Built for expats, freelancers, and business owners navigating Czech mortgage approval.
           </p>
 
           {/* Primary CTA */}
@@ -133,6 +132,36 @@ export default function HeroAnalysis({ onStart }) {
           >
             Start Assessment
           </button>
+
+          {/* Human trust block */}
+          <div className="flex items-center justify-center gap-3.5 mb-5">
+            <img
+              src="/andy-le.png"
+              alt="Andy Le"
+              className="w-16 h-16 rounded-full object-cover object-top flex-shrink-0 ring-2 ring-white/10"
+            />
+            <div className="text-left">
+              <p className="text-white text-[13px] font-semibold leading-tight">Andy Le</p>
+              <p className="text-slate-400 text-[11px] leading-snug mt-0.5">
+                Mortgage &amp; Property Financing Specialist
+              </p>
+              <p className="text-brand-400 text-[11px] italic mt-1 leading-snug">
+                "Understand your mortgage readiness<br />before speaking to the bank."
+              </p>
+            </div>
+          </div>
+
+          {/* Trust badges */}
+          <div className="flex items-center justify-center gap-4 flex-wrap mb-10">
+            {['No credit impact', 'No documents required', 'Based on Czech lender criteria'].map((badge) => (
+              <span key={badge} className="flex items-center gap-1 text-slate-500 text-[11px]">
+                <svg width="10" height="10" viewBox="0 0 10 10" fill="none" className="flex-shrink-0">
+                  <path d="M2 5L4 7L8 3" stroke="#10B981" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+                {badge}
+              </span>
+            ))}
+          </div>
 
           {/* Secondary CTA */}
           <div className="mb-4">
@@ -146,7 +175,7 @@ export default function HeroAnalysis({ onStart }) {
           </div>
 
           {/* Tertiary CTA */}
-          <div className="mb-12">
+          <div>
             <a
               href="https://calendly.com/andy-le/15min"
               target="_blank"
@@ -155,22 +184,6 @@ export default function HeroAnalysis({ onStart }) {
             >
               Need help understanding your situation?
             </a>
-          </div>
-
-          {/* Trust signals */}
-          <div className="flex items-center justify-center gap-5 flex-wrap">
-            <div className="flex items-center gap-1.5 text-slate-600 text-[11px]">
-              <Lock size={11} />
-              <span>No data stored</span>
-            </div>
-            <div className="flex items-center gap-1.5 text-slate-600 text-[11px]">
-              <Shield size={11} />
-              <span>No credit check</span>
-            </div>
-            <div className="flex items-center gap-1.5 text-slate-600 text-[11px]">
-              <BarChart2 size={11} />
-              <span>Simulation model — not a bank decision</span>
-            </div>
           </div>
 
         </div>
