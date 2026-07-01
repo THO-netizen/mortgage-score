@@ -76,9 +76,6 @@ export default function HowItWorksSection({ onStart }) {
         >
           Start Assessment
         </button>
-        <p className="text-[11px] text-ink-subtle mt-4">
-          No account required · No credit check · Simulation model
-        </p>
 
       </div>
     </section>
