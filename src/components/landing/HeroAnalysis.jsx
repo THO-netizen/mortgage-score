@@ -134,14 +134,21 @@ export default function HeroAnalysis({ onStart }) {
           </button>
 
           {/* Human trust block */}
-          <div className="flex items-center justify-center gap-3.5 mb-5">
+          <a
+            href="https://www.facebook.com/p/Andy-Le-100079180972737/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center justify-center gap-3.5 mb-5 group"
+          >
             <img
               src="/andy-le.png"
               alt="Andy Le"
-              className="w-16 h-16 rounded-full object-cover object-top flex-shrink-0 ring-2 ring-white/10"
+              className="w-16 h-16 rounded-full object-cover object-top flex-shrink-0 ring-2 ring-white/10 transition-opacity duration-150 group-hover:opacity-80"
             />
             <div className="text-left">
-              <p className="text-white text-[13px] font-semibold leading-tight">Andy Le</p>
+              <p className="text-white text-[13px] font-semibold leading-tight group-hover:text-brand-400 transition-colors duration-150">
+                Andy Le
+              </p>
               <p className="text-slate-400 text-[11px] leading-snug mt-0.5">
                 Mortgage &amp; Property Financing Specialist
               </p>
@@ -149,7 +156,7 @@ export default function HeroAnalysis({ onStart }) {
                 "Understand your mortgage readiness<br />before speaking to the bank."
               </p>
             </div>
-          </div>
+          </a>
 
           {/* Trust badges */}
           <div className="flex items-center justify-center gap-4 flex-wrap mb-10">
