@@ -1,4 +1,3 @@
-import { Shield, Lock } from 'lucide-react'
 
 /**
  * Sticky glassmorphism header.
@@ -48,19 +47,6 @@ export default function Header({ currentStep, totalSteps = 7 }) {
           </div>
         )}
 
-        {/* ── Badges ───────────────────────────────────── */}
-        <div className="ml-auto flex items-center gap-1 sm:gap-3 flex-shrink-0">
-          <div className="flex items-center gap-1.5 rounded-full bg-success-light border border-success-border px-3 py-1">
-            <Lock size={11} className="text-success-text" />
-            <span className="text-[11px] font-semibold text-success-text hidden xs:inline">
-              100% Private
-            </span>
-          </div>
-          <div className="hidden md:flex items-center gap-1.5 rounded-full bg-surface border border-border px-3 py-1">
-            <Shield size={11} className="text-brand-600" />
-            <span className="text-[11px] font-semibold text-ink-muted">No credit check</span>
-          </div>
-        </div>
       </div>
 
       {/* Mobile progress bar — full-width strip under the header */}
