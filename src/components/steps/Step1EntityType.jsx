@@ -329,7 +329,7 @@ const ENTITY_OPTIONS = [
     docs:     [],
     note:     'Open a personal consultation',
     external: true,
-    href:     'https://calendly.com/andy-le/15min',
+    href:     'https://calendly.com/andy-lkadvisor/30min',
   },
 ]
 

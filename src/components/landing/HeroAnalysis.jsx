@@ -188,7 +188,7 @@ export default function HeroAnalysis({ onStart }) {
           {/* Tertiary CTA */}
           <div>
             <a
-              href="https://calendly.com/andy-le/15min"
+              href="https://calendly.com/andy-lkadvisor/30min"
               target="_blank"
               rel="noopener noreferrer"
               className="text-slate-600 hover:text-slate-500 text-[12px] transition-colors"

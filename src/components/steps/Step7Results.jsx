@@ -1114,7 +1114,7 @@ export default function Step7Results({ formData, onBack, onRestart }) {
                 into a real Czech bank application for your specific profile.
               </p>
               <a
-                href="https://calendly.com/andy-le/15min"
+                href="https://calendly.com/andy-lkadvisor/30min"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="btn-cta mx-auto"

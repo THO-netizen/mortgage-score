@@ -2,7 +2,7 @@ import { Calendar, Shield, Lock } from 'lucide-react'
 import FunnelCard from '../funnel/FunnelCard.jsx'
 import ActionBar  from '../funnel/ActionBar.jsx'
 
-const CALENDLY_URL = 'https://calendly.com/andy-le/15min'
+const CALENDLY_URL = 'https://calendly.com/andy-lkadvisor/30min'
 
 // Google Forms endpoint (same form as Step 6 lead capture)
 const GF_URL = 'https://docs.google.com/forms/d/e/1FAIpQLSddO9mI3_GJL4W4TzS2atu4vbKAIiI2TUEVRN__GaQJeqeogA/formResponse'
