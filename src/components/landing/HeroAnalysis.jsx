@@ -125,38 +125,54 @@ export default function HeroAnalysis({ onStart }) {
           </p>
 
           {/* Primary CTA */}
-          <button
-            onClick={onStart}
-            type="button"
-            className="btn-cta mx-auto text-base px-14 mb-5"
-          >
-            Start Assessment
-          </button>
+          <div className="mb-6">
+            <button
+              onClick={onStart}
+              type="button"
+              className="btn-cta mx-auto text-base px-14"
+            >
+              Start Assessment
+            </button>
+          </div>
 
           {/* Human trust block */}
-          <a
-            href="https://www.facebook.com/p/Andy-Le-100079180972737/"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center justify-center gap-3.5 mb-10 group"
-          >
-            <img
-              src="/andy-le.png"
-              alt="Andy Le"
-              className="w-16 h-16 rounded-full object-cover object-top flex-shrink-0 ring-2 ring-white/10 transition-opacity duration-150 group-hover:opacity-80"
-            />
-            <div className="text-left">
-              <p className="text-white text-[13px] font-semibold leading-tight group-hover:text-brand-400 transition-colors duration-150">
-                Andy Le
-              </p>
-              <p className="text-slate-400 text-[11px] leading-snug mt-0.5">
-                Mortgage &amp; Property Financing Specialist
-              </p>
-              <p className="text-brand-400 text-[11px] italic mt-1 leading-snug">
-                "Understand your mortgage readiness<br />before speaking to the bank."
-              </p>
-            </div>
-          </a>
+          <div className="mb-5">
+            <a
+              href="https://www.facebook.com/p/Andy-Le-100079180972737/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center justify-center gap-3.5 group"
+            >
+              <img
+                src="/andy-le.png"
+                alt="Andy Le"
+                className="w-16 h-16 rounded-full object-cover object-top flex-shrink-0 ring-2 ring-white/10 transition-opacity duration-150 group-hover:opacity-80"
+              />
+              <div className="text-left">
+                <p className="text-white text-[13px] font-semibold leading-tight group-hover:text-brand-400 transition-colors duration-150">
+                  Andy Le
+                </p>
+                <p className="text-slate-400 text-[11px] leading-snug mt-0.5">
+                  Mortgage &amp; Property Financing Specialist
+                </p>
+                <p className="text-brand-400 text-[11px] italic mt-1 leading-snug">
+                  "Understand your mortgage readiness<br />before speaking to the bank."
+                </p>
+              </div>
+            </a>
+          </div>
+
+          {/* Trust badges */}
+          <div className="flex items-center justify-center gap-4 flex-wrap mb-10">
+            {['No credit impact', 'No documents required', 'Based on Czech lender criteria'].map((badge) => (
+              <span key={badge} className="flex items-center gap-1 text-slate-500 text-[11px]">
+                <svg width="10" height="10" viewBox="0 0 10 10" fill="none" className="flex-shrink-0">
+                  <path d="M2 5L4 7L8 3" stroke="#10B981" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+                {badge}
+              </span>
+            ))}
+          </div>
 
           {/* Secondary CTA */}
           <div className="mb-4">
