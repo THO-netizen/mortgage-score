@@ -138,7 +138,7 @@ export default function HeroAnalysis({ onStart }) {
             href="https://www.facebook.com/p/Andy-Le-100079180972737/"
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center justify-center gap-3.5 mb-5 group"
+            className="inline-flex items-center justify-center gap-3.5 mb-10 group"
           >
             <img
               src="/andy-le.png"
@@ -157,18 +157,6 @@ export default function HeroAnalysis({ onStart }) {
               </p>
             </div>
           </a>
-
-          {/* Trust badges */}
-          <div className="flex items-center justify-center gap-4 flex-wrap mb-10">
-            {['No credit impact', 'No documents required', 'Based on Czech lender criteria'].map((badge) => (
-              <span key={badge} className="flex items-center gap-1 text-slate-500 text-[11px]">
-                <svg width="10" height="10" viewBox="0 0 10 10" fill="none" className="flex-shrink-0">
-                  <path d="M2 5L4 7L8 3" stroke="#10B981" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
-                {badge}
-              </span>
-            ))}
-          </div>
 
           {/* Secondary CTA */}
           <div className="mb-4">
