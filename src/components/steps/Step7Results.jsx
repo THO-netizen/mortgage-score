@@ -6,6 +6,7 @@ import {
   Briefcase, Activity, ChevronDown,
 } from 'lucide-react'
 import { formatCZK, formatCZKShort } from '../../utils/formatters.js'
+import { generateMortgagePdf } from '../../utils/generatePdf.js'
 import {
   computeScore, computeMortgageProfile,
   monthlyPayment, annuityFactor,
@@ -775,7 +776,7 @@ function SoftLockGate({ onUnlock, formData }) {
     gf.append('entry.1807846036', form.phone || '')
     fetch(GFORM_ENDPOINT, { method: 'POST', mode: 'no-cors', body: gf }).catch(() => {})
 
-    onUnlock()
+    onUnlock(form.name.trim())
   }
 
   const canSubmit = !submitting && form.name.trim() && form.email.trim()
@@ -923,6 +924,8 @@ export default function Step7Results({ formData, onBack, onRestart }) {
   const cfg   = scoreCfg(score)
 
   const [isUnlocked,    setIsUnlocked]    = useState(false)
+  const [unlockedName,  setUnlockedName]  = useState('')
+  const [pdfLoading,    setPdfLoading]    = useState(false)
   const [simNetIncome, setSimNetIncome] = useState(
     (formData.netMonthlySalary || formData.netIncome) > 0
       ? (formData.netMonthlySalary || formData.netIncome)
@@ -1051,7 +1054,10 @@ export default function Step7Results({ formData, onBack, onRestart }) {
 
         {/* ── Soft lock gate OR full content ──────────────── */}
         {!isUnlocked ? (
-          <SoftLockGate onUnlock={() => setIsUnlocked(true)} formData={formData} />
+          <SoftLockGate
+            onUnlock={(name) => { setIsUnlocked(true); setUnlockedName(name || '') }}
+            formData={formData}
+          />
         ) : (
           <>
             {/* 4 accordions */}
@@ -1099,6 +1105,41 @@ export default function Step7Results({ formData, onBack, onRestart }) {
                 </div>
               </AccordionSection>
 
+            </div>
+
+            {/* Download Report */}
+            <div className="rounded-2xl border border-border bg-card px-6 sm:px-10 py-7 flex flex-col sm:flex-row items-center gap-5">
+              <div className="flex-1">
+                <p className="text-[10px] font-bold tracking-widest uppercase text-brand-600 mb-1">
+                  PDF Report
+                </p>
+                <h3 className="font-display text-base font-black text-ink leading-tight mb-1">
+                  Download your assessment
+                </h3>
+                <p className="text-xs text-ink-muted leading-relaxed">
+                  A clean, printable PDF with your eligibility score, DTI, DSTI, income structure, and risk factors. Generated in your browser — no data leaves your device.
+                </p>
+              </div>
+              <button
+                type="button"
+                disabled={pdfLoading}
+                onClick={() => {
+                  setPdfLoading(true)
+                  setTimeout(() => {
+                    try {
+                      generateMortgagePdf(
+                        { ...formData, netIncome: (formData.netMonthlySalary > 0 ? formData.netMonthlySalary : formData.netIncome) || 0 },
+                        unlockedName,
+                      )
+                    } catch (_) { /* silent */ }
+                    setPdfLoading(false)
+                  }, 0)
+                }}
+                className="flex-shrink-0 inline-flex items-center gap-2 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-sm font-semibold px-6 py-3 transition-colors duration-150 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+              >
+                <FileText size={15} className="flex-shrink-0" />
+                {pdfLoading ? 'Generating…' : 'Download Report'}
+              </button>
             </div>
 
             {/* Primary CTA — Consultation */}
