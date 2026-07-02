@@ -1124,16 +1124,31 @@ export default function Step7Results({ formData, onBack, onRestart }) {
                 type="button"
                 disabled={pdfLoading}
                 onClick={() => {
+                  console.log('[MortgageScore] Download Report clicked')
                   setPdfLoading(true)
-                  setTimeout(() => {
-                    try {
-                      generateMortgagePdf(
-                        { ...formData, netIncome: (formData.netMonthlySalary > 0 ? formData.netMonthlySalary : formData.netIncome) || 0 },
-                        unlockedName,
-                      )
-                    } catch (err) { console.error('[PDF] generation error:', err) }
+                  try {
+                    const resolvedIncome = (formData.netMonthlySalary > 0 ? formData.netMonthlySalary : formData.netIncome) || 0
+                    console.log('[MortgageScore] Calling generateMortgagePdf, income:', resolvedIncome)
+                    const blob = generateMortgagePdf(
+                      { ...formData, netIncome: resolvedIncome },
+                      unlockedName,
+                    )
+                    console.log('[MortgageScore] PDF blob generated, size:', blob?.size)
+                    const safeName = (unlockedName || 'applicant').toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '') || 'applicant'
+                    const url  = URL.createObjectURL(blob)
+                    const link = document.createElement('a')
+                    link.href     = url
+                    link.download = `mortgage-assessment-${safeName}.pdf`
+                    document.body.appendChild(link)
+                    link.click()
+                    document.body.removeChild(link)
+                    URL.revokeObjectURL(url)
+                    console.log('[MortgageScore] Download triggered')
+                  } catch (err) {
+                    console.error('[MortgageScore] PDF error:', err)
+                  } finally {
                     setPdfLoading(false)
-                  }, 0)
+                  }
                 }}
                 className="flex-shrink-0 inline-flex items-center gap-2 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-sm font-semibold px-6 py-3 transition-colors duration-150 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
               >

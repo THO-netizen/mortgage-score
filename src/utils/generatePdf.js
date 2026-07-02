@@ -419,8 +419,7 @@ export function generateMortgagePdf(formData, userName) {
   doc.setTextColor(148, 163, 184)
   doc.text('Andy Le — Mortgage & Property Financing Specialist', W - M, 291, { align: 'right' })
 
-  // ── Save ──────────────────────────────────────────
+  // ── Return blob (caller handles download to stay in user-gesture context) ──
 
-  const safeName = (userName || 'applicant').toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')
-  doc.save(`mortgage-assessment-${safeName}.pdf`)
+  return doc.output('blob')
 }
