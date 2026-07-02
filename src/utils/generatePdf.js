@@ -353,7 +353,7 @@ export function generateMortgagePdf(formData, userName) {
 
       doc.setFont('helvetica', 'normal')
       doc.setFontSize(9)
-      doc.setTextColor(isRisk ? [127, 29, 29] : [92, 64, 4])
+      doc.setTextColor(...(isRisk ? [127, 29, 29] : [92, 64, 4]))
 
       const text = info?.text ?? f.replace(/_/g, ' ')
       const lines = doc.splitTextToSize(text, CW - 8)

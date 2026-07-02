@@ -1131,7 +1131,7 @@ export default function Step7Results({ formData, onBack, onRestart }) {
                         { ...formData, netIncome: (formData.netMonthlySalary > 0 ? formData.netMonthlySalary : formData.netIncome) || 0 },
                         unlockedName,
                       )
-                    } catch (_) { /* silent */ }
+                    } catch (err) { console.error('[PDF] generation error:', err) }
                     setPdfLoading(false)
                   }, 0)
                 }}
