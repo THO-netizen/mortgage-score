@@ -4,7 +4,7 @@ import { Lock, Shield } from 'lucide-react'
 const PHASES = [
   { text: 'Analyzing financial profile…',                    ms: 850  },
   { text: 'Calculating DTI and LTV risk parameters…',        ms: 950  },
-  { text: 'Validating against 2026 ČNB regulatory guidelines…', ms: 900 },
+  { text: 'Validating against 2026 Czech National Bank regulatory guidelines…', ms: 900 },
 ]
 
 const TOTAL_MS = PHASES.reduce((s, p) => s + p.ms, 0)

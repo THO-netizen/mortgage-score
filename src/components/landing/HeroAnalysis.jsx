@@ -8,7 +8,7 @@ const MODAL_STEPS = [
     n: 1,
     title: 'Income profile',
     time: '~30 sec',
-    desc: 'Select your income structure — salaried employment, self-employed (OSVČ), or company director (s.r.o.). Determines the underwriting methodology applied.',
+    desc: 'Select your income structure — salaried employment, self-employed, or company director. Determines the underwriting methodology applied.',
   },
   {
     n: 2,

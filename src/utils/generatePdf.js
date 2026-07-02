@@ -8,16 +8,16 @@ import {
 
 function czk(n) {
   if (!n || n <= 0) return '—'
-  return new Intl.NumberFormat('cs-CZ', {
-    style: 'currency', currency: 'CZK', maximumFractionDigits: 0,
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency', currency: 'CZK', currencyDisplay: 'code', maximumFractionDigits: 0,
   }).format(n)
 }
 
 function czkShort(n) {
   if (!n || n <= 0) return '—'
-  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1).replace('.0', '')} M Kč`
-  if (n >= 1_000) return `${Math.round(n / 1_000)}K Kč`
-  return `${Math.round(n)} Kč`
+  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1).replace('.0', '')}M CZK`
+  if (n >= 1_000) return `${Math.round(n / 1_000)}K CZK`
+  return `${Math.round(n)} CZK`
 }
 
 function pct(n) {
@@ -33,9 +33,9 @@ function scoreLabel(s) {
 
 function entityLabel(entityType) {
   const m = {
-    zamestnanec: 'Employee (Zaměstnanec)',
-    osvc:        'Self-Employed (OSVČ)',
-    sro:         's.r.o. Director',
+    zamestnanec: 'Employee',
+    osvc:        'Self-Employed',
+    sro:         'Company Director (Ltd.)',
     other:       'Other / Complex',
   }
   return m[entityType] ?? entityType
@@ -54,7 +54,7 @@ function residenceLabel(r) {
 }
 
 function taxLabel(taxRegime) {
-  if (taxRegime === 'flat_tax') return 'Flat Tax (Paušální daň)'
+  if (taxRegime === 'flat_tax') return 'Flat Tax Regime'
   if (taxRegime === 'tax_return') return 'Standard Tax Return'
   return '—'
 }
@@ -74,7 +74,7 @@ export function generateMortgagePdf(formData, userName) {
     existingDebt, flags, redFlags,
   } = profile
 
-  const today = new Date().toLocaleDateString('cs-CZ', { year: 'numeric', month: 'long', day: 'numeric' })
+  const today = new Date().toLocaleDateString('en-GB', { year: 'numeric', month: 'long', day: 'numeric' })
 
   const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' })
   const W   = 210
@@ -230,7 +230,7 @@ export function generateMortgagePdf(formData, userName) {
       ['Annual Turnover',     czk(formData.annualTurnover)],
     ] : []),
     ...(formData.entityType === 'zamestnanec' ? [
-      ['Contract Type',       { indefinite: 'Indefinite (HPP)', definite: 'Fixed-term', agency: 'Agency', dpc: 'DPČ / DPP' }[formData.contractType] ?? '—'],
+      ['Contract Type',       { indefinite: 'Indefinite', definite: 'Fixed-term', agency: 'Agency', dpc: 'Supplemental Agreement' }[formData.contractType] ?? '—'],
     ] : []),
     ['Existing Debt / mo',    czk(existingDebt)],
   ]
@@ -268,7 +268,7 @@ export function generateMortgagePdf(formData, userName) {
     ['Loan Amount',          czk(Math.max(0, (formData.purchasePrice || 0) - (formData.ownFunds || 0)))],
     ['Property Purpose',     { primary: 'Primary Residence', investment: 'Investment / Rental', holiday: 'Holiday Home' }[formData.propertyPurpose] ?? '—'],
     ['LTV Ratio',            pct(ltvPct)],
-    ['Max LTV (ČNB)',        pct(maxLTVPct)],
+    ['Max LTV (Regulatory)', pct(maxLTVPct)],
   ]
 
   for (let i = 0; i < propRows.length; i += 2) {
@@ -316,23 +316,23 @@ export function generateMortgagePdf(formData, userName) {
   const allFlags = [...(flags ?? []), ...(redFlags ?? [])]
 
   const FLAG_LABELS = {
-    flat_tax_method:          { text: 'Income calculated via Flat Tax (Paušální daň) methodology', risk: false },
+    flat_tax_method:          { text: 'Income calculated via Flat Tax Regime methodology', risk: false },
     turnover_method:          { text: 'Income derived from annual turnover (55% recognition coefficient)', risk: false },
     fixed_term_expiring_soon: { text: 'Fixed-term contract expiring soon — lender may require renewal evidence', risk: true },
     probation:                { text: 'Applicant in probation period — most banks will decline until end of probation', risk: true },
     no_income:                { text: 'No income provided — simulation mode only', risk: true },
-    short_business_history:   { text: 'Business history <12 months — significantly limits eligible lenders', risk: true },
+    short_business_history:   { text: 'Business history under 12 months — significantly limits eligible lenders', risk: true },
     young_business_12_24:     { text: 'Business history 12–24 months — reduced income recognition at some banks', risk: false },
-    osvc_new_enterprise:      { text: 'New OSVČ enterprise (<12 months) — transition path; specialist routing required', risk: true },
+    osvc_new_enterprise:      { text: 'New self-employment (<12 months) — transition path; specialist routing required', risk: true },
     sro_negative_financials:  { text: 'Company financials show negative equity or loss — hard block on ESSO income', risk: true },
     sro_insufficient_history: { text: 'Company history insufficient (<12 months) — ESSO income not recognisable', risk: true },
     sro_medium_risk_50pct_cap:{ text: 'ESSO: income recognised at 50% cap (1–2 completed fiscal years)', risk: false },
     high_ltv:                 { text: 'LTV exceeds recommended threshold — fewer lenders eligible', risk: true },
-    dsti_at_limit:            { text: 'DSTI close to ČNB ceiling of 45% — limited debt headroom', risk: true },
+    dsti_at_limit:            { text: 'DSTI close to regulatory ceiling of 45% — limited debt headroom', risk: true },
     dti_above_limit:          { text: 'DTI above applicable cap — loan amount constrained', risk: true },
     no_residence:             { text: 'Non-EU residence status — approximately 40% of Czech banks eligible', risk: true },
     agency_worker:            { text: 'Agency / temp worker — limited bank eligibility', risk: true },
-    dpc_contract:             { text: 'DPČ / DPP agreement — income recognised partially or not at all', risk: true },
+    dpc_contract:             { text: 'Supplemental employment agreement — income recognised partially or not at all', risk: true },
   }
 
   if (allFlags.length === 0) {

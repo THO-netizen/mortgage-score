@@ -14,7 +14,7 @@ export default function CurrencyInput({
   min     = 0,
   max,
   hint,
-  placeholder = '0 Kč',
+  placeholder = '0 CZK',
 }) {
   const [focused, setFocused] = useState(false)
   const [raw,     setRaw]     = useState('')

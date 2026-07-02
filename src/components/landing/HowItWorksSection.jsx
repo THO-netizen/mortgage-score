@@ -5,7 +5,7 @@ const STEPS = [
     n: 1,
     title: 'Income profile',
     time: '~30 sec',
-    desc: 'Select your income structure — salaried employment, self-employed (OSVČ), or company director (s.r.o.). Determines the applicable underwriting methodology and income recognition rules.',
+    desc: 'Select your income structure — salaried employment, self-employed, or company director. Determines the applicable underwriting methodology and income recognition rules.',
   },
   {
     n: 2,
@@ -17,13 +17,13 @@ const STEPS = [
     n: 3,
     title: 'Existing debt obligations',
     time: '~30 sec',
-    desc: 'Current monthly obligations — loan repayments, leasing, and credit card limits. Used to calculate your debt service ratio against the ČNB 45% ceiling.',
+    desc: 'Current monthly obligations — loan repayments, leasing, and credit card limits. Used to calculate your debt service ratio against the regulatory 45% ceiling.',
   },
   {
     n: 4,
     title: 'Property & financing',
     time: '~30 sec',
-    desc: 'Purchase price, available own funds, and property purpose. Determines your LTV position and the maximum eligible loan amount under ČNB regulation.',
+    desc: 'Purchase price, available own funds, and property purpose. Determines your LTV position and the maximum eligible loan amount under regulatory guidelines.',
   },
 ]
 

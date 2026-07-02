@@ -75,7 +75,7 @@ export default function Step3Liabilities({ data, onChange, onBack, onContinue })
         <CurrencyInput
           id="otherObligations"
           label="Other Monthly Obligations"
-          sublabel="alimony · co-signed liabilities (Ručení) · maintenance"
+          sublabel="alimony · co-signed liabilities · maintenance"
           value={otherObligations}
           onChange={(v) => onChange('otherObligations', v)}
           max={200_000}

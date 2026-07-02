@@ -23,14 +23,14 @@ const GAUGE_CIRC = 2 * Math.PI * GAUGE_R
 const TIMELINE_STEPS = [
   { label: 'Pre-scoring Check',        desc: 'Free eligibility assessment complete — you are here.',                                                              done: true,  current: true  },
   { label: 'Property Search & Offer',  desc: 'Locate your property and agree a purchase price with the seller.',                                                  done: false, current: false },
-  { label: 'Reservation Agreement',    desc: 'Reservation Agreement (Rezervační smlouva) — secure the property with a 3–5% deposit.',                            done: false, current: false },
+  { label: 'Reservation Agreement',    desc: 'Reservation Agreement — secure the property with a 3–5% deposit paid to the seller.',                             done: false, current: false },
   { label: 'Bank Pre-approval',        desc: 'Submit indicative application to selected lenders for competing offers.',                                           done: false, current: false },
-  { label: 'Property Appraisal',       desc: 'Property Appraisal (Odhad nemovitosti) — bank-commissioned valuer confirms market value.',                         done: false, current: false },
+  { label: 'Property Appraisal',       desc: 'Property Appraisal — bank-commissioned valuer confirms market value.',                         done: false, current: false },
   { label: 'Full Mortgage Application',desc: 'Submit complete document package: income evidence, bank statements, company financials.',                           done: false, current: false },
-  { label: 'Bank Underwriting',        desc: 'Credit committee review — typically 10–20 working days for Self-employed (OSVČ) and Company Director applicants.', done: false, current: false },
-  { label: 'Mortgage Contract',        desc: 'Mortgage Contract (Úvěrová smlouva) signed; disbursement conditions and drawdown date confirmed.',                 done: false, current: false },
-  { label: 'Land Registry Filing',     desc: 'Land Registry (Katastr nemovitostí) — property lien (zástavní právo) registered against the title.',               done: false, current: false },
-  { label: 'Property Handover',        desc: 'Property Handover (Předání nemovitosti) — keys exchanged, mortgage live, ownership transferred.',                  done: false, current: false },
+  { label: 'Bank Underwriting',        desc: 'Credit committee review — typically 10–20 working days for self-employed and company director applicants.',        done: false, current: false },
+  { label: 'Mortgage Contract',        desc: 'Mortgage Contract signed; disbursement conditions and drawdown date confirmed.',                                    done: false, current: false },
+  { label: 'Land Registry Filing',     desc: 'Land Registry — property lien registered against the title deed.',                                                  done: false, current: false },
+  { label: 'Property Handover',        desc: 'Property Handover — keys exchanged, mortgage live, ownership transferred.',                                         done: false, current: false },
 ]
 
 const STATUS_CFG = {
@@ -102,7 +102,7 @@ function buildFactors(f, simNetIncome) {
   const businessOrEmploymentFactor = isEmployee ? {
     title:  'Employment Status',
     icon:   Briefcase,
-    detail: { indefinite: 'Indefinite contract (HPP)', definite: 'Fixed-term contract', agency: 'Agency / temp worker', dpc: 'DPČ / DPP agreement' }[contractType] ?? 'Contract not specified',
+    detail: { indefinite: 'Indefinite contract', definite: 'Fixed-term contract', agency: 'Agency / temp worker', dpc: 'Supplemental employment agreement' }[contractType] ?? 'Contract not specified',
     desc: (() => {
       const parts = []
       const inProbation = isProbation || probationPeriod === 'yes'
@@ -118,10 +118,10 @@ function buildFactors(f, simNetIncome) {
         if (flags.includes('fixed_term_expiring_soon'))
           parts.push('Fixed-term contract expiring soon — lenders may request evidence of renewal. Advisor review recommended.')
         else
-          parts.push('Fixed-term contract — assessed identically to indefinite HPP when end date is >2 months away.')
+          parts.push('Fixed-term contract — assessed identically to an indefinite contract when end date is >2 months away.')
       }
       if (contractType === 'agency')   parts.push('Agency contract: 25% income haircut; higher variance across banks.')
-      if (contractType === 'dpc')      parts.push('DPČ/DPP: treated as supplemental income; 30% haircut applied.')
+      if (contractType === 'dpc')      parts.push('Supplemental agreement: treated as supplemental income; 30% haircut applied.')
       if (contractType === 'indefinite') parts.push('Indefinite contract — preferred by all 19 covered banks.')
       const sectorLabel = { health: 'Healthcare', education: 'Education', other: 'Private sector' }[employmentSector] ?? 'Not specified'
       parts.push(`Sector: ${sectorLabel}.`)
@@ -139,7 +139,7 @@ function buildFactors(f, simNetIncome) {
     title:  'Business Structure',
     icon:   Users,
     detail: (() => {
-      if (entityType === 'osvc') return 'Self-employed (OSVČ)'
+      if (entityType === 'osvc') return 'Self-employed'
       if (entityType === 'sro') {
         const essoBlock = redFlags.includes('sro_negative_financials') || redFlags.includes('sro_insufficient_history')
         if (essoBlock) return 's.r.o. Director — ESSO Hard Block'
@@ -160,7 +160,7 @@ function buildFactors(f, simNetIncome) {
         const ageNote = businessAgeMonths >= 24
           ? `Business age ${age} — 24-month requirement met by all banks.`
           : businessAgeMonths >= 12
-          ? `Business age ${age} — below 24 months; 15% income haircut applied; ČS/mBank require 24 months.`
+          ? `Business age ${age} — below 24 months; 15% income haircut applied by most lenders.`
           : `Business age ${age} — below 12 months; transition path required (same NACE + single B2B client).`
         return `${base} ${ageNote}${businessName ? ` Registered: ${businessName}.` : ''}`
       }
@@ -257,7 +257,7 @@ function buildFactors(f, simNetIncome) {
         : profile.ltvBreached
           ? `Exceeds the ${maxLTVPct}% cap for this purpose/age combination — own funds must increase.`
           : ltvPct > 70
-          ? `Acceptable — above 70% LTV some banks add a risk premium. Cap is ${maxLTVPct}% (${propertyPurpose === 'investment' ? 'investment hard limit' : applicantAge < 36 ? 'První bydlení' : 'CNB standard'}).`
+          ? `Acceptable — above 70% LTV some banks add a risk premium. Cap is ${maxLTVPct}% (${propertyPurpose === 'investment' ? 'investment hard limit' : applicantAge < 36 ? 'First Home scheme' : 'regulatory standard'}).`
           : `Below 70% LTV — unlocks competitive fixed rates across all lenders.`,
       status: !purchasePrice ? 'review'
         : profile.ltvBreached ? 'risk'
@@ -712,7 +712,7 @@ function SummaryCard({ profile, formData }) {
 
   const entityLabel = {
     zamestnanec: 'Salaried employment',
-    osvc:        'Self-employed (OSVČ)',
+    osvc:        'Self-employed',
     sro:         'Company director (s.r.o.)',
   }[formData.entityType] ?? 'Income assessed'
 

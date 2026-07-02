@@ -19,18 +19,18 @@ function mapLegalForm(pravniForma) {
 
 // ARES pravniForma code → English display label
 const LEGAL_FORM_LABELS = {
-  '101': 'Sole Trader (živnostník)',
-  '102': 'Sole Trader (živnostník)',
+  '101': 'Sole Trader',
+  '102': 'Sole Trader',
   '103': 'Sole Trader — Agriculture',
   '104': 'Sole Trader — Liberal Profession',
-  '105': 'Sole Trader (OSVČ)',
-  '106': 'Sole Trader (OSVČ)',
-  '107': 'Sole Trader (OSVČ)',
-  '108': 'Sole Trader (OSVČ)',
-  '109': 'Sole Trader (OSVČ)',
+  '105': 'Sole Trader',
+  '106': 'Sole Trader',
+  '107': 'Sole Trader',
+  '108': 'Sole Trader',
+  '109': 'Sole Trader',
   '112': 'Limited Liability Company (s.r.o.)',
   '121': 'Joint-Stock Company (a.s.)',
-  '141': 'Cooperative (Družstvo)',
+  '141': 'Cooperative',
   '205': 'State Enterprise',
   '301': 'Branch of Foreign Entity',
   '325': 'European Company (SE)',
@@ -157,7 +157,7 @@ function IcoLookup({ onResult }) {
   }
 
   const entityBadgeClass = resolvedType === 'osvc' ? 'badge-warning' : 'badge-neutral'
-  const entityBadgeLabel = resolvedType === 'osvc' ? 'OSVČ' : resolvedType === 'sro' ? 's.r.o.' : 'Other'
+  const entityBadgeLabel = resolvedType === 'osvc' ? 'Self-employed' : resolvedType === 'sro' ? 'Company Director' : 'Other'
   const canVerify = icoInput.length === 8 && status !== 'loading'
   const hasResult = status === 'found' || status === 'inactive'
 
@@ -171,7 +171,7 @@ function IcoLookup({ onResult }) {
       {/* ── IČO input + Verify button ─────────────────── */}
       <div>
         <label htmlFor="ico" className="section-label mb-2 block">
-          Registration Number (IČO)
+          Company Registration Number
         </label>
         <div className="flex gap-2">
           <div className="relative flex-1">
@@ -206,7 +206,7 @@ function IcoLookup({ onResult }) {
           >
             {status === 'loading'
               ? <><Loader2 size={14} className="animate-spin" /> Verifying…</>
-              : 'Verify IČO'
+              : 'Verify Company'
             }
           </button>
         </div>
@@ -214,7 +214,7 @@ function IcoLookup({ onResult }) {
         {status === 'error' && (
           <div className="flex items-center gap-1.5 mt-2">
             <XCircle size={12} className="text-risk-DEFAULT flex-shrink-0" />
-            <p className="text-xs text-risk-text">Invalid IČO or company not found. Please check the number and try again.</p>
+            <p className="text-xs text-risk-text">Company not found. Please check the registration number and try again.</p>
           </div>
         )}
       </div>
@@ -230,7 +230,7 @@ function IcoLookup({ onResult }) {
               <div className="min-w-0">
                 <p className="text-xs font-bold text-warning-text leading-snug truncate">{businessName}</p>
                 <p className="text-[11px] text-warning-text mt-0.5">
-                  This trade licence (IČO) is not currently active ({activeStatus}). Please verify
+                  This company registration is not currently active ({activeStatus}). Please verify
                   your registration status with the Czech Business Register.
                 </p>
               </div>
@@ -310,13 +310,13 @@ const ENTITY_OPTIONS = [
   {
     value:    'osvc',
     Icon:     Briefcase,
-    title:    'Self-employed (OSVČ)',
+    title:    'Self-employed',
     subtitle: 'Freelancer · Sole trader · Trade licence holder',
     desc:     'You operate under a Czech trade licence as an individual. Income declared via personal tax return (Tax Return / DAP).',
     docs: [
-      'Trade licence (Živnostenský list)',
+      'Trade licence',
       'Tax returns — last 2 years',
-      'ČSSZ insurance clearance',
+      'Social insurance clearance',
     ],
     note: 'Simpler document path — one set of financials',
   },
@@ -388,7 +388,7 @@ const TAX_REGIME_OPTIONS = [
   {
     value:    'flat_tax',
     label:    'Flat Tax Regime',
-    sublabel: 'Flat Tax (Paušální daň)',
+    sublabel: 'Flat Tax Regime',
     desc:     'Fixed quarterly flat-tax payments; no annual return required',
   },
 ]
@@ -437,7 +437,7 @@ function BusinessIncomeSection({ data, onChange }) {
               <div>
                 <p className="text-xs font-bold text-risk-text mb-0.5">{businessName}</p>
                 <p className="text-[11px] text-risk-text leading-relaxed">
-                  This trade licence (IČO) is not currently active ({icoActiveStatus}). Inactive
+                  This company registration is not currently active ({icoActiveStatus}). Inactive
                   registrations cannot be assessed for mortgage underwriting. Please verify your
                   registration status at the Czech Business Register (ARES).
                 </p>
@@ -471,7 +471,7 @@ function BusinessIncomeSection({ data, onChange }) {
                   <p className="text-[11px] text-risk-text leading-relaxed">
                     According to the Czech Business Register, your trade licence has been active for{' '}
                     <strong>{formatAge(existMo)}</strong>. Our underwriting criteria require at least
-                    12 months of active business history (Česká spořitelna, ČSOB). UCB and mBank
+                    12 months of active business history (major Czech lenders). UCB and mBank
                     may consider applications from 6 months, but with significant income restrictions.
                   </p>
                 </div>
@@ -574,7 +574,7 @@ function BusinessIncomeSection({ data, onChange }) {
             <p className="text-[11px] text-ink-subtle mt-1.5 leading-relaxed">
               Enter your total declared revenues from your last Tax Return (DAP), Appendix 1,
               line 101–102. For Company Directors (s.r.o.), use the company's total annual
-              revenues from the Profit &amp; Loss statement (Výsledovka).
+              revenues from the Profit &amp; Loss statement.
             </p>
           )}
 
@@ -616,7 +616,7 @@ function BusinessIncomeSection({ data, onChange }) {
           ) : (
             <p className="text-[11px] text-ink-subtle mt-1.5 leading-relaxed">
               Enter your total gross annual revenues. The recognised income is calculated automatically
-              using the sector expense ratio (paušální výdaje) derived from your NACE business activity.
+              using the sector expense ratio derived from your NACE business activity.
             </p>
           )}
 
@@ -654,7 +654,7 @@ const CONTRACT_TYPES = [
   { value: 'indefinite', label: 'Indefinite period (HPP)' },
   { value: 'definite',   label: 'Fixed-term contract'      },
   { value: 'agency',     label: 'Agency / temp worker'     },
-  { value: 'dpc',        label: 'DPČ / DPP agreement'     },
+  { value: 'dpc',        label: 'Supplemental agreement'  },
 ]
 
 
@@ -682,29 +682,29 @@ const STREAM_OPTIONS = [
   {
     value:   'A',
     title:   'Stream A — Director Salary',
-    subtitle: 'Odměna jednatele',
+    subtitle: "Director's Salary",
     desc:    'Regular monthly salary paid by the company, net after personal income tax and social contributions.',
     varNote: '+10–20% Var(X) by stake',
   },
   {
     value:   'B',
     title:   'Stream B — Profit Share',
-    subtitle: 'Podíl na zisku / Dividendy',
+    subtitle: 'Dividends / Profit Share',
     desc:    'Annual profit distributions based on company after-tax result and ownership stake. Requires 3-year dividend history.',
     varNote: '+35% Var(X) penalty',
   },
   {
     value:   'C',
     title:   'Stream C — Director Fees',
-    subtitle: 'Smlouva o výkonu funkce',
+    subtitle: "Director's Service Agreement",
     desc:    "Fees under a signed Director's Service Agreement. Verified contract document required by all lenders.",
     varNote: '+15% Var(X) penalty',
   },
 ]
 
 const EXPENSE_LUMP_OPTIONS = [
-  { value: 80, label: '80%', desc: 'Agricultural / retail (řemeslné/zemědělství)' },
-  { value: 60, label: '60%', desc: 'Craft trades (řemeslné živnosti)' },
+  { value: 80, label: '80%', desc: 'Agricultural / retail trades' },
+  { value: 60, label: '60%', desc: 'Craft trades' },
   { value: 40, label: '40%', desc: 'Capital income / rentals' },
   { value: 30, label: '30%', desc: 'Liberal professions / IT consulting' },
 ]
@@ -802,7 +802,7 @@ function SroIncomeSection({ data, onChange }) {
 
           <div>
             <label htmlFor="companyEquity" className="text-[11px] font-semibold text-ink-muted uppercase tracking-wide mb-1.5 block">
-              Company Net Equity — Vlastní kapitál (CZK)
+              Company Net Equity (CZK)
             </label>
             <div className="relative">
               <input
@@ -824,7 +824,7 @@ function SroIncomeSection({ data, onChange }) {
 
           <div>
             <label htmlFor="companyAfterTaxResult" className="text-[11px] font-semibold text-ink-muted uppercase tracking-wide mb-1.5 block">
-              After-Tax Net Result — Hospodářský výsledek (CZK)
+              After-Tax Net Result (CZK)
             </label>
             <div className="relative">
               <input
@@ -921,7 +921,7 @@ function SroIncomeSection({ data, onChange }) {
               <p className="text-[11px] text-success-text mt-1.5">Low Risk — 2+ fiscal years. Full ESSO income recognition available.</p>
             )}
             <p className="text-[10px] text-ink-subtle mt-1.5">
-              Tip: Verify your IČO above to auto-fill company age from the Czech Business Register.
+              Tip: Verify your company registration number above to auto-fill company age from the Czech Business Register.
             </p>
           </div>
         )}
@@ -1063,7 +1063,7 @@ function SroIncomeSection({ data, onChange }) {
               <p className="text-xs font-bold text-brand-700">Stream A — Director Salary</p>
               <div>
                 <label htmlFor="sroDirectorSalary" className="text-[11px] font-semibold text-ink-muted uppercase tracking-wide mb-1.5 block">
-                  Net Monthly Salary — Odměna jednatele (CZK)
+                  Net Monthly Director Salary (CZK)
                 </label>
                 <div className="relative">
                   <input
@@ -1133,7 +1133,7 @@ function SroIncomeSection({ data, onChange }) {
                   <p className={`text-xs font-medium ${directorContractExists ? 'text-success-text' : 'text-ink'}`}>
                     Signed Director's Service Agreement exists
                   </p>
-                  <p className="text-[10px] text-ink-subtle mt-0.5">Smlouva o výkonu funkce jednatele — required by all banks</p>
+                  <p className="text-[10px] text-ink-subtle mt-0.5">Director's Service Agreement — required by all banks</p>
                 </div>
                 <Toggle on={directorContractExists} onToggle={() => onChange('directorContractExists', !directorContractExists)} />
               </div>
@@ -1192,7 +1192,7 @@ function SroIncomeSection({ data, onChange }) {
 
           <div>
             <label htmlFor="avgMonthlyCreditTurnover_sro" className="text-[11px] font-semibold text-ink-muted uppercase tracking-wide mb-1.5 block">
-              Avg. Monthly Credit Turnover — Kreditní obrat (CZK)
+              Avg. Monthly Credit Turnover (CZK)
             </label>
             <div className="relative">
               <input
@@ -1215,8 +1215,8 @@ function SroIncomeSection({ data, onChange }) {
             <p className="text-[11px] font-semibold text-ink-muted uppercase tracking-wide mb-2">Tax Filing Regime</p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {[
-                { value: 'tax_return', label: 'Standard Tax Return',   sublabel: 'DPPO / DAP — corporate or personal tax return' },
-                { value: 'flat_tax',   label: 'Flat Tax Regime',       sublabel: 'Paušální daň — fixed quarterly flat-tax' },
+                { value: 'tax_return', label: 'Standard Tax Return',   sublabel: 'Corporate or personal annual tax return' },
+                { value: 'flat_tax',   label: 'Flat Tax Regime',       sublabel: 'Fixed quarterly flat-tax payment' },
               ].map(({ value: v, label, sublabel }) => (
                 <button
                   key={v}
@@ -1244,7 +1244,7 @@ function SroIncomeSection({ data, onChange }) {
           {taxRegime === 'tax_return' && (
             <div className="animate-fade-up">
               <p className="text-[11px] font-semibold text-ink-muted uppercase tracking-wide mb-2">
-                Expense Lump Sum — Paušální výdaje (%)
+                Expense Lump Sum (%)
               </p>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                 {EXPENSE_LUMP_OPTIONS.map(({ value: v, label, desc }) => (
@@ -1329,7 +1329,7 @@ function EmployeeDetails({ data, onChange }) {
         <div className="space-y-2">
           {[
             { field: 'isProbation',          label: 'Currently in probation period'             },
-            { field: 'isNoticePeriod',       label: 'Serving a notice period (výpovědní lhůta)' },
+            { field: 'isNoticePeriod',       label: 'Serving a notice period' },
             { field: 'isOnSickLeave',        label: 'Currently on extended sick leave'           },
             { field: 'isEmployerDistressed', label: 'Employer in insolvency or restructuring'    },
           ].map(({ field, label }) => {
@@ -1452,7 +1452,7 @@ function EmployeeDetails({ data, onChange }) {
         <div className="flex items-center justify-between rounded-xl border border-border bg-card px-4 py-3">
           <div>
             <p className="text-xs font-semibold text-ink">Receives monthly dietary allowance (diety)?</p>
-            <p className="text-[11px] text-ink-subtle mt-0.5">Stravenkový benefit or tax-exempt meal allowance</p>
+            <p className="text-[11px] text-ink-subtle mt-0.5">Meal voucher or tax-exempt meal allowance</p>
           </div>
           <Toggle
             on={hasMonthlyDiety}

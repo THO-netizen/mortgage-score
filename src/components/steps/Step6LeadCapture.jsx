@@ -49,7 +49,7 @@ const BENEFITS = [
 
 const SRO_DOCS = [
   'Corporate Tax Returns (DPPO)',
-  'Tax Clearance — Bezdlužnost',
+  'Tax Clearance Certificate',
   'Bank Statements (3–6 months)',
   "Director's Service Agreement",
   'Financial Statements (P&L)',

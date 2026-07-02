@@ -62,30 +62,30 @@ function buildNaceSectorTable() {
   const set = (divs, pct, sector) => divs.forEach(d => { t[d] = { pct, sector } })
 
   // 70% — Finance, IT, Marketing, Consulting, Law, Arts, Research, Health
-  set([64, 65, 66],             70, 'Finance a účetnictví')
-  set([58, 59, 60, 61, 62, 63], 70, 'IT a technologie')
-  set([73],                     70, 'Marketing a reklama')
-  set([69, 70, 71, 85],         70, 'Poradenství a vzdělávání')
-  set([72],                     70, 'Výzkum a vývoj')
-  set([90, 91, 92, 93],         70, 'Umění, kultura a sport')
-  set([75, 86, 87, 88],         70, 'Zdravotnictví')
+  set([64, 65, 66],             70, 'Finance & Accounting')
+  set([58, 59, 60, 61, 62, 63], 70, 'IT & Technology')
+  set([73],                     70, 'Marketing & Advertising')
+  set([69, 70, 71, 85],         70, 'Consulting & Education')
+  set([72],                     70, 'Research & Development')
+  set([90, 91, 92, 93],         70, 'Arts, Culture & Sport')
+  set([75, 86, 87, 88],         70, 'Healthcare')
 
   // 60% — Security, Real Estate
-  set([68],                     60, 'Realitní trh a nemovitosti')
-  set([80],                     60, 'Ochrana a bezpečnost')
+  set([68],                     60, 'Real Estate')
+  set([80],                     60, 'Security & Protection')
 
   // 50% — Automotive, Transport, Beauty/Fashion/Design, Construction, Manufacturing
-  set([45],                     50, 'Automobilový průmysl')
-  set([49, 50, 51, 52, 53],     50, 'Doprava a logistika')
-  set([74, 96],                 50, 'Móda, design a péče o tělo')
-  set([41, 42, 43],             50, 'Stavebnictví a řemeslné práce')
-  for (let d = 5; d <= 33; d++) t[d] = { pct: 50, sector: 'Výroba a průmysl' }
-  for (let d = 35; d <= 39; d++) t[d] = { pct: 50, sector: 'Výroba a průmysl' }
+  set([45],                     50, 'Automotive')
+  set([49, 50, 51, 52, 53],     50, 'Transport & Logistics')
+  set([74, 96],                 50, 'Fashion, Design & Personal Care')
+  set([41, 42, 43],             50, 'Construction & Trades')
+  for (let d = 5; d <= 33; d++) t[d] = { pct: 50, sector: 'Manufacturing & Industry' }
+  for (let d = 35; d <= 39; d++) t[d] = { pct: 50, sector: 'Manufacturing & Industry' }
 
   // 40% — Retail/Wholesale, Agriculture, Gastronomy, Direct sales
-  set([1, 2, 3],                40, 'Zemědělství a lesnictví')
-  set([46, 47],                 40, 'Maloobchod a velkoobchod')
-  set([55, 56],                 40, 'Gastronomie a pohostinství')
+  set([1, 2, 3],                40, 'Agriculture & Forestry')
+  set([46, 47],                 40, 'Retail & Wholesale')
+  set([55, 56],                 40, 'Gastronomy & Hospitality')
 
   return t
 }

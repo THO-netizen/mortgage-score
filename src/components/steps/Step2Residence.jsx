@@ -11,26 +11,26 @@ const RESIDENCE_OPTIONS = [
   },
   {
     value:   'permanent',
-    label:   'Permanent Residence — Trvalý pobyt',
+    label:   'Permanent Residence',
     desc:    'Approved permanent residency granted by Czech authorities (TP)',
     risk:    'low',
   },
   {
     value:   'longterm5plus',
     label:   'Long-term Residence — 5 or more years',
-    desc:    'Dlouhodobý pobyt (DP) permit held continuously for 5+ years',
+    desc:    'Long-term residence permit held continuously for 5+ years',
     risk:    'med',
   },
   {
     value:   'longterm',
     label:   'Long-term Residence — under 5 years',
-    desc:    'Dlouhodobý pobyt (DP) permit held for fewer than 5 years',
+    desc:    'Long-term residence permit held for fewer than 5 years',
     risk:    'med',
   },
   {
     value:   'employment',
     label:   'Long-term Residence (Work/Business Permit)',
-    desc:    'Work or business visa with long-term stay entitlement (pobyt za účelem zaměstnání / podnikání)',
+    desc:    'Work or business visa with long-term stay entitlement',
     risk:    'med',
   },
   {

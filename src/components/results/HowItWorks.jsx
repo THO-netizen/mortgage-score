@@ -8,23 +8,23 @@ const SECTIONS = [
   },
   {
     q: 'How does Czech bank underwriting work?',
-    a: 'Czech National Bank (ČNB) regulations require banks to assess three ratios: DTI (total debt-to-income, capped at 9.5×), DSTI (debt-service-to-income, capped at 45% of net income), and LTV (loan-to-value, capped at 80% generally or 90% for applicants under 36). Banks apply these constraints simultaneously — the most restrictive binding constraint determines the maximum loan.',
+    a: 'Czech National Bank (CNB) regulations require banks to assess three ratios: DTI (total debt-to-income, capped at 9.5×), DSTI (debt-service-to-income, capped at 45% of net income), and LTV (loan-to-value, capped at 80% generally or 90% for applicants under 36). Banks apply these constraints simultaneously — the most restrictive binding constraint determines the maximum loan.',
   },
   {
-    q: 'How is OSVČ income assessed?',
-    a: 'Sole traders (OSVČ) using standard tax returns are assessed on taxable profit after expenses. Banks typically average the last two fiscal years. OSVČ using the flat-cost (paušální výdaj) regime face a structurally lower taxable base, which directly limits borrowing capacity. Minimum 2 years of self-employment history is required by most lenders.',
+    q: 'How is self-employed income assessed?',
+    a: 'Self-employed sole traders using standard tax returns are assessed on taxable profit after expenses. Banks typically average the last two fiscal years. Those using the flat-tax regime face a structurally lower taxable base, which directly limits borrowing capacity. Minimum 2 years of self-employment history is required by most lenders.',
   },
   {
-    q: 'How is s.r.o. director income assessed?',
-    a: 'Company directors (jednatelé) are assessed under ESSO (Economically Self-related Subject Owner) methodology. Banks assess income across three streams: Stream A (salary/odměna), Stream B (dividends), and Stream C (service fees). Ownership percentage, company profitability, equity, and dividend history all factor into the eligible income calculation. Not all banks accept all streams.',
+    q: 'How is company director income assessed?',
+    a: 'Company directors are assessed under ESSO (Economically Self-related Subject Owner) methodology. Banks assess income across three streams: Stream A (director salary), Stream B (dividends), and Stream C (service fees). Ownership percentage, company profitability, equity, and dividend history all factor into the eligible income calculation. Not all banks accept all streams.',
   },
   {
     q: 'What is DSTI and why does it matter?',
-    a: 'DSTI (Debt Service-to-Income ratio) measures total monthly debt obligations — including the proposed new mortgage — as a percentage of net monthly income. ČNB regulation caps this at 45%. Household living costs (životní minimum) are deducted from income before applying the cap, which is why liabilities and income precision both matter significantly.',
+    a: 'DSTI (Debt Service-to-Income ratio) measures total monthly debt obligations — including the proposed new mortgage — as a percentage of net monthly income. Regulatory rules cap this at 45%. Household minimum living costs are deducted from income before applying the cap, which is why liabilities and income precision both matter significantly.',
   },
   {
     q: 'Is this assessment binding or official?',
-    a: 'No. This is a simulation model built on publicly available ČNB regulation parameters and observed Czech bank underwriting practice. It is designed to help applicants understand their likely position before speaking to a bank or broker. Individual bank decisions may differ based on internal credit policy, document verification, and applicant-specific factors not captured here.',
+    a: 'No. This is a simulation model built on publicly available Czech National Bank regulation parameters and observed Czech bank underwriting practice. It is designed to help applicants understand their likely position before speaking to a bank or broker. Individual bank decisions may differ based on internal credit policy, document verification, and applicant-specific factors not captured here.',
   },
 ]
 
