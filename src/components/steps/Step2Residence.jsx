@@ -41,11 +41,6 @@ const RESIDENCE_OPTIONS = [
   },
 ]
 
-const RISK_CONFIG = {
-  low:  { label: 'Full Access',  badge: 'badge-success' },
-  med:  { label: 'Limited',      badge: 'badge-warning' },
-  high: { label: 'Restricted',   badge: 'badge-risk'    },
-}
 
 const YEARS_OPTIONS = [
   { value: '',        label: 'Select years in Czechia…' },
@@ -57,8 +52,7 @@ const YEARS_OPTIONS = [
 ]
 
 function ResidenceOption({ option, selected, onSelect }) {
-  const { label, desc, risk } = option
-  const { label: riskLabel, badge } = RISK_CONFIG[risk]
+  const { label, desc } = option
 
   return (
     <button
@@ -98,11 +92,6 @@ function ResidenceOption({ option, selected, onSelect }) {
         <span className="block text-xs text-ink-muted mt-0.5 leading-relaxed">
           {desc}
         </span>
-      </span>
-
-      {/* Risk / access badge */}
-      <span className={`${badge} flex-shrink-0`}>
-        {riskLabel}
       </span>
     </button>
   )
