@@ -977,36 +977,36 @@ function ScenarioSimulator({ formData, onIncomeChange }) {
       </div>
 
       {/* Results */}
-      <div className="rounded-xl border border-border bg-surface p-5">
-        <div className="grid grid-cols-4 gap-4 mb-4">
+      <div className="rounded-xl border border-border bg-surface p-4 sm:p-5">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mb-4">
           <div>
             <p className="section-label mb-1">Loan</p>
-            <p className="font-display text-lg font-extrabold text-ink tabular-nums leading-tight">
+            <p className="font-display text-base sm:text-lg font-extrabold text-ink tabular-nums leading-tight">
               {formatCZKShort(loanAmt)}
             </p>
           </div>
-          <div className="text-center border-x border-border px-2">
+          <div className="text-right sm:text-center sm:border-x sm:border-border sm:px-2">
             <p className="section-label mb-1">LTV</p>
-            <p className={`font-display text-lg font-extrabold tabular-nums leading-tight ${ltvAlert ? 'text-risk-DEFAULT' : simLTV > 70 ? 'text-warning-DEFAULT' : 'text-success-DEFAULT'}`}>
+            <p className={`font-display text-base sm:text-lg font-extrabold tabular-nums leading-tight ${ltvAlert ? 'text-risk-DEFAULT' : simLTV > 70 ? 'text-warning-DEFAULT' : 'text-success-DEFAULT'}`}>
               {simLTV.toFixed(0)}%
             </p>
           </div>
-          <div className="text-center border-r border-border px-2">
+          <div>
             <p className="section-label mb-1">DTI</p>
-            <p className={`font-display text-lg font-extrabold tabular-nums leading-tight ${dtiAlert ? 'text-risk-DEFAULT' : 'text-success-DEFAULT'}`}>
+            <p className={`font-display text-base sm:text-lg font-extrabold tabular-nums leading-tight ${dtiAlert ? 'text-risk-DEFAULT' : 'text-success-DEFAULT'}`}>
               {s.netIncome > 0 ? `${simDTI.toFixed(1)}×` : '—'}
             </p>
           </div>
           <div className="text-right">
             <p className="section-label mb-1">DSTI</p>
-            <p className={`font-display text-lg font-extrabold tabular-nums leading-tight ${dstiAlert ? 'text-risk-DEFAULT' : simDSTI > 35 ? 'text-warning-DEFAULT' : 'text-success-DEFAULT'}`}>
+            <p className={`font-display text-base sm:text-lg font-extrabold tabular-nums leading-tight ${dstiAlert ? 'text-risk-DEFAULT' : simDSTI > 35 ? 'text-warning-DEFAULT' : 'text-success-DEFAULT'}`}>
               {s.netIncome > 0 ? `${simDSTI.toFixed(0)}%` : '—'}
             </p>
           </div>
         </div>
-        <div className="flex items-center justify-between pt-4 border-t border-border">
-          <p className="text-sm font-semibold text-ink">Estimated Monthly Payment</p>
-          <p className="font-display text-2xl font-black text-ink tabular-nums">{formatCZK(Math.round(payment))}</p>
+        <div className="flex items-center justify-between gap-3 pt-4 border-t border-border">
+          <p className="text-sm font-semibold text-ink min-w-0">Estimated Monthly Payment</p>
+          <p className="font-display text-xl sm:text-2xl font-black text-ink tabular-nums flex-shrink-0">{formatCZK(Math.round(payment))}</p>
         </div>
       </div>
 
@@ -1334,8 +1334,8 @@ export default function Step7Results({ formData, onBack, onRestart }) {
     <main className="animate-fade-up">
 
       {/* ── Sticky result header ─────────────────────── */}
-      <div className="sticky top-16 z-40 bg-dark-900/95 backdrop-blur border-b border-white/10">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-3 flex items-center gap-4 sm:gap-6">
+      <div className="sticky top-0 z-40 bg-dark-900/95 backdrop-blur border-b border-white/10">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-3 flex items-center gap-3 sm:gap-6 min-w-0">
 
           {/* Mini gauge + score */}
           <div className="flex items-center gap-3 flex-shrink-0">

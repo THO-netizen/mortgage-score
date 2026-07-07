@@ -20,6 +20,7 @@
     background-color: #F8FAFC;
     color: #0F172A;
     line-height: 1.6;
+    overflow-x: hidden;   /* prevent horizontal scroll from any overflow child */
   }
 
   /* Scrollbar — subtle, institutional */

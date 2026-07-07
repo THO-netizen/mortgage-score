@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { AlertTriangle, CheckCircle } from 'lucide-react'
 import FunnelCard    from '../funnel/FunnelCard.jsx'
 import ActionBar     from '../funnel/ActionBar.jsx'
-import { formatCZK } from '../../utils/formatters.js'
+import { formatCZK, formatCZKShort } from '../../utils/formatters.js'
 
 const PROPERTY_PURPOSES = [
   { value: '',           label: 'Select purpose…'        },
@@ -206,20 +206,20 @@ export default function Step4Property({ data, onChange, onBack, onContinue }) {
         {/* Three metric tiles */}
         <div className="grid grid-cols-3 gap-2 mb-5">
           <div>
-            <p className="section-label mb-1.5">Loan Amount</p>
-            <p className="font-display text-lg font-extrabold text-ink tabular-nums leading-tight">
-              {formatCZK(loanAmount)}
+            <p className="section-label mb-1.5">Loan</p>
+            <p className="font-display text-base sm:text-lg font-extrabold text-ink tabular-nums leading-tight">
+              {formatCZKShort(loanAmount)}
             </p>
           </div>
           <div className="text-center border-x border-black/10 px-2">
-            <p className="section-label mb-1.5">LTV Ratio</p>
-            <p className={`font-display text-3xl font-black tabular-nums leading-tight ${ltvColor}`}>
+            <p className="section-label mb-1.5">LTV</p>
+            <p className={`font-display text-2xl sm:text-3xl font-black tabular-nums leading-tight ${ltvColor}`}>
               {ltv.toFixed(0)}%
             </p>
           </div>
           <div className="text-right">
             <p className="section-label mb-1.5">Own Funds</p>
-            <p className="font-display text-lg font-extrabold text-ink tabular-nums leading-tight">
+            <p className="font-display text-base sm:text-lg font-extrabold text-ink tabular-nums leading-tight">
               {ownFundsPct.toFixed(0)}%
             </p>
           </div>
