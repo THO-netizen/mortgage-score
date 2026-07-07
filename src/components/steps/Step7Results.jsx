@@ -1848,11 +1848,11 @@ export default function Step7Results({ formData, onBack, onRestart }) {
               <button
                 type="button"
                 disabled={pdfLoading}
-                onClick={() => {
+                onClick={async () => {
                   setPdfLoading(true)
                   try {
                     const resolvedIncome = (formData.netMonthlySalary > 0 ? formData.netMonthlySalary : formData.netIncome) || 0
-                    const blob = generateMortgagePdf({ ...formData, netIncome: resolvedIncome }, unlockedName)
+                    const blob = await generateMortgagePdf({ ...formData, netIncome: resolvedIncome }, unlockedName)
                     const safeName = (unlockedName || 'applicant').toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '') || 'applicant'
                     const url  = URL.createObjectURL(blob)
                     const link = document.createElement('a')

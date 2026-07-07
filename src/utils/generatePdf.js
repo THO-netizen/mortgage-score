@@ -1,5 +1,6 @@
-// ── PDF generation entry point ──────────────────────────────────────────────
-// Delegates to the premium modular engine in src/pdf/.
-// Legacy alias kept for backwards compatibility with existing call sites.
-
-export { generatePremiumReport as generateMortgagePdf } from '../pdf/MortgageReport.js'
+// Lazy-loads react-pdf only when the user triggers a download.
+// Keeps the initial bundle lean; @react-pdf/renderer (~900kb) loads on demand.
+export async function generateMortgagePdf(formData, userName) {
+  const { generateReactPdf } = await import('../pdf/ReactPdfReport.jsx')
+  return generateReactPdf(formData, userName)
+}
