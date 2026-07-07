@@ -1501,6 +1501,95 @@ function RecommendedStrategy({ score, profile, formData }) {
   )
 }
 
+// ── Hero Verdict Post-Gate ────────────────────────────
+
+function HeroVerdictPost({ score, cfg, profile, formData }) {
+  const { eX, eXStress, riskStatus, bottleneck, effectiveIncome } = profile
+
+  const riskBand = {
+    zelena:   'Low Risk',
+    oranzova: 'Moderate Risk',
+    cervena:  'Higher Risk',
+  }[riskStatus] ?? 'Under Assessment'
+
+  // Dynamic 2-3 sentence summary — no bank names
+  const summary = (() => {
+    const s1 = eX > 0
+      ? `Based on your profile, you qualify for an estimated maximum loan of ${formatCZKShort(eX)}, with a stress-tested floor of ${formatCZKShort(eXStress)} at the CNB 6.89% rate.`
+      : 'Your profile has been assessed under the Czech bank dual-test methodology.'
+
+    const s2 = bottleneck === 'LTV'
+      ? 'Your loan-to-value ratio is the primary constraint — increasing your down-payment is the single highest-impact action to expand capacity.'
+      : bottleneck === 'DSTI' || bottleneck === 'DI'
+      ? 'Debt service ratio is the binding constraint; reducing monthly obligations before application directly expands available borrowing capacity.'
+      : bottleneck === 'DTI'
+      ? 'Your total debt-to-income ratio is the cap — reducing outstanding loan balances or growing the annual income base are the highest-return actions before applying.'
+      : formData.entityType === 'osvc'
+      ? 'As a self-employed applicant, your income recognition method and turnover structure are the key variables — a specialist lender match significantly affects your final offer.'
+      : formData.entityType === 'sro'
+      ? 'Director income is assessed under ESSO methodology; the recognised figure depends on company financials, ownership structure, and fiscal history.'
+      : riskStatus === 'zelena'
+      ? 'Your profile scores in the strong band — most lenders will process this application through standard underwriting without additional conditions.'
+      : 'Income recognised is within standard bounds; a targeted lender selection will determine the best offer.'
+
+    const s3 = score >= 75
+      ? 'Your profile is submission-ready — the next step is lender pre-approval, which typically completes within 2–3 weeks of a full application submission.'
+      : score >= 55
+      ? 'With focused preparation, this profile can reach submission stage. Book a session to map the fastest path to pre-approval.'
+      : 'A strategy session will identify the specific steps needed and the realistic timeline to reach a bankable position.'
+
+    return `${s1} ${s2} ${s3}`
+  })()
+
+  return (
+    <div className="rounded-2xl border border-border bg-card overflow-hidden">
+      <div className="h-0.5 w-full" style={{ background: cfg.color }} />
+      <div className="px-5 sm:px-8 py-6">
+        <p className="text-[10px] font-bold tracking-widest uppercase text-ink-subtle mb-5">Your Assessment Result</p>
+        <div className="flex flex-col sm:flex-row items-start gap-6 sm:gap-8">
+
+          {/* Score gauge */}
+          <div className="flex items-center gap-4 flex-shrink-0">
+            <ScoreGauge score={score} color={cfg.color} />
+            <div className="min-w-0">
+              <p className="text-[10px] text-ink-subtle uppercase tracking-wide mb-0.5">Readiness Score</p>
+              <p className="font-display text-xl font-black text-ink leading-tight">{cfg.label}</p>
+              <div className="flex items-center gap-1.5 mt-1.5">
+                <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: cfg.color }} />
+                <span className="text-xs text-ink-muted">{riskBand}</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="hidden sm:block w-px bg-border self-stretch flex-shrink-0" />
+
+          {/* Loan figures + summary */}
+          <div className="flex-1 min-w-0">
+            <div className="grid grid-cols-2 gap-4 sm:gap-6 mb-4">
+              <div>
+                <p className="text-[10px] text-ink-subtle uppercase tracking-wide mb-1">Estimated Maximum Loan</p>
+                <p className="font-display text-2xl font-black text-ink tabular-nums leading-tight">
+                  {eX > 0 ? formatCZKShort(eX) : '—'}
+                </p>
+              </div>
+              {eXStress > 0 && (
+                <div>
+                  <p className="text-[10px] text-ink-subtle uppercase tracking-wide mb-1">Stress-Tested Floor · 6.89%</p>
+                  <p className="font-display text-xl font-black text-ink-muted tabular-nums leading-tight">
+                    {formatCZKShort(eXStress)}
+                  </p>
+                </div>
+              )}
+            </div>
+            <p className="text-sm text-ink-muted leading-relaxed">{summary}</p>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ── Soft Lock Gate ────────────────────────────────────
 
 const GFORM_ENDPOINT = 'https://docs.google.com/forms/d/e/1FAIpQLSddO9mI3_GJL4W4TzS2atu4vbKAIiI2TUEVRN__GaQJeqeogA/formResponse'
@@ -1826,74 +1915,63 @@ export default function Step7Results({ formData, onBack, onRestart }) {
               <ApplicantProfilePanel formData={formData} profile={headerProfile} />
             </AccordionSection>
 
-            {/* ── Bank Loan Capacity ──────────────────── */}
-            <div className="animate-fade-in">
-              <BankResultsTable profile={headerProfile} />
-            </div>
+            {/* ── Hero Verdict (post-gate summary) ────────── */}
+            <HeroVerdictPost score={score} cfg={cfg} profile={headerProfile} formData={formData} />
 
             {/* ── Recommended Strategy ────────────────── */}
             <RecommendedStrategy score={score} profile={headerProfile} formData={formData} />
 
-            {/* ── PDF Download ────────────────────────── */}
-            <div className="rounded-2xl border border-border bg-card px-5 sm:px-8 py-6 flex flex-col sm:flex-row items-center gap-4 sm:gap-6">
-              <div className="flex-1 min-w-0">
-                <p className="text-[10px] font-bold tracking-widest uppercase text-brand-600 mb-1">PDF Report</p>
-                <h3 className="font-display text-base font-black text-ink leading-tight mb-1">
-                  Download your assessment
-                </h3>
-                <p className="text-xs text-ink-muted leading-relaxed break-words max-w-sm">
-                  Eligibility score, DSTI, DTI, income structure and risk factors — generated in-browser, nothing leaves your device.
-                </p>
-              </div>
-              <button
-                type="button"
-                disabled={pdfLoading}
-                onClick={async () => {
-                  setPdfLoading(true)
-                  try {
-                    const resolvedIncome = (formData.netMonthlySalary > 0 ? formData.netMonthlySalary : formData.netIncome) || 0
-                    const blob = await generateMortgagePdf({ ...formData, netIncome: resolvedIncome }, unlockedName)
-                    const safeName = (unlockedName || 'applicant').toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '') || 'applicant'
-                    const url  = URL.createObjectURL(blob)
-                    const link = document.createElement('a')
-                    link.href = url
-                    link.download = `mortgage-assessment-${safeName}.pdf`
-                    document.body.appendChild(link)
-                    link.click()
-                    document.body.removeChild(link)
-                    URL.revokeObjectURL(url)
-                  } catch (err) {
-                    console.error('[MortgageScore] PDF error:', err)
-                  } finally {
-                    setPdfLoading(false)
-                  }
-                }}
-                className="flex-shrink-0 inline-flex items-center gap-2 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-sm font-semibold px-6 py-3 transition-colors duration-150 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
-              >
-                <FileText size={15} className="flex-shrink-0" />
-                {pdfLoading ? 'Generating…' : 'Download Report'}
-              </button>
-            </div>
-
-            {/* ── Strategy Session CTA ─────────────────── */}
-            <div className="rounded-2xl bg-dark-900 border border-white/10 px-5 sm:px-10 py-8 text-center">
+            {/* ── Strategy call + PDF — combined CTA ───── */}
+            <div className="rounded-2xl bg-dark-900 border border-white/10 px-5 sm:px-10 py-8">
               <p className="text-[10px] font-bold tracking-widest uppercase text-brand-400 mb-3">
-                Professional Review
+                Next Steps
               </p>
               <h3 className="font-display text-xl sm:text-2xl font-black text-white mb-3 leading-tight break-words">
-                Review findings with a specialist
+                Turn your assessment into an approved mortgage
               </h3>
-              <p className="text-slate-400 text-sm leading-relaxed mb-7 max-w-sm mx-auto break-words">
-                Map your lender path, confirm the income recognition method that works in your favour, and initiate pre-approval.
+              <p className="text-slate-400 text-sm leading-relaxed mb-7 max-w-lg break-words">
+                Book a 30-minute strategy call to discuss these results and get matched with the right lender.
+                Or download your personalised Mortgage Intelligence Report as PDF.
               </p>
-              <a
-                href="https://calendly.com/andy-lkadvisor/30min"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="btn-cta mx-auto"
-              >
-                Book strategy session
-              </a>
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4">
+                <a
+                  href="https://calendly.com/andy-lkadvisor/30min"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="btn-cta justify-center"
+                >
+                  <Calendar size={15} className="flex-shrink-0" />
+                  Book a 30-minute strategy call
+                </a>
+                <button
+                  type="button"
+                  disabled={pdfLoading}
+                  onClick={async () => {
+                    setPdfLoading(true)
+                    try {
+                      const resolvedIncome = (formData.netMonthlySalary > 0 ? formData.netMonthlySalary : formData.netIncome) || 0
+                      const blob = await generateMortgagePdf({ ...formData, netIncome: resolvedIncome }, unlockedName)
+                      const safeName = (unlockedName || 'applicant').toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '') || 'applicant'
+                      const url  = URL.createObjectURL(blob)
+                      const link = document.createElement('a')
+                      link.href = url
+                      link.download = `mortgage-assessment-${safeName}.pdf`
+                      document.body.appendChild(link)
+                      link.click()
+                      document.body.removeChild(link)
+                      URL.revokeObjectURL(url)
+                    } catch (err) {
+                      console.error('[MortgageScore] PDF error:', err)
+                    } finally {
+                      setPdfLoading(false)
+                    }
+                  }}
+                  className="inline-flex items-center justify-center gap-2 rounded-xl bg-white/10 hover:bg-white/15 text-white text-sm font-semibold px-6 py-3 transition-colors disabled:opacity-50 disabled:cursor-not-allowed break-words"
+                >
+                  <FileText size={15} className="flex-shrink-0" />
+                  {pdfLoading ? 'Generating…' : 'Download Intelligence Report (PDF)'}
+                </button>
+              </div>
             </div>
           </>
         )}
