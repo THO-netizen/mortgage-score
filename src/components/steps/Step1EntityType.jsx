@@ -1591,8 +1591,7 @@ export default function Step1EntityType({ value, onChange, onIcoResult, numberOf
 
   const canContinue = !!value && (
     !isEmployee || (
-      (employeeData?.netMonthlySalary ?? 0) > 0 &&
-      !!employeeData?.contractType
+      (employeeData?.netMonthlySalary ?? 0) > 0
     )
   ) && (
     !isOSVC || (
