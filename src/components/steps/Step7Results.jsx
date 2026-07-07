@@ -829,7 +829,7 @@ function BankResultsTable({ profile }) {
   return (
     <div className="rounded-xl border border-border overflow-hidden mt-4">
       <div className="bg-surface px-5 py-3 border-b border-border flex items-center justify-between">
-        <p className="text-[11px] font-bold text-ink-subtle uppercase tracking-wide">Per-Bank Dual Test — Dvojtest</p>
+        <p className="text-[11px] font-bold text-ink-subtle uppercase tracking-wide">Bank Loan Capacity</p>
         <p className="text-[10px] text-ink-subtle">Test A @ 4.89% · Test B @ 6.89%</p>
       </div>
       <div className="overflow-x-auto">
