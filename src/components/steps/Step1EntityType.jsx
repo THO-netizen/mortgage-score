@@ -268,36 +268,23 @@ function IcoLookup({ onResult, entityType }) {
           {/* Legal Structure */}
           <div className="flex items-center gap-3 rounded-xl border border-border bg-surface px-4 py-3">
             <span className="flex-1 text-sm font-medium text-ink leading-snug">{legalFormLabel}</span>
-            {resolvedType && <span className={entityBadgeClass}>{entityBadgeLabel}</span>}
           </div>
 
           {/* Business age */}
           {ageMonths !== null && (
             <div className="flex items-center justify-between rounded-xl border border-border bg-surface px-4 py-3">
               <span className="text-xs text-ink-muted">Registered</span>
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-semibold text-ink">{formatAge(ageMonths)}</span>
-                {ageMonths >= 24
-                  ? <span className="badge-success text-[10px]">24-month requirement met</span>
-                  : ageMonths >= 12
-                  ? <span className="badge-warning text-[10px]">12–24 months — medium risk</span>
-                  : ageMonths >= 6
-                  ? <span className="badge-warning text-[10px]">6–12 months — limited lenders</span>
-                  : <span className="badge-risk text-[10px]">Under 6 months — hard block</span>
-                }
-              </div>
+              <span className="text-xs font-semibold text-ink">{formatAge(ageMonths)}</span>
             </div>
           )}
 
           {/* NACE business sector — shown for OSVČ after lookup */}
           {resolvedType === 'osvc' && naceSector && (
-            <div className="flex items-center justify-between rounded-xl border border-border bg-surface px-4 py-3">
-              <div>
-                <span className="text-xs text-ink-muted block mb-0.5">Business sector (NACE)</span>
-                <span className="text-xs font-semibold text-ink">{naceSector}</span>
-              </div>
+            <div className="rounded-xl border border-border bg-surface px-4 py-3">
+              <span className="text-xs text-ink-muted block mb-0.5">Business sector (NACE)</span>
+              <span className="text-xs font-semibold text-ink">{naceSector}</span>
               {nacePct !== null && (
-                <span className="badge-success text-[10px]">{nacePct}% income recognition</span>
+                <span className="text-[11px] text-ink-subtle ml-2">({nacePct}% income recognition)</span>
               )}
             </div>
           )}
@@ -493,12 +480,7 @@ function BusinessIncomeSection({ data, onChange }) {
             <div className="flex items-center gap-3 rounded-xl bg-success-light border border-success-border px-4 py-3">
               <CheckCircle size={15} className="text-success-DEFAULT flex-shrink-0" />
               <div className="min-w-0">
-                <p className="text-xs font-bold text-success-text truncate">
-                  {businessName}
-                  <span className="ml-2 text-[10px] font-semibold normal-case tracking-normal opacity-70">
-                    Active Trade Licence
-                  </span>
-                </p>
+                <p className="text-xs font-bold text-success-text truncate">{businessName}</p>
                 <p className="text-[10px] text-success-text/80 mt-0.5">
                   Verified via Czech Business Register (ARES)
                 </p>
@@ -522,24 +504,18 @@ function BusinessIncomeSection({ data, onChange }) {
                 </div>
               </div>
             ) : existMo < 24 ? (
-              <div className="flex items-center justify-between rounded-xl border border-warning-border bg-warning-light px-4 py-3">
-                <div className="flex items-center gap-2">
-                  <AlertTriangle size={13} className="text-warning-DEFAULT flex-shrink-0" />
-                  <span className="text-xs font-semibold text-warning-text">
-                    Active for {formatAge(existMo)} — auto-resolved from ARES
-                  </span>
-                </div>
-                <span className="badge-warning text-[10px]">Medium Risk</span>
+              <div className="flex items-center gap-2 rounded-xl border border-warning-border bg-warning-light px-4 py-3">
+                <AlertTriangle size={13} className="text-warning-DEFAULT flex-shrink-0" />
+                <span className="text-xs font-semibold text-warning-text">
+                  Active for {formatAge(existMo)} — auto-resolved from ARES
+                </span>
               </div>
             ) : (
-              <div className="flex items-center justify-between rounded-xl border border-success-border bg-success-light px-4 py-3">
-                <div className="flex items-center gap-2">
-                  <CheckCircle size={13} className="text-success-DEFAULT flex-shrink-0" />
-                  <span className="text-xs font-semibold text-success-text">
-                    Active for {formatAge(existMo)} — auto-resolved from ARES
-                  </span>
-                </div>
-                <span className="badge-success text-[10px]">Low Risk</span>
+              <div className="flex items-center gap-2 rounded-xl border border-success-border bg-success-light px-4 py-3">
+                <CheckCircle size={13} className="text-success-DEFAULT flex-shrink-0" />
+                <span className="text-xs font-semibold text-success-text">
+                  Active for {formatAge(existMo)} — auto-resolved from ARES
+                </span>
               </div>
             )
           )}
