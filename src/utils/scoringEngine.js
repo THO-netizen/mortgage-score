@@ -149,7 +149,7 @@ export const BANK_DTI_LIMIT = {
 }
 export const BANK_KEYS = ['mbank', 'kb', 'csob', 'cs', 'rb', 'ucb']
 export const BANK_NAMES = {
-  mbank: 'mBank', kb: 'KB', csob: 'ČSOB', cs: 'Česká spořitelna',
+  mbank: 'mBank', kb: 'KB', csob: 'CSOB', cs: 'Ceska sporitelna',
   rb: 'Raiffeisenbank', ucb: 'UniCredit',
 }
 

@@ -832,8 +832,8 @@ function BankResultsTable({ profile }) {
         <p className="text-[11px] font-bold text-ink-subtle uppercase tracking-wide">Bank Loan Capacity</p>
         <p className="text-[10px] text-ink-subtle">Test A @ 4.89% · Test B @ 6.89%</p>
       </div>
-      <div className="overflow-x-auto">
-        <table className="w-full text-xs">
+      <div className="overflow-x-auto w-full">
+        <table className="min-w-max w-full text-xs">
           <thead>
             <tr className="border-b border-border bg-surface/50">
               <th className="text-left px-4 py-2.5 font-semibold text-ink-subtle whitespace-nowrap">Bank</th>
@@ -1405,6 +1405,102 @@ function ProfileBreakdownGrid({ formData, profile }) {
   )
 }
 
+// ── Recommended Strategy ──────────────────────────────
+
+function RecommendedStrategy({ score, profile, formData }) {
+  const { bottleneck, redFlags, ltvPct, maxLTVPct, eX } = profile
+
+  const actions = []
+
+  if (redFlags.length > 0) {
+    actions.push({
+      priority: 'Critical', color: '#EF4444',
+      title: 'Resolve Hard Blocks Before Applying',
+      text: `Your profile has ${redFlags.length} critical flag${redFlags.length > 1 ? 's' : ''} that will trigger automatic decline at most banks. Address these before any formal application.`,
+    })
+  }
+
+  if (bottleneck === 'LTV' || ltvPct > maxLTVPct * 0.92) {
+    actions.push({
+      priority: 'High Impact', color: '#F59E0B',
+      title: 'Increase Down-Payment',
+      text: `LTV is the binding constraint at ${ltvPct.toFixed(0)}% against a ${maxLTVPct}% cap. Increasing own funds by 5–10% directly expands borrowing capacity and unlocks better rate pricing.`,
+    })
+  } else if (bottleneck === 'DSTI' || bottleneck === 'DI') {
+    actions.push({
+      priority: 'High Impact', color: '#F59E0B',
+      title: 'Reduce Monthly Obligation Load',
+      text: 'Debt service ratio is the binding constraint. Closing credit card limits and paying down loans before application directly increases available DSTI headroom.',
+    })
+  } else if (bottleneck === 'DTI') {
+    actions.push({
+      priority: 'High Impact', color: '#F59E0B',
+      title: 'Reduce Outstanding Debt (DTI)',
+      text: 'Total debt-to-income ratio is the cap. Reducing outstanding loan balances or increasing the annual income base are the highest-return actions available.',
+    })
+  }
+
+  if (formData.entityType === 'osvc') {
+    actions.push({
+      priority: 'Strategy', color: '#3B82F6',
+      title: 'Select the Right Income Recognition Method',
+      text: 'Two assessment methods are available (Tax Return vs Bank Turnover). The method applied determines your recognised income — and therefore which lender to approach first. This is the highest-value decision for self-employed applicants.',
+    })
+  }
+
+  if (formData.entityType === 'osvc' && formData.businessAgeMonths !== null && formData.businessAgeMonths < 24) {
+    actions.push({
+      priority: formData.businessAgeMonths < 12 ? 'Critical' : 'High Impact',
+      color: formData.businessAgeMonths < 12 ? '#EF4444' : '#F59E0B',
+      title: formData.businessAgeMonths < 12 ? 'Establish 12-Month Trading History' : 'Reach 24-Month Threshold',
+      text: formData.businessAgeMonths < 12
+        ? 'Under 12 months of trading history — most banks require at least 12 months. A continuity path from prior employment in the same sector and NACE code may be the fastest route.'
+        : `At ${formData.businessAgeMonths} months, a 15% income haircut applies. Crossing the 24-month mark removes this haircut and unlocks full income recognition at most Czech banks.`,
+    })
+  }
+
+  actions.push({
+    priority: score >= 75 ? 'Next Step' : 'Recommended', color: '#10B981',
+    title: 'Book a Strategy Session',
+    text: score >= 75
+      ? 'Your profile is submission-ready. A focused session identifies the optimal lender, locks in the best rate, and initiates pre-approval — typically within 2–3 weeks of submission.'
+      : 'A strategy session maps your lender options, identifies the income recognition path that works in your favour, and sets a realistic timeline for improving the profile before application.',
+  })
+
+  return (
+    <div className="rounded-card border border-border bg-card overflow-hidden">
+      <div className="px-5 sm:px-6 py-4 border-b border-border">
+        <p className="text-[10px] font-bold tracking-widest uppercase text-ink-subtle">Recommended Strategy</p>
+        <p className="text-sm font-semibold text-ink mt-0.5">Priority actions based on your profile</p>
+      </div>
+      <div className="p-5 sm:p-6 space-y-5">
+        {actions.slice(0, 4).map(({ priority, color, title, text }, i) => (
+          <div key={i} className="flex gap-4 min-w-0">
+            <div
+              className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 text-white text-[11px] font-bold mt-0.5"
+              style={{ background: color }}
+            >
+              {i + 1}
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 mb-1 flex-wrap">
+                <p className="text-sm font-semibold text-ink leading-tight break-words">{title}</p>
+                <span
+                  className="text-[9px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-full flex-shrink-0"
+                  style={{ color, background: `${color}18`, border: `1px solid ${color}40` }}
+                >
+                  {priority}
+                </span>
+              </div>
+              <p className="text-xs text-ink-muted leading-relaxed break-words">{text}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 // ── Soft Lock Gate ────────────────────────────────────
 
 const GFORM_ENDPOINT = 'https://docs.google.com/forms/d/e/1FAIpQLSddO9mI3_GJL4W4TzS2atu4vbKAIiI2TUEVRN__GaQJeqeogA/formResponse'
@@ -1586,17 +1682,9 @@ export default function Step7Results({ formData, onBack, onRestart }) {
   const [isUnlocked,    setIsUnlocked]    = useState(false)
   const [unlockedName,  setUnlockedName]  = useState('')
   const [pdfLoading,    setPdfLoading]    = useState(false)
-  const [simNetIncome, setSimNetIncome] = useState(
-    (formData.netMonthlySalary || formData.netIncome) > 0
-      ? (formData.netMonthlySalary || formData.netIncome)
-      : 80_000
-  )
-
-  const factors = buildFactors(formData, simNetIncome)
-
-  // E[X] for sticky header and summary card
+  // E[X] for sticky header
   const resolvedIncome    = formData.netMonthlySalary > 0 ? formData.netMonthlySalary : formData.netIncome
-  const incomeForHeader   = (resolvedIncome > 0 ? resolvedIncome : simNetIncome) || 0
+  const incomeForHeader   = resolvedIncome || 0
   const headerProfile     = computeMortgageProfile({ ...formData, netIncome: incomeForHeader })
   const maxLoanForHeader  = headerProfile.eX
 
@@ -1724,104 +1812,56 @@ export default function Step7Results({ formData, onBack, onRestart }) {
             {/* ── Profile Breakdown Grid ──────────────── */}
             <ProfileBreakdownGrid formData={formData} profile={headerProfile} />
 
-            {/* Accordions */}
-            <div className="space-y-3 animate-fade-in">
+            {/* ── Income Recognition ──────────────────── */}
+            <AccordionSection
+              title={formData.entityType === 'zamestnanec' ? 'Employment Profile' : 'Income Recognition'}
+              subtitle={
+                formData.entityType === 'zamestnanec'
+                  ? 'Contract type, stability assessment, and recognised income'
+                  : 'Assessment method, recognised monthly income, and verification status'
+              }
+              icon={formData.entityType === 'zamestnanec' ? Briefcase : Building2}
+              defaultOpen
+            >
+              <ApplicantProfilePanel formData={formData} profile={headerProfile} />
+            </AccordionSection>
 
-              {/* Applicant Profile — first, always open */}
-              <AccordionSection
-                title={formData.entityType === 'zamestnanec' ? 'Employment Profile' : 'Business Profile'}
-                subtitle={
-                  formData.entityType === 'zamestnanec'
-                    ? 'Contract type, stability assessment, and recognised income'
-                    : 'Verified business identity, industry, income recognition, and history'
-                }
-                icon={formData.entityType === 'zamestnanec' ? Briefcase : Building2}
-                defaultOpen
-              >
-                <ApplicantProfilePanel formData={formData} profile={headerProfile} />
-              </AccordionSection>
-
-              <AccordionSection
-                title="Score breakdown"
-                subtitle="10 eligibility factors evaluated against Czech bank criteria"
-                icon={Shield}
-              >
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4">
-                  {factors.map((f) => <ReadinessCard key={f.title} factor={f} />)}
-                </div>
-              </AccordionSection>
-
-              <AccordionSection
-                title="Loan capacity estimate"
-                subtitle="Maximum borrowing range, dual-test breakdown, and scenario analysis"
-                icon={TrendingUp}
-              >
-                <div className="space-y-4 pt-4">
-                  <RiskMatrix formData={formData} simNetIncome={simNetIncome} />
-                  <BankResultsTable profile={headerProfile} />
-                  <ScenarioSimulator formData={formData} onIncomeChange={setSimNetIncome} />
-                </div>
-              </AccordionSection>
-
-              <AccordionSection
-                title="How this was calculated"
-                subtitle="Czech bank underwriting methodology and model parameters"
-                icon={BarChart2}
-              >
-                <div className="pt-2">
-                  <HowItWorks />
-                </div>
-              </AccordionSection>
-
-              <AccordionSection
-                title="Next steps"
-                subtitle="Czech mortgage process from pre-scoring to property handover"
-                icon={Calendar}
-              >
-                <div className="pt-4">
-                  <JourneyTimeline />
-                </div>
-              </AccordionSection>
-
+            {/* ── Bank Loan Capacity ──────────────────── */}
+            <div className="animate-fade-in">
+              <BankResultsTable profile={headerProfile} />
             </div>
 
-            {/* Download Report */}
-            <div className="rounded-2xl border border-border bg-card px-4 sm:px-8 py-6 sm:py-7 flex flex-col sm:flex-row items-center gap-4 sm:gap-5">
-              <div className="flex-1">
-                <p className="text-[10px] font-bold tracking-widest uppercase text-brand-600 mb-1">
-                  PDF Report
-                </p>
+            {/* ── Recommended Strategy ────────────────── */}
+            <RecommendedStrategy score={score} profile={headerProfile} formData={formData} />
+
+            {/* ── PDF Download ────────────────────────── */}
+            <div className="rounded-2xl border border-border bg-card px-5 sm:px-8 py-6 flex flex-col sm:flex-row items-center gap-4 sm:gap-6">
+              <div className="flex-1 min-w-0">
+                <p className="text-[10px] font-bold tracking-widest uppercase text-brand-600 mb-1">PDF Report</p>
                 <h3 className="font-display text-base font-black text-ink leading-tight mb-1">
                   Download your assessment
                 </h3>
-                <p className="text-xs text-ink-muted leading-relaxed">
-                  A clean, printable PDF with your eligibility score, DTI, DSTI, income structure, and risk factors. Generated in your browser — no data leaves your device.
+                <p className="text-xs text-ink-muted leading-relaxed break-words max-w-sm">
+                  Eligibility score, DSTI, DTI, income structure and risk factors — generated in-browser, nothing leaves your device.
                 </p>
               </div>
               <button
                 type="button"
                 disabled={pdfLoading}
                 onClick={() => {
-                  console.log('[MortgageScore] Download Report clicked')
                   setPdfLoading(true)
                   try {
                     const resolvedIncome = (formData.netMonthlySalary > 0 ? formData.netMonthlySalary : formData.netIncome) || 0
-                    console.log('[MortgageScore] Calling generateMortgagePdf, income:', resolvedIncome)
-                    const blob = generateMortgagePdf(
-                      { ...formData, netIncome: resolvedIncome },
-                      unlockedName,
-                    )
-                    console.log('[MortgageScore] PDF blob generated, size:', blob?.size)
+                    const blob = generateMortgagePdf({ ...formData, netIncome: resolvedIncome }, unlockedName)
                     const safeName = (unlockedName || 'applicant').toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '') || 'applicant'
                     const url  = URL.createObjectURL(blob)
                     const link = document.createElement('a')
-                    link.href     = url
+                    link.href = url
                     link.download = `mortgage-assessment-${safeName}.pdf`
                     document.body.appendChild(link)
                     link.click()
                     document.body.removeChild(link)
                     URL.revokeObjectURL(url)
-                    console.log('[MortgageScore] Download triggered')
                   } catch (err) {
                     console.error('[MortgageScore] PDF error:', err)
                   } finally {
@@ -1835,17 +1875,16 @@ export default function Step7Results({ formData, onBack, onRestart }) {
               </button>
             </div>
 
-            {/* Primary CTA — Consultation */}
-            <div className="rounded-2xl bg-dark-900 border border-white/10 px-4 sm:px-8 py-7 text-center">
-              <p className="text-[11px] font-bold tracking-widest uppercase text-brand-400 mb-3">
+            {/* ── Strategy Session CTA ─────────────────── */}
+            <div className="rounded-2xl bg-dark-900 border border-white/10 px-5 sm:px-10 py-8 text-center">
+              <p className="text-[10px] font-bold tracking-widest uppercase text-brand-400 mb-3">
                 Professional Review
               </p>
-              <h3 className="font-display text-xl sm:text-2xl font-black text-white mb-3 leading-tight">
+              <h3 className="font-display text-xl sm:text-2xl font-black text-white mb-3 leading-tight break-words">
                 Review findings with a specialist
               </h3>
-              <p className="text-slate-400 text-sm leading-relaxed mb-7 max-w-md mx-auto">
-                Understand the simulation model outcomes and how they translate
-                into a real Czech bank application for your specific profile.
+              <p className="text-slate-400 text-sm leading-relaxed mb-7 max-w-sm mx-auto break-words">
+                Map your lender path, confirm the income recognition method that works in your favour, and initiate pre-approval.
               </p>
               <a
                 href="https://calendly.com/andy-lkadvisor/30min"
@@ -1853,7 +1892,7 @@ export default function Step7Results({ formData, onBack, onRestart }) {
                 rel="noopener noreferrer"
                 className="btn-cta mx-auto"
               >
-                Schedule a review session
+                Book strategy session
               </a>
             </div>
           </>

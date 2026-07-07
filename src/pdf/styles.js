@@ -354,8 +354,8 @@ export function scoreLabel(s) {
 }
 
 export const BANK_DISPLAY = {
-  mbank: 'mBank', kb: 'Komerční banka', csob: 'ČSOB',
-  cs: 'Česká spořitelna', rb: 'Raiffeisenbank', ucb: 'UniCredit',
+  mbank: 'mBank', kb: 'Komercni banka', csob: 'CSOB',
+  cs: 'Ceska sporitelna', rb: 'Raiffeisenbank', ucb: 'UniCredit',
 }
 
 export const BANK_KEYS = ['mbank', 'kb', 'csob', 'cs', 'rb', 'ucb']

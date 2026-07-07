@@ -116,8 +116,8 @@ export function drawScenarioComparisonPage(doc, ctx) {
     y += 7
 
     const BANK_NAMES = {
-      mbank: 'mBank', kb: 'KB', csob: 'ČSOB',
-      cs: 'Česká spořitelna', rb: 'Raiffeisenbank', ucb: 'UniCredit',
+      mbank: 'mBank', kb: 'KB', csob: 'CSOB',
+      cs: 'Ceska sporitelna', rb: 'Raiffeisenbank', ucb: 'UniCredit',
     }
     const BKEYS = ['mbank', 'kb', 'csob', 'cs', 'rb', 'ucb']
     const BC = [38, 26, 26, 26, 28, 22]
