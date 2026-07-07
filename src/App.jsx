@@ -25,6 +25,7 @@ const INITIAL_FORM = {
 
   // Step 1 — ARES verification
   icoActiveStatus:          '',    // '' | 'AKTIVNÍ' | other ARES status string
+  businessActivityGap:      false, // true if ARES reports suspension or dissolution history
 
   // Step 1 — OSVČ / s.r.o. income fields
   taxRegime:                '',    // 'tax_return' | 'flat_tax'
@@ -237,16 +238,17 @@ export default function App() {
                       onApplicantCountChange={(n) => setField('numberOfApplicants', n)}
                       onIcoResult={(r) => setFormData((prev) => ({
                         ...prev,
-                        ico:                    r.ico               ?? prev.ico,
-                        businessName:           r.businessName      ?? prev.businessName,
-                        legalFormLabel:         r.legalFormLabel    ?? prev.legalFormLabel,
-                        businessAgeMonths:      r.businessAgeMonths ?? prev.businessAgeMonths,
-                        datumVzniku:            r.datumVzniku       ?? prev.datumVzniku,
-                        icoActiveStatus:        r.icoActiveStatus   ?? prev.icoActiveStatus,
-                        companyExistenceMonths: r.businessAgeMonths ?? prev.companyExistenceMonths,
-                        primaryNace:            r.primaryNace       ?? prev.primaryNace,
-                        naceSector:             r.naceSector        ?? prev.naceSector,
-                        turnoverIncomePct:      r.turnoverIncomePct ?? prev.turnoverIncomePct,
+                        ico:                    r.ico                    !== undefined ? r.ico                    : prev.ico,
+                        businessName:           r.businessName           !== undefined ? r.businessName           : prev.businessName,
+                        legalFormLabel:         r.legalFormLabel         !== undefined ? r.legalFormLabel         : prev.legalFormLabel,
+                        businessAgeMonths:      r.businessAgeMonths      !== undefined ? r.businessAgeMonths      : prev.businessAgeMonths,
+                        datumVzniku:            r.datumVzniku            !== undefined ? r.datumVzniku            : prev.datumVzniku,
+                        icoActiveStatus:        r.icoActiveStatus        !== undefined ? r.icoActiveStatus        : prev.icoActiveStatus,
+                        companyExistenceMonths: r.businessAgeMonths      !== undefined ? r.businessAgeMonths      : prev.companyExistenceMonths,
+                        primaryNace:            r.primaryNace            !== undefined ? r.primaryNace            : prev.primaryNace,
+                        naceSector:             r.naceSector             !== undefined ? r.naceSector             : prev.naceSector,
+                        turnoverIncomePct:      r.turnoverIncomePct      !== undefined ? r.turnoverIncomePct      : prev.turnoverIncomePct,
+                        businessActivityGap:    r.businessActivityGap    !== undefined ? r.businessActivityGap    : prev.businessActivityGap,
                       }))}
                       employeeData={{
                         isProbation:           formData.isProbation,
@@ -288,6 +290,7 @@ export default function App() {
                         directorContractExists:      formData.directorContractExists,
                         sroDirectorSalary:           formData.sroDirectorSalary,
                         sroDirectorFees:             formData.sroDirectorFees,
+                        businessActivityGap:         formData.businessActivityGap,
                       }}
                       onBusinessChange={setField}
                       onContinue={handleStep1Continue}

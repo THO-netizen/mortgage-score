@@ -1052,6 +1052,23 @@ export default function Step7Results({ formData, onBack, onRestart }) {
           </div>
         )}
 
+        {/* ── Business activity gap warning ───────────────── */}
+        {formData.entityType !== 'zamestnanec' && formData.businessActivityGap && (
+          <div className="flex items-start gap-4 rounded-card border-2 border-warning-border bg-warning-light p-5">
+            <AlertTriangle size={18} className="text-warning-DEFAULT flex-shrink-0 mt-0.5" />
+            <div>
+              <p className="font-display text-base font-bold text-warning-text mb-1">Risk Alert: Interrupted Business Activity</p>
+              <p className="text-sm text-warning-text leading-relaxed">
+                The Czech Business Register (ARES) indicates that this business registration was
+                suspended or has a dissolution record on file. Most Czech lenders treat interrupted
+                business history as a risk factor — it may trigger additional underwriting scrutiny
+                or income haircuts. We recommend discussing this with your mortgage advisor before
+                submitting any formal application.
+              </p>
+            </div>
+          </div>
+        )}
+
         {/* ── Soft lock gate OR full content ──────────────── */}
         {!isUnlocked ? (
           <SoftLockGate

@@ -5,7 +5,7 @@ import {
 } from 'lucide-react'
 import FunnelCard          from '../funnel/FunnelCard.jsx'
 import ActionBar           from '../funnel/ActionBar.jsx'
-import { mapNaceToSector } from '../../utils/scoringEngine.js'
+import { mapNaceToSector, NACE_SECTOR_OPTIONS } from '../../utils/scoringEngine.js'
 
 // ── ARES legal-form → entity-type mapping ──────────────
 const OSVC_FORMS = new Set(['101', '102', '103', '104', '105', '106', '107', '108', '109'])
@@ -59,7 +59,7 @@ function formatAge(months) {
 
 // ── IČO lookup widget ──────────────────────────────────
 
-function IcoLookup({ onResult }) {
+function IcoLookup({ onResult, entityType }) {
   const [icoInput,        setIcoInput]        = useState('')
   const [status,          setStatus]          = useState('idle')  // idle|loading|found|inactive|error
   const [businessName,    setBusinessName]    = useState('')
@@ -71,7 +71,15 @@ function IcoLookup({ onResult }) {
   const [naceSector,      setNaceSector]      = useState('')
   const [nacePct,         setNacePct]         = useState(null)
   const [primaryNace,     setPrimaryNace]     = useState('')
+  const [hasGap,          setHasGap]          = useState(false)
+  const [manualSector,    setManualSector]    = useState('')
   const abortRef = useRef(null)
+
+  const CLEAR_RESULT = {
+    ico: '', businessName: '', businessAgeMonths: null, datumVzniku: '',
+    entityType: '', legalFormLabel: '', icoActiveStatus: '',
+    primaryNace: '', naceSector: '', turnoverIncomePct: null, businessActivityGap: false,
+  }
 
   const resetResult = () => {
     setStatus('idle')
@@ -83,12 +91,17 @@ function IcoLookup({ onResult }) {
     setNaceSector('')
     setNacePct(null)
     setPrimaryNace('')
+    setHasGap(false)
+    setManualSector('')
   }
 
   const handleChange = (e) => {
     const val = e.target.value.replace(/\D/g, '').slice(0, 8)
     setIcoInput(val)
-    if (status !== 'idle' && status !== 'loading') resetResult()
+    if (status !== 'idle' && status !== 'loading') {
+      resetResult()
+      onResult({ ...CLEAR_RESULT, ico: val })
+    }
   }
 
   const handleVerify = () => {
@@ -118,10 +131,12 @@ function IcoLookup({ onResult }) {
         const formCode     = String(data.pravniForma ?? '')
         const dateStr      = data.datumVzniku ?? ''
         const months       = calcAgeMonths(dateStr)
-        const entityType   = mapLegalForm(formCode)
+        const resolvedEntityType = mapLegalForm(formCode)
         const formLabel    = getLegalFormLabel(formCode)
         // stavEkonSubjektu: 'AKTIVNÍ' | 'ZANIKLÝ' | 'POZASTAVENÝ' | etc.
         const icoStatus    = data.stavEkonSubjektu ?? 'AKTIVNÍ'
+        // Gap: currently suspended or has a dissolution date on record
+        const gap = icoStatus === 'POZASTAVENÝ' || !!data.datumZaniku
 
         // NACE — primary business activity code (first in array, any length)
         const rawNace  = (data.czNace ?? [])[0] ?? ''
@@ -131,24 +146,27 @@ function IcoLookup({ onResult }) {
         setAgeMonths(months)
         setQualified(months !== null && months >= 24)
         setLegalFormLabel(formLabel)
-        setResolvedType(entityType)
+        setResolvedType(resolvedEntityType)
         setActiveStatus(icoStatus)
         setPrimaryNace(rawNace)
         setNaceSector(nSector)
         setNacePct(nPct)
+        setHasGap(gap)
+        setManualSector('')
         setStatus(icoStatus === 'AKTIVNÍ' ? 'found' : 'inactive')
 
         onResult({
           ico: icoInput, businessName: name, businessAgeMonths: months,
-          datumVzniku: dateStr, entityType, legalFormLabel: formLabel,
+          datumVzniku: dateStr, entityType: resolvedEntityType, legalFormLabel: formLabel,
           icoActiveStatus: icoStatus,
           primaryNace: rawNace, naceSector: nSector, turnoverIncomePct: nPct,
+          businessActivityGap: gap,
         })
       })
       .catch((err) => {
         if (err.name === 'AbortError') return
         setStatus('error')
-        onResult({ ico: icoInput, businessName: '', businessAgeMonths: null, datumVzniku: '', entityType: '', legalFormLabel: '', icoActiveStatus: '' })
+        onResult({ ...CLEAR_RESULT, ico: icoInput })
       })
   }
 
@@ -165,13 +183,13 @@ function IcoLookup({ onResult }) {
     <div className="mt-6 pt-6 border-t border-border space-y-4 animate-fade-up">
 
       <p className="text-[11px] font-semibold text-ink-muted uppercase tracking-wide">
-        Business Registry Verification (Optional)
+        Business Registry Verification
       </p>
 
       {/* ── IČO input + Verify button ─────────────────── */}
       <div>
         <label htmlFor="ico" className="section-label mb-2 block">
-          Company Registration Number
+          {entityType === 'osvc' ? 'Trade License Number (IČO)' : 'Company Registration Number (IČO)'}
         </label>
         <div className="flex gap-2">
           <div className="relative flex-1">
@@ -271,7 +289,7 @@ function IcoLookup({ onResult }) {
             </div>
           )}
 
-          {/* NACE business sector — shown for OSVČ */}
+          {/* NACE business sector — shown for OSVČ after lookup */}
           {resolvedType === 'osvc' && naceSector && (
             <div className="flex items-center justify-between rounded-xl border border-border bg-surface px-4 py-3">
               <div>
@@ -281,6 +299,33 @@ function IcoLookup({ onResult }) {
               {nacePct !== null && (
                 <span className="badge-success text-[10px]">{nacePct}% income recognition</span>
               )}
+            </div>
+          )}
+
+          {/* Manual sector fallback — when NACE code has no automatic mapping */}
+          {resolvedType === 'osvc' && status === 'found' && nacePct === null && (
+            <div className="rounded-xl border border-warning-border bg-warning-light px-4 py-3 space-y-2">
+              <p className="text-xs font-semibold text-warning-text">
+                Business activity not recognised automatically. Please select your industry:
+              </p>
+              <select
+                className="select-field text-xs"
+                value={manualSector}
+                onChange={(e) => {
+                  const chosen = NACE_SECTOR_OPTIONS.find((o) => o.sector === e.target.value)
+                  setManualSector(e.target.value)
+                  if (chosen) {
+                    setNaceSector(chosen.sector)
+                    setNacePct(chosen.pct)
+                    onResult({ naceSector: chosen.sector, turnoverIncomePct: chosen.pct })
+                  }
+                }}
+              >
+                <option value="">Select your business sector…</option>
+                {NACE_SECTOR_OPTIONS.map((o) => (
+                  <option key={o.sector} value={o.sector}>{o.sector} — {o.pct}% income recognition</option>
+                ))}
+              </select>
             </div>
           )}
 
@@ -1589,12 +1634,15 @@ export default function Step1EntityType({ value, onChange, onIcoResult, numberOf
   const isOSVC     = value === 'osvc'
   const isSRODir   = value === 'sro'
 
+  const icoVerified = !!businessData?.businessName && businessData?.icoActiveStatus === 'AKTIVNÍ'
+
   const canContinue = !!value && (
     !isEmployee || (
       (employeeData?.netMonthlySalary ?? 0) > 0
     )
   ) && (
     !isOSVC || (
+      icoVerified &&
       !!businessData?.taxRegime && (
         (businessData.taxRegime === 'tax_return' && Number(businessData.annualTurnover           ?? 0) >= 1) ||
         (businessData.taxRegime === 'flat_tax'   && Number(businessData.annualTurnover ?? 0) >= 1)
@@ -1602,6 +1650,7 @@ export default function Step1EntityType({ value, onChange, onIcoResult, numberOf
     )
   ) && (
     !isSRODir || (
+      icoVerified &&
       businessData?.companyOwnershipPct !== null &&
       businessData?.companyOwnershipPct !== '' &&
       !!businessData?.companyIncomeStream
@@ -1698,6 +1747,7 @@ export default function Step1EntityType({ value, onChange, onIcoResult, numberOf
       {/* IČO lookup — slides in below cards when OSVČ or s.r.o. is selected */}
       {(isOSVC || isSRODir) && (
         <IcoLookup
+          entityType={value}
           onResult={(result) => {
             onIcoResult(result)
             if (result.entityType) onChange(result.entityType)

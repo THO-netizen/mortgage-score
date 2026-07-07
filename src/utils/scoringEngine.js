@@ -92,6 +92,26 @@ function buildNaceSectorTable() {
 
 export const NACE_SECTOR_TABLE = buildNaceSectorTable()
 
+export const NACE_SECTOR_OPTIONS = [
+  { sector: 'Finance & Accounting',          pct: 70 },
+  { sector: 'IT & Technology',               pct: 70 },
+  { sector: 'Marketing & Advertising',       pct: 70 },
+  { sector: 'Consulting & Education',        pct: 70 },
+  { sector: 'Research & Development',        pct: 70 },
+  { sector: 'Arts, Culture & Sport',         pct: 70 },
+  { sector: 'Healthcare',                    pct: 70 },
+  { sector: 'Real Estate',                   pct: 60 },
+  { sector: 'Security & Protection',         pct: 60 },
+  { sector: 'Automotive',                    pct: 50 },
+  { sector: 'Transport & Logistics',         pct: 50 },
+  { sector: 'Fashion, Design & Personal Care', pct: 50 },
+  { sector: 'Construction & Trades',         pct: 50 },
+  { sector: 'Manufacturing & Industry',      pct: 50 },
+  { sector: 'Agriculture & Forestry',        pct: 40 },
+  { sector: 'Retail & Wholesale',            pct: 40 },
+  { sector: 'Gastronomy & Hospitality',      pct: 40 },
+]
+
 /**
  * Maps a raw NACE code (any length string) to { pct, sector }.
  * pct is the income recognition % (40/50/60/70), sector is the Czech label.
