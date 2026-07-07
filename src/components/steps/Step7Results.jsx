@@ -1130,6 +1130,281 @@ function SummaryCard({ profile, formData }) {
   )
 }
 
+// ── Headline Verdict ───────────────────────────────────
+
+function HeadlineVerdict({ score, cfg, profile, formData }) {
+  const { eX, eXStress, riskStatus, bottleneck, effectiveIncome } = profile
+
+  const riskBand = {
+    zelena:   'Low Risk',
+    oranzova: 'Moderate Risk',
+    cervena:  'Higher Risk',
+  }[riskStatus] ?? 'Under Assessment'
+
+  const insightSentence = (() => {
+    if (eX <= 0) return 'Enter your income to see your full borrowing capacity estimate.'
+    if (bottleneck === 'LTV')
+      return 'Your down-payment is the key lever — increasing own funds directly expands your maximum loan.'
+    if (bottleneck === 'DTI')
+      return 'Your total debt load is the binding constraint. Reducing existing obligations before applying will have the highest impact on capacity.'
+    if (formData.entityType === 'osvc')
+      return 'As a self-employed applicant, your income recognition method determines which lender to approach first — and it may not be the most obvious one.'
+    if (formData.entityType === 'sro')
+      return 'Your income is assessed under ESSO methodology. How your company financials are structured directly determines the recognised base.'
+    return `Your profile qualifies for up to ${formatCZKShort(eX)} under Czech bank dual-test methodology. The stress-tested floor at 6.89% is ${eXStress > 0 ? formatCZKShort(eXStress) : '—'}.`
+  })()
+
+  return (
+    <div className="rounded-card bg-dark-900 border border-white/10 overflow-hidden">
+      <div className="h-0.5 w-full flex-shrink-0" style={{ background: cfg.color }} />
+      <div className="px-5 sm:px-10 py-8 sm:py-10">
+        <div className="flex flex-col lg:flex-row items-start gap-6 lg:gap-10">
+
+          {/* Left: Gauge + verdict */}
+          <div className="flex items-center gap-4 sm:gap-6 flex-shrink-0">
+            <ScoreGauge score={score} color={cfg.color} />
+            <div className="min-w-0">
+              <p className="text-[10px] font-bold tracking-widest uppercase text-slate-500 mb-1.5">Eligibility Score</p>
+              <p className="font-display text-xl sm:text-2xl font-black text-white leading-tight">{cfg.label}</p>
+              <div className="flex items-center gap-2 mt-2.5">
+                <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: cfg.color }} />
+                <span className="text-xs text-slate-400 font-medium">{riskBand}</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Divider */}
+          <div className="hidden lg:block w-px self-stretch bg-white/10 flex-shrink-0" />
+
+          {/* Right: Loan figures + insight */}
+          <div className="flex-1 min-w-0 space-y-5">
+            <div className="grid grid-cols-2 gap-4 sm:gap-8">
+              <div>
+                <p className="text-[10px] font-bold tracking-widest uppercase text-slate-500 mb-1">
+                  Estimated Maximum Loan
+                </p>
+                <p className="font-display text-2xl sm:text-3xl font-black text-white tabular-nums leading-tight">
+                  {eX > 0 ? formatCZKShort(eX) : '—'}
+                </p>
+              </div>
+              {eXStress > 0 && (
+                <div>
+                  <p className="text-[10px] font-bold tracking-widest uppercase text-slate-500 mb-1">
+                    Stress-Tested Floor · 6.89%
+                  </p>
+                  <p className="font-display text-xl sm:text-2xl font-black text-slate-300 tabular-nums leading-tight">
+                    {formatCZKShort(eXStress)}
+                  </p>
+                </div>
+              )}
+            </div>
+            <p className="text-sm text-slate-400 leading-relaxed max-w-xl">{insightSentence}</p>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ── Binding Constraint Bars ────────────────────────────
+
+function BindingConstraintBars({ profile }) {
+  const {
+    eX, effectiveIncome, dstiAtEX, ltvPct, maxLTVPct,
+    winnerBank, bankResults, maturity, existingDebt, bottleneck,
+  } = profile
+
+  const netIncome = effectiveIncome || 0
+  if (netIncome <= 0 || eX <= 0) return null
+
+  const winnerResult  = bankResults?.[winnerBank]
+  const dstiLimit     = winnerResult ? winnerResult.effectiveDSTI * 100 : 45
+  const stressPayment = eX > 0 && maturity?.maxYears > 0
+    ? monthlyPayment(eX, 6.89, maturity.maxYears)
+    : 0
+  const stressDSTI    = netIncome > 0
+    ? Math.min(99, ((stressPayment + existingDebt) / netIncome) * 100)
+    : 0
+
+  const bars = [
+    {
+      label:    'Debt Service (DSTI)',
+      sub:      `at 4.89% fixation rate · limit ${dstiLimit.toFixed(0)}%`,
+      value:    dstiAtEX,
+      limit:    dstiLimit,
+      isActive: bottleneck === 'DSTI',
+    },
+    {
+      label:    'Stress Test (DI Rate)',
+      sub:      `at 6.89% stress rate · CNB limit 45%`,
+      value:    stressDSTI,
+      limit:    45,
+      isActive: bottleneck !== 'DSTI' && bottleneck !== 'LTV' && bottleneck !== 'DTI',
+    },
+    {
+      label:    'LTV (Loan-to-Value)',
+      sub:      `property collateral · cap ${maxLTVPct}%`,
+      value:    ltvPct,
+      limit:    maxLTVPct,
+      isActive: bottleneck === 'LTV',
+    },
+  ]
+
+  return (
+    <div className="rounded-card border border-border bg-card overflow-hidden">
+      <div className="px-5 sm:px-6 py-4 border-b border-border">
+        <p className="text-[10px] font-bold tracking-widest uppercase text-ink-subtle">Binding Constraint</p>
+        <p className="text-sm font-semibold text-ink mt-0.5">How your profile scores against each key regulatory limit</p>
+      </div>
+      <div className="p-5 sm:p-6 grid grid-cols-1 sm:grid-cols-3 gap-6">
+        {bars.map(({ label, sub, value, limit, isActive }) => {
+          const pct      = Math.min(100, limit > 0 ? (value / limit) * 100 : 0)
+          const breached = value > limit
+          const color    = breached ? '#EF4444' : isActive ? '#F59E0B' : '#10B981'
+          return (
+            <div key={label} className="space-y-2.5">
+              <div className="flex items-start justify-between gap-2">
+                <div className="min-w-0">
+                  <p className="text-xs font-semibold text-ink leading-tight">{label}</p>
+                  <p className="text-[10px] text-ink-subtle mt-0.5 leading-tight">{sub}</p>
+                </div>
+                {breached && <span className="badge-risk text-[9px] flex-shrink-0">Exceeded</span>}
+                {!breached && isActive && <span className="badge-warning text-[9px] flex-shrink-0">Binding</span>}
+              </div>
+              <div className="relative h-2.5 bg-surface rounded-full overflow-hidden border border-border">
+                <div
+                  className="absolute left-0 top-0 h-full rounded-full transition-all duration-700"
+                  style={{ width: `${pct}%`, background: color }}
+                />
+              </div>
+              <div className="flex justify-between items-baseline">
+                <span className="font-display font-black tabular-nums text-base" style={{ color }}>
+                  {value.toFixed(1)}%
+                </span>
+                <span className="text-[10px] text-ink-subtle">limit {limit.toFixed(0)}%</span>
+              </div>
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
+// ── Profile Breakdown Grid ─────────────────────────────
+
+function ProfileBreakdownGrid({ formData, profile }) {
+  const {
+    residenceStatus = '', yearsInCZ = '', entityType = '',
+    contractType = '', isProbation = false, probationPeriod = '', employmentSector = '',
+    purchasePrice = 0, ownFunds = 0, propertyPurpose = '',
+    businessName = '', naceSector = '', businessAgeMonths = null,
+  } = formData
+  const { effectiveIncome, ltvPct, maxLTVPct, ltvBreached } = profile
+
+  const inProbation = isProbation || probationPeriod === 'yes'
+  const own = purchasePrice > 0 ? (ownFunds / purchasePrice) * 100 : 0
+
+  const residenceLabels = {
+    eu: 'EU / EEA Citizen', permanent: 'Permanent Residence',
+    longterm5plus: 'Long-term 5+ yrs', longterm: 'Long-term Residence',
+    employment: 'Long-term (Work/Business)', other: 'Other / Student',
+  }
+  const purposeLabels   = { primary: 'Primary Residence', investment: 'Investment / Rental', holiday: 'Holiday Home' }
+  const contractLabels  = { indefinite: 'Indefinite', definite: 'Fixed-term', agency: 'Agency', dpc: 'DPC (Supplemental)' }
+  const yrsLabels       = { less1: '<1 yr', '1-2': '1–2 yrs', '2-5': '2–5 yrs', '5-10': '5–10 yrs', '10plus': '10+ yrs' }
+  const sectorLabels    = { health: 'Healthcare', education: 'Education', other: 'Private sector' }
+
+  const bizDuration = businessAgeMonths !== null ? (() => {
+    const y = Math.floor(businessAgeMonths / 12)
+    const m = businessAgeMonths % 12
+    if (y > 0 && m > 0) return `Active for ${y} yr ${m} mo`
+    if (y > 0) return `Active for ${y} yr`
+    return `Active for ${m} mo`
+  })() : null
+
+  const cards = [
+    {
+      title: 'Residence',
+      CardIcon: MapPin,
+      primary: residenceLabels[residenceStatus] ?? '—',
+      secondary: yearsInCZ
+        ? `${yrsLabels[yearsInCZ] ?? yearsInCZ} in Czech Republic`
+        : 'Tenure not specified',
+      status: !residenceStatus ? 'review'
+        : (residenceStatus === 'eu' || residenceStatus === 'permanent') ? 'strong'
+        : (residenceStatus === 'longterm5plus' || residenceStatus === 'longterm' || residenceStatus === 'employment') ? 'good'
+        : 'risk',
+    },
+    {
+      title: entityType === 'zamestnanec' ? 'Employment' : 'Business Structure',
+      CardIcon: entityType === 'zamestnanec' ? Briefcase : Building2,
+      primary: entityType === 'zamestnanec'
+        ? (contractLabels[contractType] ?? 'Contract not specified')
+        : entityType === 'osvc' ? (businessName || 'Self-Employed')
+        : entityType === 'sro' ? 's.r.o. Director' : '—',
+      secondary: entityType === 'zamestnanec'
+        ? (inProbation
+            ? `Probation active · ${sectorLabels[employmentSector] ?? 'Sector not specified'}`
+            : `Not in probation · ${sectorLabels[employmentSector] ?? 'Sector not specified'}`)
+        : bizDuration ?? (naceSector || 'Industry not resolved'),
+      status: entityType === 'zamestnanec'
+        ? (inProbation && employmentSector !== 'health' && employmentSector !== 'education' ? 'risk'
+           : inProbation ? 'review'
+           : contractType === 'indefinite' ? 'strong' : contractType ? 'good' : 'review')
+        : !entityType ? 'review'
+        : businessAgeMonths !== null ? (businessAgeMonths < 12 ? 'risk' : businessAgeMonths < 24 ? 'review' : 'good')
+        : 'review',
+    },
+    {
+      title: 'Recognised Income',
+      CardIcon: DollarSign,
+      primary: effectiveIncome > 0 ? `${formatCZK(effectiveIncome)}/mo` : '—',
+      secondary: entityType === 'osvc' ? 'Recognised from annual / monthly turnover'
+        : entityType === 'sro'         ? 'ESSO-assessed director income'
+        : entityType === 'zamestnanec' ? 'Net monthly salary (after deductions)'
+        : 'Income not assessed',
+      status: effectiveIncome > 0
+        ? (effectiveIncome > 80_000 ? 'strong' : effectiveIncome > 40_000 ? 'good' : 'review')
+        : 'review',
+    },
+    {
+      title: 'Property',
+      CardIcon: Home,
+      primary: purchasePrice > 0 ? formatCZKShort(purchasePrice) : '—',
+      secondary: purchasePrice > 0
+        ? `${purposeLabels[propertyPurpose] ?? 'Purpose not set'} · ${own.toFixed(0)}% own funds · LTV ${ltvPct.toFixed(0)}% / ${maxLTVPct}%`
+        : 'Property details not entered',
+      status: !purchasePrice ? 'review' : ltvBreached ? 'risk' : ltvPct > 70 ? 'good' : 'strong',
+    },
+  ]
+
+  const dotColor = { strong: '#10B981', good: '#3B82F6', review: '#F59E0B', risk: '#EF4444' }
+
+  return (
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      {cards.map(({ title, CardIcon, primary, secondary, status }) => (
+        <div key={title} className="rounded-card border border-border bg-card p-5 flex flex-col gap-3 min-w-0">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <div className="w-8 h-8 rounded-lg bg-surface border border-border flex items-center justify-center flex-shrink-0">
+                <CardIcon size={14} className="text-ink-muted" />
+              </div>
+              <p className="text-[10px] font-bold uppercase tracking-wide text-ink-subtle truncate">{title}</p>
+            </div>
+            <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: dotColor[status] ?? '#94A3B8' }} />
+          </div>
+          <div className="min-w-0">
+            <p className="text-sm font-bold text-ink leading-snug break-words">{primary}</p>
+            <p className="text-[11px] text-ink-subtle mt-1 leading-relaxed break-words">{secondary}</p>
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+}
+
 // ── Soft Lock Gate ────────────────────────────────────
 
 const GFORM_ENDPOINT = 'https://docs.google.com/forms/d/e/1FAIpQLSddO9mI3_GJL4W4TzS2atu4vbKAIiI2TUEVRN__GaQJeqeogA/formResponse'
@@ -1385,27 +1660,8 @@ export default function Step7Results({ formData, onBack, onRestart }) {
       {/* ── Page content ─────────────────────────────── */}
       <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8 sm:py-12 space-y-6">
 
-        {/* ── Insight trigger ──────────────────────────── */}
-        <div className="card-surface p-5 sm:p-9">
-          <div className="flex flex-col sm:flex-row items-center sm:items-start gap-5 sm:gap-6">
-            <ScoreGauge score={score} color={cfg.color} />
-            <div className="text-center sm:text-left">
-              <p className="section-label mb-2">Eligibility Assessment</p>
-              <h2 className="font-display text-2xl sm:text-3xl font-black text-ink mb-3 leading-tight">
-                Your result is based on Czech bank logic.
-              </h2>
-              <p className="text-sm text-ink-muted mb-4 max-w-md leading-relaxed">
-                This simulation runs your profile through the same parameters Czech banks apply
-                in 2026. Your risk band and borrowing range are shown below. Save your assessment
-                to unlock the full breakdown.
-              </p>
-              <span className={`badge ${cfg.badge} text-xs`}>{cfg.label}</span>
-            </div>
-          </div>
-        </div>
-
-        {/* ── Summary card (always visible) ───────────────── */}
-        <SummaryCard profile={headerProfile} formData={formData} />
+        {/* ── Headline Verdict ─────────────────────────── */}
+        <HeadlineVerdict score={score} cfg={cfg} profile={headerProfile} formData={formData} />
 
         {/* ── ESSO callouts (s.r.o. only, always visible) ─ */}
         {essoHardBlock && (
@@ -1462,6 +1718,12 @@ export default function Step7Results({ formData, onBack, onRestart }) {
           />
         ) : (
           <>
+            {/* ── Binding Constraint Bars ─────────────── */}
+            <BindingConstraintBars profile={headerProfile} />
+
+            {/* ── Profile Breakdown Grid ──────────────── */}
+            <ProfileBreakdownGrid formData={formData} profile={headerProfile} />
+
             {/* Accordions */}
             <div className="space-y-3 animate-fade-in">
 
