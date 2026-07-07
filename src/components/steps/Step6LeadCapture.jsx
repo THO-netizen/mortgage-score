@@ -137,7 +137,7 @@ export default function Step6LeadCapture({ data, formData, onChange, onBack, onC
           <p className="text-[11px] text-ink-muted mb-3 leading-relaxed">
             Have these ready for your strategy session:
           </p>
-          <div className="grid grid-cols-2 gap-x-4 gap-y-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2">
             {SRO_DOCS.map((doc) => (
               <div key={doc} className="flex items-center gap-1.5">
                 <span className="w-1 h-1 rounded-full bg-brand-400 flex-shrink-0" />

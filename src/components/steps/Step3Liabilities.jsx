@@ -113,9 +113,9 @@ export default function Step3Liabilities({ data, onChange, onBack, onContinue })
               </span>
             </div>
           ))}
-          <div className="pt-3 mt-0.5 border-t border-border flex items-center justify-between">
-            <span className="text-sm font-bold text-ink">Total Monthly Obligations</span>
-            <span className="font-display text-xl font-extrabold text-ink tabular-nums">
+          <div className="pt-3 mt-0.5 border-t border-border flex items-center justify-between gap-3">
+            <span className="text-sm font-bold text-ink leading-tight">Total Monthly Obligations</span>
+            <span className="font-display text-lg sm:text-xl font-extrabold text-ink tabular-nums flex-shrink-0">
               {formatCZK(totalMonthly)}
             </span>
           </div>

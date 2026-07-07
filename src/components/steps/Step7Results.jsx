@@ -384,7 +384,7 @@ function RiskMatrix({ formData, simNetIncome }) {
   }[bottleneck] ?? 'Profile within all limits'
 
   const MetricCell = ({ label, value, warn }) => (
-    <div className={`rounded-xl px-4 py-3 border ${warn ? 'bg-risk-light border-risk-border' : 'bg-surface border-border'}`}>
+    <div className={`rounded-xl px-3 py-2.5 border ${warn ? 'bg-risk-light border-risk-border' : 'bg-surface border-border'}`}>
       <p className="text-[10px] font-semibold text-ink-subtle uppercase tracking-wide mb-0.5">{label}</p>
       <p className={`font-display text-sm font-extrabold tabular-nums ${warn ? 'text-risk-DEFAULT' : 'text-ink'}`}>{value}</p>
     </div>
@@ -393,8 +393,8 @@ function RiskMatrix({ formData, simNetIncome }) {
   return (
     <div className={`rounded-card border-2 ${cfg.border} overflow-hidden`}>
       {/* Header */}
-      <div className={`${cfg.bg} px-6 py-5`}>
-        <div className="flex items-center justify-between gap-4 flex-wrap">
+      <div className={`${cfg.bg} px-4 sm:px-6 py-4 sm:py-5`}>
+        <div className="flex items-center justify-between gap-3 sm:gap-4 flex-wrap">
           <div className="flex items-center gap-3">
             <div className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: cfg.color }} />
             <div>
@@ -407,7 +407,7 @@ function RiskMatrix({ formData, simNetIncome }) {
           {incomeForCalc > 0 && (
             <div className="text-right">
               <p className="text-[10px] text-ink-subtle mb-0.5">Expected Loan</p>
-              <p className={`font-display text-2xl font-black tabular-nums ${cfg.text}`}>
+              <p className={`font-display text-xl sm:text-2xl font-black tabular-nums ${cfg.text}`}>
                 {eX > 0 ? formatCZKShort(eX) : '—'}
               </p>
             </div>
@@ -416,7 +416,7 @@ function RiskMatrix({ formData, simNetIncome }) {
       </div>
 
       {/* Metrics grid */}
-      <div className="p-5 bg-card">
+      <div className="p-4 sm:p-5 bg-card">
         {incomeForCalc > 0 && (
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
             <MetricCell label="LTV" value={`${ltvPct.toFixed(0)}% / ${maxLTVPct}%`} warn={ltvBreached} />
@@ -484,13 +484,13 @@ function ReadinessCard({ factor }) {
       {/* Bonity extended display */}
       {eX !== undefined && netIncome > 0 && eX > 0 && (
         <div className="mt-3 pt-3 border-t border-border space-y-1.5">
-          <div className="flex justify-between text-xs">
-            <span className="text-ink-muted">Expected loan @ 4.89% / {maturity?.maxYears ?? 20} yr</span>
-            <span className="font-bold text-ink tabular-nums">{formatCZK(eX)}</span>
+          <div className="flex justify-between text-xs gap-2">
+            <span className="text-ink-muted min-w-0">Expected loan @ 4.89% / {maturity?.maxYears ?? 20} yr</span>
+            <span className="font-bold text-ink tabular-nums flex-shrink-0">{formatCZKShort(eX)}</span>
           </div>
-          <div className="flex justify-between text-xs">
-            <span className="text-ink-muted">Stress test @ 6.89%</span>
-            <span className="font-semibold text-warning-text tabular-nums">{formatCZK(eXStress)}</span>
+          <div className="flex justify-between text-xs gap-2">
+            <span className="text-ink-muted min-w-0">Stress test @ 6.89%</span>
+            <span className="font-semibold text-warning-text tabular-nums flex-shrink-0">{formatCZKShort(eXStress)}</span>
           </div>
           <div className="flex justify-between text-xs">
             <span className="text-ink-muted">Debt service ratio</span>
@@ -582,7 +582,7 @@ function ApplicantProfilePanel({ formData, profile }) {
         </div>
 
         {/* Detail grid */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
           <DetailCell label="Verified Industry" value={naceSector || 'Not resolved'} />
           <DetailCell label="Recognition Rate" value={`${coeffLabel} of turnover`} />
           <DetailCell label="Business Duration" value={businessDurationStr} />
@@ -942,10 +942,10 @@ function ScenarioSimulator({ formData, onIncomeChange }) {
   )
 
   return (
-    <div className="card-surface p-6 sm:p-8">
-      <div className="flex items-center gap-2 mb-6">
+    <div className="card-surface p-4 sm:p-6">
+      <div className="flex items-center gap-2 mb-5 sm:mb-6">
         <TrendingUp size={16} className="text-brand-600" />
-        <h3 className="font-display text-lg font-extrabold text-ink">Scenario Simulator</h3>
+        <h3 className="font-display text-base sm:text-lg font-extrabold text-ink">Scenario Simulator</h3>
         {simMaxYears < 30 && (
           <span className="badge-warning text-[10px] ml-auto">Age cap: max {simMaxYears} yr</span>
         )}
@@ -954,7 +954,7 @@ function ScenarioSimulator({ formData, onIncomeChange }) {
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-10 gap-y-6 mb-7">
         <SliderRow label="Purchase Price" value={s.price}
           min={1_000_000} max={25_000_000} step={100_000}
-          format={(v) => formatCZK(v)} onChange={(v) => upd('price', v)} />
+          format={(v) => formatCZKShort(v)} onChange={(v) => upd('price', v)} />
         <SliderRow label="Down-payment" value={s.downPct}
           min={5} max={70} step={1}
           format={(v) => `${v}%`} onChange={(v) => upd('downPct', v)} />
@@ -968,8 +968,8 @@ function ScenarioSimulator({ formData, onIncomeChange }) {
 
       <div className="mb-7">
         <div className="flex justify-between items-baseline mb-1.5">
-          <span className="section-label">Monthly Net Income</span>
-          <span className="font-display text-base font-extrabold text-ink tabular-nums">{formatCZK(s.netIncome)}</span>
+          <span className="section-label">Net Income</span>
+          <span className="font-display text-base font-extrabold text-ink tabular-nums">{formatCZKShort(s.netIncome)}</span>
         </div>
         <input type="range" min={20_000} max={500_000} step={5_000} value={s.netIncome}
           onChange={(e) => upd('netIncome', Number(e.target.value))} className="slider-field" />
@@ -1047,8 +1047,8 @@ function ScenarioSimulator({ formData, onIncomeChange }) {
 
 function JourneyTimeline() {
   return (
-    <div className="card-surface p-6 sm:p-8">
-      <div className="flex items-center gap-2 mb-6">
+    <div className="card-surface p-4 sm:p-6">
+      <div className="flex items-center gap-2 mb-5 sm:mb-6">
         <Calendar size={16} className="text-brand-600" />
         <h3 className="font-display text-lg font-extrabold text-ink">Czech Mortgage Journey</h3>
       </div>
@@ -1102,27 +1102,27 @@ function SummaryCard({ profile, formData }) {
   }[formData.entityType] ?? 'Income assessed'
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
 
-      <div className={`rounded-2xl border p-5 ${riskMeta.bg}`}>
+      <div className={`rounded-2xl border p-4 sm:p-5 ${riskMeta.bg}`}>
         <p className="text-[10px] font-bold uppercase tracking-widest text-ink-subtle mb-2">Risk Band</p>
-        <p className={`font-display text-2xl font-black ${riskMeta.text}`}>{riskMeta.label}</p>
+        <p className={`font-display text-xl sm:text-2xl font-black leading-tight ${riskMeta.text}`}>{riskMeta.label}</p>
         <p className="text-[11px] text-ink-subtle mt-1">Based on your profile inputs</p>
       </div>
 
-      <div className="rounded-2xl border border-border bg-card p-5">
+      <div className="rounded-2xl border border-border bg-card p-4 sm:p-5">
         <p className="text-[10px] font-bold uppercase tracking-widest text-ink-subtle mb-2">Borrowing Range</p>
-        <p className="font-display text-2xl font-black text-ink tabular-nums">
+        <p className="font-display text-xl sm:text-2xl font-black text-ink tabular-nums leading-tight">
           {eX > 0 ? formatCZKShort(eX) : '—'}
         </p>
         {eXStress > 0 && (
-          <p className="text-[11px] text-ink-subtle mt-1">Stress test: {formatCZKShort(eXStress)}</p>
+          <p className="text-[11px] text-ink-subtle mt-1">Stress: {formatCZKShort(eXStress)}</p>
         )}
       </div>
 
-      <div className="rounded-2xl border border-border bg-card p-5">
+      <div className="rounded-2xl border border-border bg-card p-4 sm:p-5">
         <p className="text-[10px] font-bold uppercase tracking-widest text-ink-subtle mb-2">Income Structure</p>
-        <p className="font-display text-sm font-bold text-ink">{entityLabel}</p>
+        <p className="font-display text-sm font-bold text-ink leading-snug">{entityLabel}</p>
         <p className="text-[11px] text-ink-subtle mt-1">Czech bank methodology applied</p>
       </div>
 
@@ -1191,7 +1191,7 @@ function SoftLockGate({ onUnlock, formData }) {
       </div>
 
       {/* Gate form card — visually connected below */}
-      <div className="rounded-b-2xl border border-t-0 border-border bg-card shadow-lg px-6 sm:px-10 py-8 sm:py-10">
+      <div className="rounded-b-2xl border border-t-0 border-border bg-card shadow-lg px-4 sm:px-8 py-6 sm:py-10">
 
         <p className="text-[10px] font-bold tracking-widest uppercase text-brand-600 mb-3">
           Full Assessment
@@ -1279,14 +1279,14 @@ function AccordionSection({ title, subtitle, icon: Icon, defaultOpen = false, ch
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="w-full flex items-center gap-4 px-6 py-5 hover:bg-surface transition-colors focus:outline-none group"
+        className="w-full flex items-center gap-3 sm:gap-4 px-4 sm:px-6 py-4 sm:py-5 hover:bg-surface transition-colors focus:outline-none group"
       >
         <div className="w-9 h-9 rounded-lg bg-brand-50 border border-brand-100 flex items-center justify-center flex-shrink-0">
           <Icon size={16} className="text-brand-600" />
         </div>
         <div className="flex-1 text-left min-w-0">
           <p className="text-[14px] font-semibold text-ink leading-snug">{title}</p>
-          <p className="text-[11px] text-ink-subtle mt-0.5">{subtitle}</p>
+          <p className="text-[11px] text-ink-subtle mt-0.5 leading-relaxed">{subtitle}</p>
         </div>
         <ChevronDown
           size={16}
@@ -1294,7 +1294,7 @@ function AccordionSection({ title, subtitle, icon: Icon, defaultOpen = false, ch
         />
       </button>
       {open && (
-        <div className="px-6 pb-6 border-t border-border animate-fade-in">
+        <div className="px-4 sm:px-6 pb-4 sm:pb-6 border-t border-border animate-fade-in">
           {children}
         </div>
       )}
@@ -1386,8 +1386,8 @@ export default function Step7Results({ formData, onBack, onRestart }) {
       <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8 sm:py-12 space-y-6">
 
         {/* ── Insight trigger ──────────────────────────── */}
-        <div className="card-surface p-7 sm:p-9">
-          <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6">
+        <div className="card-surface p-5 sm:p-9">
+          <div className="flex flex-col sm:flex-row items-center sm:items-start gap-5 sm:gap-6">
             <ScoreGauge score={score} color={cfg.color} />
             <div className="text-center sm:text-left">
               <p className="section-label mb-2">Eligibility Assessment</p>
@@ -1524,7 +1524,7 @@ export default function Step7Results({ formData, onBack, onRestart }) {
             </div>
 
             {/* Download Report */}
-            <div className="rounded-2xl border border-border bg-card px-6 sm:px-10 py-7 flex flex-col sm:flex-row items-center gap-5">
+            <div className="rounded-2xl border border-border bg-card px-4 sm:px-8 py-6 sm:py-7 flex flex-col sm:flex-row items-center gap-4 sm:gap-5">
               <div className="flex-1">
                 <p className="text-[10px] font-bold tracking-widest uppercase text-brand-600 mb-1">
                   PDF Report
@@ -1574,7 +1574,7 @@ export default function Step7Results({ formData, onBack, onRestart }) {
             </div>
 
             {/* Primary CTA — Consultation */}
-            <div className="rounded-2xl bg-dark-900 border border-white/10 px-6 sm:px-10 py-8 text-center">
+            <div className="rounded-2xl bg-dark-900 border border-white/10 px-4 sm:px-8 py-7 text-center">
               <p className="text-[11px] font-bold tracking-widest uppercase text-brand-400 mb-3">
                 Professional Review
               </p>

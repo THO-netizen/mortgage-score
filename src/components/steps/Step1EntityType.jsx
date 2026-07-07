@@ -372,7 +372,7 @@ function EntityCard({ option, selected, onSelect }) {
       type="button"
       onClick={onSelect}
       className={[
-        'relative w-full text-left rounded-2xl border-2 p-6',
+        'relative w-full text-left rounded-2xl border-2 p-4 sm:p-6',
         'transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-600/40',
         selected
           ? 'border-brand-600 bg-brand-50 shadow-card-md'
@@ -385,12 +385,12 @@ function EntityCard({ option, selected, onSelect }) {
         </span>
       )}
       <div className={[
-        'w-12 h-12 rounded-xl flex items-center justify-center mb-5 transition-colors duration-200',
+        'w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center mb-4 sm:mb-5 transition-colors duration-200',
         selected ? 'bg-brand-600' : 'bg-surface',
       ].join(' ')}>
-        <Icon size={22} className={selected ? 'text-white' : 'text-ink-muted'} />
+        <Icon size={20} className={selected ? 'text-white' : 'text-ink-muted'} />
       </div>
-      <h3 className="font-display text-xl font-extrabold text-ink leading-tight mb-0.5">{title}</h3>
+      <h3 className="font-display text-lg sm:text-xl font-extrabold text-ink leading-tight mb-0.5">{title}</h3>
       <p className="text-xs text-ink-muted mb-3">{subtitle}</p>
       <p className="text-sm text-ink-muted leading-relaxed mb-5">{desc}</p>
       <ul className="space-y-2 mb-5">
@@ -1517,7 +1517,7 @@ function EmployeeDetails({ data, onChange }) {
           />
         </div>
         {hasFxIncome && (
-          <div className="mt-2 animate-fade-up grid grid-cols-[120px_1fr] gap-2">
+          <div className="mt-2 animate-fade-up grid grid-cols-[100px_1fr] sm:grid-cols-[120px_1fr] gap-2">
             <select
               value={foreignSalaryCurrency}
               onChange={(e) => onChange('foreignSalaryCurrency', e.target.value)}
