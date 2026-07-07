@@ -389,7 +389,7 @@ const TAX_REGIME_OPTIONS = [
     value:    'flat_tax',
     label:    'Flat Tax Regime',
     sublabel: 'Flat Tax Regime',
-    desc:     'Fixed quarterly flat-tax payments; no annual return required',
+    desc:     'Average monthly business turnover (from bank statements) — We use your average monthly business credit turnover, not a tax-return figure. Flat-tax filers don\'t declare turnover in a return; banks read it from your last 3–6 months of statements.',
   },
 ]
 
@@ -1216,7 +1216,7 @@ function SroIncomeSection({ data, onChange }) {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {[
                 { value: 'tax_return', label: 'Standard Tax Return',   sublabel: 'Corporate or personal annual tax return' },
-                { value: 'flat_tax',   label: 'Flat Tax Regime',       sublabel: 'Fixed quarterly flat-tax payment' },
+                { value: 'flat_tax',   label: 'Flat Tax Regime',       sublabel: 'Avg. monthly credit turnover — read from bank statements (last 3–6 months)' },
               ].map(({ value: v, label, sublabel }) => (
                 <button
                   key={v}
