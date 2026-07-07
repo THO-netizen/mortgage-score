@@ -97,6 +97,7 @@ function IcoLookup({ onResult, entityType }) {
 
   const handleChange = (e) => {
     const val = e.target.value.replace(/\D/g, '').slice(0, 8)
+    console.log('[IčO] onChange → stored value:', val, '| length:', val.length)
     setIcoInput(val)
     if (status !== 'idle' && status !== 'loading') {
       resetResult()
@@ -105,7 +106,7 @@ function IcoLookup({ onResult, entityType }) {
   }
 
   const handleVerify = () => {
-    if (icoInput.length !== 8 || status === 'loading') return
+    if (icoInput.length < 8 || status === 'loading') return
 
     abortRef.current?.abort()
     const ctrl = new AbortController()
@@ -176,7 +177,7 @@ function IcoLookup({ onResult, entityType }) {
 
   const entityBadgeClass = resolvedType === 'osvc' ? 'badge-warning' : 'badge-neutral'
   const entityBadgeLabel = resolvedType === 'osvc' ? 'Self-employed' : resolvedType === 'sro' ? 'Company Director' : 'Other'
-  const canVerify = icoInput.length === 8 && status !== 'loading'
+  const canVerify = icoInput.length >= 8 && status !== 'loading'
   const hasResult = status === 'found' || status === 'inactive'
 
   return (
@@ -201,7 +202,7 @@ function IcoLookup({ onResult, entityType }) {
               onChange={handleChange}
               onKeyDown={handleKeyDown}
               placeholder="e.g. 12345678"
-              maxLength={8}
+              maxLength={12}
               className="input-field pr-11 tabular-nums tracking-widest w-full"
             />
             <span className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none">
