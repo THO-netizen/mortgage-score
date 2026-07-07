@@ -24,14 +24,24 @@ export const PAYOFF_AGES = {
   kb:    75,   // Komerční banka — most generous (= PAYOFF_AGE_MAX)
 }
 
-// Turnover-to-income coefficient for tax_return pathway (§7.6.1 conservative default)
-// ČS: up to 0.70 for services; mBank: 0.60; UCB: sector-dependent. Using 0.55 as
-// a conservative cross-bank average absent NACE sector data.
-export const TURNOVER_COEFF_DEFAULT = 0.55
+// Contractual & stressed interest rates (spec v3.0, fixed 2026)
+export const CONTRACT_RATE_PA = 4.89   // % p.a. — used in DSTI test (Test A)
+export const STRESS_RATE_PA   = 6.89   // % p.a. — contract + 2 pp, used in DI test (Test B)
 
-// Flat-tax (paušální daň) income coefficient — all four bank methodologies, 2026
-export const FLAT_TAX_INCOME_COEFF = 0.60
-export const FLAT_TAX_INCOME_CAP   = 150_000   // CZK/month hard ceiling per all methodologies
+// Turnover recognition default (spec v3.0: 0.70 is the standard per mBank/ČS/RB/UCB)
+// KB/ČSOB use taxable-profit base — use same 0.70 as a conservative fallback.
+export const TURNOVER_COEFF_DEFAULT = 0.70
+
+// Flat-tax regime — same recognition coefficient as Branch A
+export const FLAT_TAX_INCOME_COEFF = 0.70   // aligned with TURNOVER_COEFF_DEFAULT
+export const FLAT_TAX_INCOME_CAP   = 150_000   // CZK/month hard ceiling (UCB: 170k)
+
+// DI test: 5% reserve on top of living costs
+export const RESERVE_KOEF = 0.05
+
+// Living cost components for DI test (krok_3 aproximace)
+export const HOUSING_COSTS_CZK       = 7_500   // náklady na bydlení per household
+export const ZM_ADDITIONAL_ADULT_CZK = 4_470   // životní minimum, each additional adult
 
 // Variance coefficients: capture cross-bank methodology spread (σ/E[X])
 export const VAR_COEFF = {
@@ -121,6 +131,60 @@ export function mapNaceToSector(naceCode) {
   if (!naceCode) return { pct: null, sector: '' }
   const div = parseInt(String(naceCode).slice(0, 2), 10)
   return NACE_SECTOR_TABLE[div] ?? { pct: null, sector: '' }
+}
+
+// ─── Bank profile tables (spec v3.0 — mapa_bank) ────────────────────────────
+
+// KK (credit card limit) imputation coefficient per bank
+export const BANK_KK_KOEF = {
+  mbank: 0.05, kb: 0.05, csob: 0.05, cs: 0.05, rb: 0.05, ucb: 0.029,
+}
+// KTK (overdraft limit) imputation coefficient per bank
+export const BANK_KTK_KOEF = {
+  mbank: 0.05, kb: 0.05, csob: 0.05, cs: 0.05, rb: 0.05, ucb: 0.034,
+}
+// DTI limit (multiple of annual income)
+export const BANK_DTI_LIMIT = {
+  mbank: 8.5, kb: 9.5, csob: 12, cs: 9.5, rb: 9.5, ucb: 7,
+}
+export const BANK_KEYS = ['mbank', 'kb', 'csob', 'cs', 'rb', 'ucb']
+export const BANK_NAMES = {
+  mbank: 'mBank', kb: 'KB', csob: 'ČSOB', cs: 'Česká spořitelna',
+  rb: 'Raiffeisenbank', ucb: 'UniCredit',
+}
+
+/**
+ * Effective DSTI limit for a given bank based on applicant profile.
+ * Returns null for UniCredit (no DSTI test — only DI test applies).
+ *
+ * @param {string}  bankKey        — one of BANK_KEYS
+ * @param {number}  income         — effective monthly income (CZK)
+ * @param {boolean} isYoung        — applicant age < 36
+ * @param {boolean} isForeigner    — non-EU, non-permanent residence
+ * @param {number}  ltvPct         — LTV percentage (0-100)
+ * @param {boolean} isEnergyAB     — energy class A or B property (mBank +5% bonus)
+ */
+export function getBankEffectiveDSTI(bankKey, income, isYoung, isForeigner, ltvPct, isEnergyAB = false) {
+  switch (bankKey) {
+    case 'mbank': {
+      // Income pasma: ≤30k→40%, ≤50k→50%, ≤100k→60%, >100k→65%
+      // "neni OSTRE nad 100k" → income=100000 maps to do_100tis (0.60)
+      let base = income > 100_000 ? 0.65
+        : income > 50_000  ? 0.60
+        : income > 30_000  ? 0.50
+        : 0.40
+      if (isEnergyAB) base = Math.min(0.65, base + 0.05)
+      return base
+    }
+    case 'kb':   return 0.60   // "nizke riziko" standard
+    case 'csob': return 0.55
+    case 'cs':   return isYoung ? 0.60 : 0.55   // 0.60 if at least one applicant < 36
+    case 'rb':
+      if (isForeigner) return 0.45
+      return ltvPct <= 70 ? 0.60 : 0.50
+    case 'ucb':  return null   // no DSTI test — only Test B (DI) applies
+    default:     return 0.45
+  }
 }
 
 // ─── Core math helpers ───────────────────────────────────────────────────────
@@ -379,21 +443,28 @@ export function computeEffectiveIncome(formData) {
       // 24+ months: full recognition, haircut = 1.0
     }
 
-    // Income method selection
-    const turnover = Number(annualTurnover ?? 0)
+    // Income method selection (krok_1b — spec v3.0)
+    const coeff = (turnoverIncomePct !== null && turnoverIncomePct > 0)
+      ? turnoverIncomePct / 100
+      : TURNOVER_COEFF_DEFAULT   // 0.70 per spec default
 
-    if (taxRegime === 'flat_tax' && turnover >= 1) {
-      const coeff = (turnoverIncomePct !== null && turnoverIncomePct > 0)
-        ? turnoverIncomePct / 100
-        : TURNOVER_COEFF_DEFAULT
-      income = Math.round(turnover * coeff / 12)
-      flags.push('flat_tax_method')
-    } else if (taxRegime === 'tax_return' && turnover >= 1) {
-      const turnoverMonthly = Math.round(turnover * TURNOVER_COEFF_DEFAULT / 12)
-      if (turnoverMonthly > income) {
-        income = turnoverMonthly
-        flags.push('turnover_method')
+    if (taxRegime === 'flat_tax') {
+      // Branch B: monthly business income from bank statements
+      const monthlyBI = Number(avgMonthlyCreditTurnover ?? 0)
+      if (monthlyBI >= 1) {
+        const uznatelny = monthlyBI * coeff
+        income = Math.min(Math.round(uznatelny), FLAT_TAX_INCOME_CAP)
+        flags.push('flat_tax_method')
+      } else if (Number(annualTurnover ?? 0) >= 1) {
+        // Legacy fallback if avgMonthlyCreditTurnover not yet entered
+        income = Math.min(Math.round(Number(annualTurnover) / 12 * coeff), FLAT_TAX_INCOME_CAP)
+        flags.push('flat_tax_method')
       }
+    } else if (taxRegime === 'tax_return' && Number(annualTurnover ?? 0) >= 1) {
+      // Branch A: obratová metoda — gross annual turnover ÷ 12 × recognition_koef
+      const mesicniObrat = Number(annualTurnover) / 12
+      income = Math.min(Math.round(mesicniObrat * coeff), FLAT_TAX_INCOME_CAP)
+      flags.push('turnover_method')
     }
 
     return {
@@ -564,17 +635,16 @@ export function computeVarianceCoeff(formData) {
   return 0.15
 }
 
-// ─── Master profile engine ────────────────────────────────────────────────────
+// ─── Master profile engine (spec v3.0 — Dvojtest) ────────────────────────────
 
 /**
- * Runs the full 2026 underwriting model and returns all derived values.
- * This is the single source of truth consumed by computeScore() and Step 7.
- *
- * E[X] formula (per spec):
- *   E[X] = min(
- *     (Net Income × Max DSTI − Existing Debt) × AnnuityFactor,
- *     Net Annual Income × Max DTI
- *   )
+ * Runs the full 2026 Dvojtest underwriting model:
+ *   Test A (DSTI): max_loan = (DSTI × income − obligations) × PV_factor(4.89%)
+ *   Test B (DI):   max_loan = (income − živnáklady − 5%reserve − obligations) × PV_factor(6.89%)
+ *   bonita = MIN(A, B)
+ *   max_loan[bank] = MIN(bonita, DTI_cap, LTV_cap)
+ *   winner = bank with highest effective DSTI (→ highest achievable amount)
+ *   eX = max_loan[winner]
  */
 export function computeMortgageProfile(formData) {
   const {
@@ -587,79 +657,154 @@ export function computeMortgageProfile(formData) {
     creditCardLimits    = 0,
     monthlyLeasing      = 0,
     otherObligations    = 0,
+    residenceStatus     = '',
   } = formData
 
-  // ── Obligations ─────────────────────────────────────────────────────────
-  const cc5          = Math.round(Number(creditCardLimits) * 0.05)
-  const existingDebt = Number(monthlyLoanPayments) + cc5 +
-                       Number(monthlyLeasing) + Number(otherObligations)
+  const age       = Number(applicantAge)
+  const isYoung   = age < FIRST_HOME_LTV_AGE_THRESHOLD
+  // RB restricts to 0.45 DSTI for non-EU/non-permanent applicants
+  const isForeigner = !['eu', 'permanent'].includes(residenceStatus)
 
-  // ── Income with haircuts ─────────────────────────────────────────────────
-  const incomeResult    = computeEffectiveIncome(formData)
+  // ── Income with haircuts ──────────────────────────────────────────────────
+  const incomeResult = computeEffectiveIncome(formData)
   const { effectiveIncome, baseIncome, haircut, flags, redFlags, perBankIncome = {} } = incomeResult
 
-  // ── LTV ─────────────────────────────────────────────────────────────────
+  // ── LTV ──────────────────────────────────────────────────────────────────
   const loanAmount  = Math.max(0, Number(purchasePrice) - Number(ownFunds))
   const ltvPct      = purchasePrice > 0 ? (loanAmount / purchasePrice) * 100 : 0
-  const maxLTVPct   = getMaxLTV(propertyPurpose, Number(applicantAge))
+  const maxLTVPct   = getMaxLTV(propertyPurpose, age)
   const ltvBreached = purchasePrice > 0 && ltvPct > maxLTVPct
-
-  // ── DTI ──────────────────────────────────────────────────────────────────
-  const annualIncome = effectiveIncome * 12
-  const dtiRatio     = annualIncome > 0 ? loanAmount / annualIncome : 0
-  const maxDTIVal    = getMaxDTI(propertyPurpose)
-  const dtiBreached  = annualIncome > 0 && loanAmount > 0 && dtiRatio > maxDTIVal
-
-  // ── Tentative DSTI at 4.5%/30yr (for maturity eligibility check) ─────────
-  const refRate       = 4.5
-  const af30          = annuityFactor(refRate, 360)
-  const tentPmt       = af30 > 0 ? loanAmount / af30 : 0
-  const tentativeDSTI = effectiveIncome > 0
-    ? ((tentPmt + existingDebt) / effectiveIncome) * 100 : 0
+  const ltvCapLoan  = purchasePrice > 0 ? (maxLTVPct / 100) * Number(purchasePrice) : Infinity
 
   // ── Max maturity ─────────────────────────────────────────────────────────
-  const maturity = calcMaxMaturity(
-    Number(applicantAge), ltvPct, tentativeDSTI, dtiRatio
-  )
+  // Use standard (30yr) cap by default. The 40yr extension is mBank-specific and
+  // requires knowing final DSTI/DTI — not knowable before the per-bank loop.
+  const maturity = calcMaxMaturity(age, ltvPct, 46, 99)
 
-  // ── E[X] at base rate 4.5% / max maturity ────────────────────────────────
-  const af       = annuityFactor(refRate, maturity.maxMonths)
-  const afStress = annuityFactor(6.5,    maturity.maxMonths)
+  // ── Annuity factors: PV factor = loan / monthly_payment ──────────────────
+  // loan = payment × PV_factor  →  max_loan = free_payment × PV_factor
+  const af       = annuityFactor(CONTRACT_RATE_PA, maturity.maxMonths)  // 4.89%
+  const afStress = annuityFactor(STRESS_RATE_PA,   maturity.maxMonths)  // 6.89%
 
-  // Household living expenses (životní minimum × applicants) — deducted before DSTI
-  const householdExpenses = LIVING_EXPENSE_PER_APPLICANT * Math.max(1, Number(numberOfApplicants))
+  // ── Obligations (base — KK coeff applied per bank below) ─────────────────
+  const splatky  = Number(monthlyLoanPayments) + Number(monthlyLeasing) + Number(otherObligations)
+  const kkLimits = Number(creditCardLimits)
+  const cc5      = Math.round(kkLimits * 0.05)   // display field (standard 5%)
 
-  // Monthly headroom under DSTI ceiling, net of household living costs
-  const headroom = Math.max(0, effectiveIncome * CNB_DSTI_MAX - existingDebt - householdExpenses)
+  // ── Living costs for DI test (krok_3) ────────────────────────────────────
+  const adults      = Math.max(1, Number(numberOfApplicants))
+  const zmTotal     = LIVING_MIN_CZK + Math.max(0, adults - 1) * ZM_ADDITIONAL_ADULT_CZK
+  const livingCosts = zmTotal + HOUSING_COSTS_CZK           // ZM + housing per household
+  const reserve     = Math.round(livingCosts * RESERVE_KOEF)  // 5% reserve
+  const householdExpenses = livingCosts + reserve            // total DI-test deduction
 
-  const eXbyDSTI       = Math.round(headroom * af)
-  const eXbyDSTIStress = Math.round(headroom * afStress)
-  const eXbyDTI        = annualIncome > 0
-    ? Math.round(annualIncome * maxDTIVal)
-    : Number.MAX_SAFE_INTEGER
+  // ── Per-bank Dvojtest ────────────────────────────────────────────────────
+  const bankResults = {}
 
-  const eX       = Math.min(eXbyDSTI,       eXbyDTI)
-  const eXStress = Math.min(eXbyDSTIStress,  eXbyDTI)
+  for (const key of BANK_KEYS) {
+    const koefKK = BANK_KK_KOEF[key]
+    const dtiLim  = BANK_DTI_LIMIT[key]
 
-  // ── Var[X] ───────────────────────────────────────────────────────────────
+    // Use per-bank income for s.r.o. (ESSO streams differ); fallback = effectiveIncome
+    const bIncome = (perBankIncome[key] !== undefined && perBankIncome[key] > 0)
+      ? perBankIncome[key]
+      : effectiveIncome
+
+    const effectiveDSTI = getBankEffectiveDSTI(key, bIncome, isYoung, isForeigner, ltvPct)
+    const totalObl      = splatky + kkLimits * koefKK   // KTK not collected → 0
+
+    // Test A — DSTI (contract rate 4.89%)
+    let maxByDSTI = Infinity
+    if (effectiveDSTI !== null) {
+      const volnaSplatka = Math.max(0, effectiveDSTI * bIncome - totalObl)
+      maxByDSTI = Math.round(volnaSplatka * af)
+    }
+
+    // Test B — DI (stressed rate 6.89%)
+    const disponibilni = Math.max(0, bIncome - livingCosts - reserve - totalObl)
+    const maxByDI      = Math.round(disponibilni * afStress)
+
+    // krok_4: bonita = MIN(A, B)
+    const bonita = Math.min(maxByDSTI, maxByDI)
+
+    // krok_5: DTI cap
+    const maxByDTI = isFinite(dtiLim) ? Math.round(bIncome * 12 * dtiLim) : Infinity
+
+    // krok_6: LTV cap
+    const maxByLTV = isFinite(ltvCapLoan) ? Math.round(ltvCapLoan) : Infinity
+
+    // krok_7: bank result
+    const maxLoan = Math.max(0, Math.min(bonita, maxByDTI, maxByLTV))
+
+    // Binding constraint label
+    let binding
+    if (maxByLTV < bonita && maxByLTV <= maxByDTI)     binding = 'LTV'
+    else if (maxByDTI < bonita)                        binding = 'DTI'
+    else if (isFinite(maxByDSTI) && maxByDSTI <= maxByDI) binding = 'DSTI'
+    else                                               binding = 'DI'
+
+    bankResults[key] = { effectiveDSTI, maxByDSTI, maxByDI, bonita, maxByDTI, maxLoan, binding }
+  }
+
+  // ── krok_8: select winning bank ───────────────────────────────────────────
+  // Primary sort: highest effectiveDSTI; tie → highest maxLoan
+  // UCB has null DSTI — compared purely on maxLoan
+  let winnerKey  = BANK_KEYS[0]
+  let winnerDSTI = bankResults[BANK_KEYS[0]].effectiveDSTI ?? -1
+  let winnerLoan = bankResults[BANK_KEYS[0]].maxLoan
+
+  for (const key of BANK_KEYS.slice(1)) {
+    const r    = bankResults[key]
+    const dsti = r.effectiveDSTI ?? -1
+    if (dsti > winnerDSTI || (dsti === winnerDSTI && r.maxLoan > winnerLoan)) {
+      winnerKey  = key
+      winnerDSTI = dsti
+      winnerLoan = r.maxLoan
+    }
+  }
+  // Let UCB compete on pure maxLoan (overrides DSTI winner only if strictly higher)
+  if ((bankResults['ucb']?.maxLoan ?? 0) > winnerLoan) {
+    winnerKey  = 'ucb'
+    winnerLoan = bankResults['ucb'].maxLoan
+  }
+
+  const winner = bankResults[winnerKey]
+  const eX     = Math.max(0, winner.maxLoan)
+  // eXStress: what the loan would be if DI test alone were used (display only)
+  const eXStress = Math.max(0, winner.maxByDI)
+
+  // ── Derived legacy fields ─────────────────────────────────────────────────
+  const annualIncome = effectiveIncome * 12
+  const maxDTIVal    = getMaxDTI(propertyPurpose)
+  const dtiRatio     = annualIncome > 0 ? loanAmount / annualIncome : 0
+  const dtiBreached  = annualIncome > 0 && loanAmount > 0 && dtiRatio > maxDTIVal
+
+  const existingDebt = splatky + cc5   // display field
+
+  // DSTI at eX for display (monthly payment / income)
+  const optPayment  = af > 0 ? eX / af : 0
+  const dstiAtEX    = effectiveIncome > 0 ? (optPayment / effectiveIncome) * 100 : 0
+  const tentativeDSTI = dstiAtEX
+
+  // Legacy eXbyDSTI / eXbyDTI from winning bank for backward compat
+  const eXbyDSTI = isFinite(winner.maxByDSTI) ? winner.maxByDSTI : eX
+  const eXbyDTI  = isFinite(winner.maxByDTI)  ? winner.maxByDTI  : eX
+
+  // Headroom at CNB 45% (legacy display field — not used in dual test)
+  const headroom = Math.max(0, effectiveIncome * CNB_DSTI_MAX - existingDebt)
+
+  // ── Var[X] ────────────────────────────────────────────────────────────────
   const varCoeff = computeVarianceCoeff(formData)
   const varX     = Math.round(eX * varCoeff)
 
-  // ── DSTI at the optimal E[X] loan ────────────────────────────────────────
-  const optPayment = af > 0 ? eX / af : 0
-  const dstiAtEX   = effectiveIncome > 0
-    ? ((optPayment + existingDebt) / effectiveIncome) * 100 : 0
-
-  // ── Bottleneck identification ─────────────────────────────────────────────
+  // ── Bottleneck ────────────────────────────────────────────────────────────
   let bottleneck
-  if      (ltvBreached)                      bottleneck = 'LTV'
-  else if (dtiBreached)                      bottleneck = 'DTI'
-  else if (dstiAtEX > 45)                    bottleneck = 'DSTI'
-  else if (maturity.maxMonths < 300 && Number(applicantAge) > 50) bottleneck = 'AGE'
-  else if (eXbyDSTI <= eXbyDTI)              bottleneck = 'DSTI'
-  else                                       bottleneck = 'DTI'
+  if      (ltvBreached)              bottleneck = 'LTV'
+  else if (dtiBreached)              bottleneck = 'DTI'
+  else if (age > 50 && maturity.maxMonths < 300) bottleneck = 'AGE'
+  else                               bottleneck = winner.binding
 
-  // ── Risk matrix: Zelená / Oranžová / Červená ──────────────────────────────
+  // ── Risk matrix ───────────────────────────────────────────────────────────
   let riskStatus = 'zelena'
   const hardStop = ltvBreached || dtiBreached ||
     redFlags.includes('probation') || redFlags.includes('business_too_new') ||
@@ -685,6 +830,7 @@ export function computeMortgageProfile(formData) {
     // Income
     baseIncome, effectiveIncome, haircut, flags, redFlags, perBankIncome,
     existingDebt, cc5, householdExpenses, numberOfApplicants,
+    livingCosts, reserve,
     // Loan structure
     loanAmount, ltvPct, maxLTVPct, ltvBreached,
     // DTI
@@ -699,6 +845,8 @@ export function computeMortgageProfile(formData) {
     eXbyDSTI, eXbyDTI,
     // Risk
     bottleneck, riskStatus,
+    // Per-bank results (new — Step 7 can surface these)
+    bankResults, winnerBank: winnerKey,
   }
 }
 
