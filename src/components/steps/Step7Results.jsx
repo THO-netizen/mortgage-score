@@ -2,8 +2,8 @@ import { useState, useEffect } from 'react'
 import {
   AlertTriangle, CheckCircle, TrendingUp, Home,
   Shield, DollarSign, FileText, BarChart2, Calendar,
-  Users, Award, MapPin, RotateCcw, ArrowLeft, Info,
-  Briefcase, Activity, ChevronDown,
+  Users, Award, MapPin, RotateCcw, Info,
+  Briefcase, Activity, ChevronDown, Building2,
 } from 'lucide-react'
 import { formatCZK, formatCZKShort } from '../../utils/formatters.js'
 import { generateMortgagePdf } from '../../utils/generatePdf.js'
@@ -11,6 +11,7 @@ import {
   computeScore, computeMortgageProfile,
   monthlyPayment, annuityFactor,
   getMaxLTV, getMaxDTI, calcMaxMaturity,
+  BANK_NAMES, BANK_KEYS,
 } from '../../utils/scoringEngine.js'
 import HowItWorks        from '../results/HowItWorks.jsx'
 import InlineLeadCapture from '../results/InlineLeadCapture.jsx'
@@ -484,11 +485,11 @@ function ReadinessCard({ factor }) {
       {eX !== undefined && netIncome > 0 && eX > 0 && (
         <div className="mt-3 pt-3 border-t border-border space-y-1.5">
           <div className="flex justify-between text-xs">
-            <span className="text-ink-muted">Expected loan @ 4.5% / {maturity?.maxYears ?? 20} yr</span>
+            <span className="text-ink-muted">Expected loan @ 4.89% / {maturity?.maxYears ?? 20} yr</span>
             <span className="font-bold text-ink tabular-nums">{formatCZK(eX)}</span>
           </div>
           <div className="flex justify-between text-xs">
-            <span className="text-ink-muted">Stress test @ 6.5%</span>
+            <span className="text-ink-muted">Stress test @ 6.89%</span>
             <span className="font-semibold text-warning-text tabular-nums">{formatCZK(eXStress)}</span>
           </div>
           <div className="flex justify-between text-xs">
@@ -499,6 +500,390 @@ function ReadinessCard({ factor }) {
           </div>
         </div>
       )}
+    </div>
+  )
+}
+
+// ── Applicant Profile Panel ────────────────────────────
+
+function ApplicantProfilePanel({ formData, profile }) {
+  const {
+    entityType = '',
+    businessName = '',
+    icoActiveStatus = '',
+    naceSector = '',
+    turnoverIncomePct = null,
+    businessAgeMonths = null,
+    businessActivityGap = false,
+    taxRegime = '',
+    annualTurnover = null,
+    avgMonthlyCreditTurnover = null,
+    contractType = '',
+    probationPeriod = '',
+    isProbation = false,
+    employmentSector = '',
+    isNoticePeriod = false,
+  } = formData
+
+  const { effectiveIncome, flags } = profile
+
+  const DetailCell = ({ label, value, warn = false }) => (
+    <div className={`rounded-xl border p-4 ${warn ? 'bg-risk-light border-risk-border' : 'bg-surface border-border'}`}>
+      <p className={`text-[10px] font-semibold uppercase tracking-wide mb-1.5 ${warn ? 'text-risk-text' : 'text-ink-subtle'}`}>{label}</p>
+      <p className={`text-sm font-bold leading-snug ${warn ? 'text-risk-text' : 'text-ink'}`}>{value}</p>
+    </div>
+  )
+
+  const businessDurationStr = businessAgeMonths !== null
+    ? (() => {
+        const y = Math.floor(businessAgeMonths / 12)
+        const m = businessAgeMonths % 12
+        if (y > 0 && m > 0) return `${y} yr ${m} mo`
+        if (y > 0) return `${y} yr`
+        return `${m} mo`
+      })()
+    : 'Not verified'
+
+  // ── OSVČ ────────────────────────────────────────────────
+  if (entityType === 'osvc') {
+    const coeff     = (turnoverIncomePct ?? 70) / 100
+    const coeffLabel = `${turnoverIncomePct ?? 70}%`
+    const annualNum  = Number(annualTurnover ?? 0)
+    const monthlyNum = Number(avgMonthlyCreditTurnover ?? 0)
+
+    const methodAIncome = annualNum > 0
+      ? Math.min(Math.round(annualNum / 12 * coeff), 150_000)
+      : null
+    const methodBIncome = monthlyNum > 0
+      ? Math.min(Math.round(monthlyNum * coeff), 150_000)
+      : null
+
+    const activeMethod = flags.includes('flat_tax_method') ? 'B' : 'A'
+    const statusLabel  = icoActiveStatus === 'AKTIVNÍ' ? 'Verified — Active' : icoActiveStatus ? icoActiveStatus : 'Not verified'
+    const statusBadge  = icoActiveStatus === 'AKTIVNÍ' ? 'badge-success' : 'badge-warning'
+    const historyLabel = businessActivityGap ? 'Interrupted' : businessAgeMonths !== null ? 'Continuous' : 'Unknown'
+    const taxLabel     = taxRegime === 'flat_tax' ? 'Flat Tax (Paušální)' : taxRegime === 'tax_return' ? 'Tax Return (DPFO)' : 'Not specified'
+
+    return (
+      <div className="space-y-5 pt-4">
+
+        {/* Business identity */}
+        <div className="flex items-center gap-3 flex-wrap">
+          <div className="w-10 h-10 rounded-xl bg-brand-50 border border-brand-100 flex items-center justify-center flex-shrink-0">
+            <Building2 size={16} className="text-brand-600" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="font-semibold text-ink leading-tight">{businessName || 'Self-Employed Applicant'}</p>
+            <p className="text-xs text-ink-subtle">Sole trader (OSVČ) · {taxLabel}</p>
+          </div>
+          {icoActiveStatus && (
+            <span className={`${statusBadge} text-[10px] flex-shrink-0`}>{statusLabel}</span>
+          )}
+        </div>
+
+        {/* Detail grid */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <DetailCell label="Verified Industry" value={naceSector || 'Not resolved'} />
+          <DetailCell label="Recognition Rate" value={`${coeffLabel} of turnover`} />
+          <DetailCell label="Business Duration" value={businessDurationStr} />
+          <DetailCell label="History Status" value={historyLabel} warn={businessActivityGap} />
+        </div>
+
+        {/* Income recognition comparison */}
+        <div>
+          <p className="section-label mb-3">Income Recognition — Method Comparison</p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+
+            {/* Method A — Tax Return */}
+            <div className={`rounded-xl border p-5 ${activeMethod === 'A' ? 'border-brand-200 bg-brand-50/40' : 'border-border bg-surface'}`}>
+              <div className="flex items-center justify-between mb-1">
+                <p className="section-label">Method A — Tax Return</p>
+                {activeMethod === 'A' && <span className="badge-success text-[10px]">Applied</span>}
+              </div>
+              <p className="text-[11px] text-ink-subtle mb-4 leading-relaxed">
+                Annual turnover ÷ 12 × {coeffLabel} recognition rate
+              </p>
+              {methodAIncome !== null ? (
+                <div className="space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-ink-muted">Recognised income</span>
+                    <span className="font-bold text-ink tabular-nums">{formatCZK(methodAIncome)}/mo</span>
+                  </div>
+                  {annualNum > 0 && (
+                    <div className="flex justify-between text-xs">
+                      <span className="text-ink-subtle">Annual turnover basis</span>
+                      <span className="text-ink-subtle tabular-nums">{formatCZK(annualNum)}/yr</span>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <p className="text-xs text-ink-subtle">Annual turnover not entered</p>
+              )}
+            </div>
+
+            {/* Method B — Bank Turnover */}
+            <div className={`rounded-xl border p-5 ${activeMethod === 'B' ? 'border-brand-200 bg-brand-50/40' : 'border-border bg-surface'}`}>
+              <div className="flex items-center justify-between mb-1">
+                <p className="section-label">Method B — Bank Turnover</p>
+                {activeMethod === 'B' && <span className="badge-success text-[10px]">Applied</span>}
+              </div>
+              <p className="text-[11px] text-ink-subtle mb-4 leading-relaxed">
+                Avg monthly credit turnover × {coeffLabel} recognition rate
+              </p>
+              {methodBIncome !== null ? (
+                <div className="space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-ink-muted">Recognised income</span>
+                    <span className="font-bold text-ink tabular-nums">{formatCZK(methodBIncome)}/mo</span>
+                  </div>
+                  <div className="flex justify-between text-xs">
+                    <span className="text-ink-subtle">Monthly turnover basis</span>
+                    <span className="text-ink-subtle tabular-nums">{formatCZK(monthlyNum)}/mo</span>
+                  </div>
+                </div>
+              ) : (
+                <p className="text-xs text-ink-subtle">
+                  {taxRegime === 'flat_tax'
+                    ? 'Monthly bank turnover not entered — required for flat-tax applicants.'
+                    : 'Not applicable for standard tax-return filing.'}
+                </p>
+              )}
+            </div>
+          </div>
+
+          {/* Active recognised income summary */}
+          <div className="flex items-center justify-between rounded-xl border border-border bg-surface px-5 py-4 mt-3">
+            <div>
+              <p className="section-label mb-0.5">Recognised Monthly Income (used in calculation)</p>
+              <p className="text-[11px] text-ink-subtle">Method {activeMethod} · Cap: 150,000 CZK/mo</p>
+            </div>
+            <p className="font-display text-xl font-black text-ink tabular-nums">{formatCZK(effectiveIncome)}/mo</p>
+          </div>
+        </div>
+
+        {/* Under-24-month warning */}
+        {businessAgeMonths !== null && businessAgeMonths < 24 && (
+          <div className="flex items-start gap-3 rounded-xl bg-warning-light border border-warning-border p-4">
+            <AlertTriangle size={14} className="text-warning-DEFAULT flex-shrink-0 mt-0.5" />
+            <div>
+              <p className="text-xs font-semibold text-warning-text mb-0.5">
+                {businessAgeMonths < 12 ? 'Under 12 Months — Transition Path Required' : 'Under 24 Months — Income Haircut Applied'}
+              </p>
+              <p className="text-xs text-warning-text leading-relaxed">
+                {businessAgeMonths < 12
+                  ? 'Businesses under 12 months must demonstrate continuity from prior employment in the same sector with a single B2B client to qualify for income recognition at most banks.'
+                  : 'Businesses between 12 and 24 months receive a 15% income haircut at most Czech banks. Full recognition activates once the 24-month threshold is crossed.'}
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* Interrupted history warning */}
+        {businessActivityGap && (
+          <div className="flex items-start gap-3 rounded-xl bg-risk-light border border-risk-border p-4">
+            <AlertTriangle size={14} className="text-risk-DEFAULT flex-shrink-0 mt-0.5" />
+            <div>
+              <p className="text-xs font-semibold text-risk-text mb-0.5">Risk Alert: Interrupted Business Activity</p>
+              <p className="text-xs text-risk-text leading-relaxed">
+                The Czech Business Register (ARES) shows a suspension or dissolution record on file.
+                Most Czech lenders treat interrupted business history as a risk factor — it may trigger
+                additional underwriting scrutiny or income haircuts.
+              </p>
+            </div>
+          </div>
+        )}
+      </div>
+    )
+  }
+
+  // ── Zamestnanec ─────────────────────────────────────────
+  if (entityType === 'zamestnanec') {
+    const inProbation = isProbation || probationPeriod === 'yes'
+    const contractLabels = {
+      indefinite: 'Indefinite contract',
+      definite:   'Fixed-term contract',
+      agency:     'Agency / temporary',
+      dpc:        'Supplemental agreement (DPC)',
+    }
+    const sectorLabels = {
+      health:    'Healthcare',
+      education: 'Education',
+      other:     'Private sector',
+    }
+    const stabilityStatus = (() => {
+      if (isNoticePeriod) return { label: 'Notice Period — Hard Block', cls: 'badge-risk' }
+      if (inProbation && employmentSector !== 'health' && employmentSector !== 'education')
+        return { label: 'Probation — Most Banks Decline', cls: 'badge-risk' }
+      if (inProbation) return { label: 'Probation — ČSOB Exception', cls: 'badge-warning' }
+      if (contractType === 'agency' || contractType === 'dpc') return { label: 'Needs Review', cls: 'badge-warning' }
+      if (contractType === 'indefinite') return { label: 'Strong', cls: 'badge-success' }
+      return { label: 'Good', cls: 'badge bg-brand-50 text-brand-700 border border-brand-100' }
+    })()
+
+    return (
+      <div className="space-y-5 pt-4">
+
+        {/* Header */}
+        <div className="flex items-center gap-3 flex-wrap">
+          <div className="w-10 h-10 rounded-xl bg-brand-50 border border-brand-100 flex items-center justify-center flex-shrink-0">
+            <Briefcase size={16} className="text-brand-600" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="font-semibold text-ink">Salaried Employment</p>
+            <p className="text-xs text-ink-subtle">{sectorLabels[employmentSector] ?? 'Sector not specified'}</p>
+          </div>
+          <span className={`${stabilityStatus.cls} text-[10px] flex-shrink-0`}>{stabilityStatus.label}</span>
+        </div>
+
+        {/* Detail grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <DetailCell label="Contract Type" value={contractLabels[contractType] ?? 'Not specified'} />
+          <DetailCell
+            label="Probation Status"
+            value={inProbation ? 'In probation period' : 'Not in probation'}
+            warn={inProbation && employmentSector !== 'health' && employmentSector !== 'education'}
+          />
+          <DetailCell label="Employment Sector" value={sectorLabels[employmentSector] ?? 'Not specified'} />
+        </div>
+
+        {/* Contextual notes */}
+        {contractType === 'indefinite' && !inProbation && (
+          <div className="flex items-start gap-3 rounded-xl bg-success-light border border-success-border p-4">
+            <CheckCircle size={14} className="text-success-DEFAULT flex-shrink-0 mt-0.5" />
+            <p className="text-xs text-success-text leading-relaxed">
+              <strong>Indefinite contract — preferred by all Czech banks.</strong> No income haircut applies.
+              Standard underwriting path with the widest lender access.
+            </p>
+          </div>
+        )}
+        {contractType === 'agency' && (
+          <div className="flex items-start gap-3 rounded-xl bg-warning-light border border-warning-border p-4">
+            <Info size={14} className="text-warning-DEFAULT flex-shrink-0 mt-0.5" />
+            <p className="text-xs text-warning-text leading-relaxed">
+              <strong>Agency contract — 25% income haircut applied.</strong> Recognised income used in calculation:{' '}
+              <span className="font-semibold tabular-nums">{formatCZK(effectiveIncome)}/mo</span>.
+              Higher income variance across banks; specialist lender pre-filtering required.
+            </p>
+          </div>
+        )}
+        {contractType === 'dpc' && (
+          <div className="flex items-start gap-3 rounded-xl bg-warning-light border border-warning-border p-4">
+            <Info size={14} className="text-warning-DEFAULT flex-shrink-0 mt-0.5" />
+            <p className="text-xs text-warning-text leading-relaxed">
+              <strong>Supplemental agreement (DPC) — 30% income haircut applied.</strong> DPC income is treated as
+              secondary by most Czech lenders. Recognised income:{' '}
+              <span className="font-semibold tabular-nums">{formatCZK(effectiveIncome)}/mo</span>.
+            </p>
+          </div>
+        )}
+        {inProbation && (employmentSector === 'health' || employmentSector === 'education') && (
+          <div className="flex items-start gap-3 rounded-xl bg-warning-light border border-warning-border p-4">
+            <Info size={14} className="text-warning-DEFAULT flex-shrink-0 mt-0.5" />
+            <p className="text-xs text-warning-text leading-relaxed">
+              <strong>ČSOB exception — Healthcare / Education sector.</strong> Applicants in probation within
+              healthcare or education may qualify via ČSOB manual HQ underwriting. Other banks will decline
+              until probation ends.
+            </p>
+          </div>
+        )}
+        {inProbation && employmentSector !== 'health' && employmentSector !== 'education' && (
+          <div className="flex items-start gap-3 rounded-xl bg-risk-light border border-risk-border p-4">
+            <AlertTriangle size={14} className="text-risk-DEFAULT flex-shrink-0 mt-0.5" />
+            <p className="text-xs text-risk-text leading-relaxed">
+              <strong>Probation period — most banks will decline.</strong> Standard Czech banks require the probation
+              period to have ended at the point of application. We recommend reapplying once probation is confirmed
+              complete.
+            </p>
+          </div>
+        )}
+        {isNoticePeriod && (
+          <div className="flex items-start gap-3 rounded-xl bg-risk-light border border-risk-border p-4">
+            <AlertTriangle size={14} className="text-risk-DEFAULT flex-shrink-0 mt-0.5" />
+            <p className="text-xs text-risk-text leading-relaxed">
+              <strong>Notice period — hard block across all banks.</strong> Active employment must be confirmed at the
+              point of application. Any formal notice of termination prevents approval until new employment is started
+              and confirmed.
+            </p>
+          </div>
+        )}
+      </div>
+    )
+  }
+
+  return null
+}
+
+// ── Per-Bank Dual Test Table ───────────────────────────
+
+function BankResultsTable({ profile }) {
+  const { bankResults, winnerBank } = profile
+  if (!bankResults) return null
+
+  const bindingColor = {
+    DSTI: 'bg-brand-50 text-brand-700',
+    DI:   'bg-warning-light text-warning-text',
+    DTI:  'bg-risk-light text-risk-text',
+    LTV:  'bg-surface text-ink-muted border border-border',
+  }
+
+  return (
+    <div className="rounded-xl border border-border overflow-hidden mt-4">
+      <div className="bg-surface px-5 py-3 border-b border-border flex items-center justify-between">
+        <p className="text-[11px] font-bold text-ink-subtle uppercase tracking-wide">Per-Bank Dual Test — Dvojtest</p>
+        <p className="text-[10px] text-ink-subtle">Test A @ 4.89% · Test B @ 6.89%</p>
+      </div>
+      <div className="overflow-x-auto">
+        <table className="w-full text-xs">
+          <thead>
+            <tr className="border-b border-border bg-surface/50">
+              <th className="text-left px-4 py-2.5 font-semibold text-ink-subtle whitespace-nowrap">Bank</th>
+              <th className="text-right px-3 py-2.5 font-semibold text-ink-subtle whitespace-nowrap">DSTI cap</th>
+              <th className="text-right px-3 py-2.5 font-semibold text-ink-subtle whitespace-nowrap">Test A (DSTI)</th>
+              <th className="text-right px-3 py-2.5 font-semibold text-ink-subtle whitespace-nowrap">Test B (DI)</th>
+              <th className="text-right px-4 py-2.5 font-semibold text-ink-subtle whitespace-nowrap">Max Loan</th>
+              <th className="text-center px-3 py-2.5 font-semibold text-ink-subtle whitespace-nowrap">Binding</th>
+            </tr>
+          </thead>
+          <tbody>
+            {BANK_KEYS.map((key) => {
+              const r        = bankResults[key]
+              const isWinner = key === winnerBank
+              return (
+                <tr key={key} className={`border-b border-border last:border-0 transition-colors ${isWinner ? 'bg-success-light' : 'hover:bg-surface/60'}`}>
+                  <td className="px-4 py-3 font-semibold text-ink whitespace-nowrap">
+                    {BANK_NAMES[key]}
+                    {isWinner && <span className="ml-2 badge-success text-[9px] py-0.5 px-1.5">Selected</span>}
+                  </td>
+                  <td className="px-3 py-3 text-right tabular-nums text-ink-muted">
+                    {r.effectiveDSTI !== null ? `${(r.effectiveDSTI * 100).toFixed(0)}%` : 'No limit'}
+                  </td>
+                  <td className="px-3 py-3 text-right tabular-nums text-ink-muted">
+                    {isFinite(r.maxByDSTI) ? formatCZKShort(r.maxByDSTI) : '—'}
+                  </td>
+                  <td className="px-3 py-3 text-right tabular-nums text-ink-muted">
+                    {formatCZKShort(r.maxByDI)}
+                  </td>
+                  <td className={`px-4 py-3 text-right font-bold tabular-nums ${isWinner ? 'text-success-text' : 'text-ink'}`}>
+                    {formatCZKShort(r.maxLoan)}
+                  </td>
+                  <td className="px-3 py-3 text-center">
+                    <span className={`text-[9px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-full ${bindingColor[r.binding] ?? 'bg-surface text-ink-muted'}`}>
+                      {r.binding}
+                    </span>
+                  </td>
+                </tr>
+              )
+            })}
+          </tbody>
+        </table>
+      </div>
+      <div className="px-5 py-3 border-t border-border bg-surface/50 flex items-center gap-2 flex-wrap">
+        <Info size={11} className="text-ink-subtle flex-shrink-0" />
+        <p className="text-[10px] text-ink-subtle leading-relaxed">
+          Bonita = MIN(Test A, Test B). Max Loan = MIN(Bonita, DTI cap, LTV cap).
+          Selected bank has the highest effective DSTI limit; ties broken by highest max loan.
+        </p>
+      </div>
     </div>
   )
 }
@@ -1077,14 +1462,27 @@ export default function Step7Results({ formData, onBack, onRestart }) {
           />
         ) : (
           <>
-            {/* 4 accordions */}
+            {/* Accordions */}
             <div className="space-y-3 animate-fade-in">
+
+              {/* Applicant Profile — first, always open */}
+              <AccordionSection
+                title={formData.entityType === 'zamestnanec' ? 'Employment Profile' : 'Business Profile'}
+                subtitle={
+                  formData.entityType === 'zamestnanec'
+                    ? 'Contract type, stability assessment, and recognised income'
+                    : 'Verified business identity, industry, income recognition, and history'
+                }
+                icon={formData.entityType === 'zamestnanec' ? Briefcase : Building2}
+                defaultOpen
+              >
+                <ApplicantProfilePanel formData={formData} profile={headerProfile} />
+              </AccordionSection>
 
               <AccordionSection
                 title="Score breakdown"
                 subtitle="10 eligibility factors evaluated against Czech bank criteria"
                 icon={Shield}
-                defaultOpen
               >
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4">
                   {factors.map((f) => <ReadinessCard key={f.title} factor={f} />)}
@@ -1093,11 +1491,12 @@ export default function Step7Results({ formData, onBack, onRestart }) {
 
               <AccordionSection
                 title="Loan capacity estimate"
-                subtitle="Maximum borrowing range, stress test, and scenario analysis"
+                subtitle="Maximum borrowing range, dual-test breakdown, and scenario analysis"
                 icon={TrendingUp}
               >
                 <div className="space-y-4 pt-4">
                   <RiskMatrix formData={formData} simNetIncome={simNetIncome} />
+                  <BankResultsTable profile={headerProfile} />
                   <ScenarioSimulator formData={formData} onIncomeChange={setSimNetIncome} />
                 </div>
               </AccordionSection>
