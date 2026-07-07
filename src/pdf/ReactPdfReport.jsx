@@ -226,6 +226,155 @@ function StratItem({ n, priority, color, title, text }) {
   )
 }
 
+/* ── Underwriter's Perspective ───────────────────── */
+
+function UnderwriterPerspective({ profile, formData }) {
+  const { dstiAtEX, ltvPct, maxLTVPct, effectiveIncome, existingDebt, eX, maturity } = profile
+  const years = maturity?.maxYears ?? 30
+  const mp = eX > 0 ? monthlyPayment(eX, 4.89, years) : 0
+  const surplus = Math.max(0, (effectiveIncome || 0) - mp - (existingDebt || 0) - 4_860)
+
+  const dstiText = dstiAtEX > 40
+    ? `At ${pctF(dstiAtEX)} DSTI, your estimated post-obligation surplus is ~${czkS(surplus)}/mo. Czech banks flag profiles where surplus falls below 20% of net income — your file is ${dstiAtEX > 44 ? 'above' : 'near'} that threshold and warrants a lender strategy.`
+    : `Your ${pctF(dstiAtEX)} DSTI leaves an estimated surplus of ~${czkS(surplus)}/mo after all obligations. This signals strong repayment capacity and typically results in a lower risk rating at credit committee.`
+
+  let secondTitle, secondText
+  if (ltvPct > 75) {
+    const pp = Number(formData.purchasePrice) || 0
+    const of = Number(formData.ownFunds) || 0
+    const revalLTV = pp > 0 ? ((pp - of) / (pp * 0.90) * 100) : ltvPct * 1.11
+    secondTitle = 'Collateral Valuation Risk'
+    secondText = `At ${pctF(ltvPct)} LTV, a conservative 10% downward revaluation by the bank's appraiser would push effective LTV to ~${revalLTV.toFixed(0)}%, close to the ${maxLTVPct}% cap. A modest increase in own funds builds resilience against this scenario.`
+  } else if (formData.entityType === 'osvc') {
+    secondTitle = 'Self-Employed Income Scrutiny'
+    secondText = 'Underwriters cross-check declared tax-base income against bank statement turnover. Significant divergence triggers additional questions — having a clear margin explanation prepared reduces processing delays and minimises underwriting friction.'
+  } else if (formData.entityType === 'sro') {
+    secondTitle = 'Company Director Income Complexity'
+    secondText = 'ESSO methodology requires underwriters to reconstruct income from 2 years of company financial statements and personal tax returns. Consistent, complete documentation across both years is the single largest factor in underwriting speed.'
+  } else {
+    const ct = formData.contractType
+    secondTitle = 'Employment Contract Assessment'
+    secondText = ct === 'indefinite'
+      ? 'Indefinite contracts receive full income recognition with no haircut — the strongest employment basis for Czech mortgage underwriting. The underwriter verifies net pay against the employer confirmation letter.'
+      : 'Fixed-term or non-standard contracts receive a proportional income haircut at most Czech banks. The underwriter verifies contract end date and length of continuous employment.'
+  }
+
+  return (
+    <View style={{ marginTop: 10 }}>
+      <Text style={S.secTitle}>{"The Underwriter's Perspective"}</Text>
+      <View style={S.card}>
+        <View style={{ marginBottom: 8, paddingBottom: 8, borderBottomWidth: 1, borderBottomColor: BD }}>
+          <Text style={{ fontSize: 7.5, fontFamily: 'Helvetica-Bold', color: IN, marginBottom: 3 }}>
+            Monthly Surplus & Repayment Capacity
+          </Text>
+          <Text style={{ fontSize: 7, color: MU, lineHeight: 1.4 }}>{dstiText}</Text>
+        </View>
+        <View>
+          <Text style={{ fontSize: 7.5, fontFamily: 'Helvetica-Bold', color: IN, marginBottom: 3 }}>
+            {secondTitle}
+          </Text>
+          <Text style={{ fontSize: 7, color: MU, lineHeight: 1.4 }}>{secondText}</Text>
+        </View>
+      </View>
+    </View>
+  )
+}
+
+/* ── Scenario Optimisation ───────────────────────── */
+
+function ScenarioOptimization({ formData, profile }) {
+  const base = profile.eX || 0
+
+  function safeCompute(fd) {
+    try { return computeMortgageProfile(fd).eX || base } catch { return base }
+  }
+
+  const s1eX = safeCompute({ ...formData, ownFunds: (Number(formData.ownFunds) || 0) + 500_000 })
+  const s2eX = safeCompute({ ...formData, monthlyLoanPayments: Math.max(0, (Number(formData.monthlyLoanPayments) || 0) - 2_000) })
+  const s3eX = safeCompute({ ...formData, netIncome: Math.round((Number(formData.netIncome) || profile.effectiveIncome || 0) * 1.10) })
+
+  const rows = [
+    { action: 'Add 500k CZK to down-payment',      newEX: s1eX, delta: s1eX - base },
+    { action: 'Reduce monthly debt load by 2k/mo', newEX: s2eX, delta: s2eX - base },
+    { action: 'Increase recognised income by 10%', newEX: s3eX, delta: s3eX - base },
+  ]
+
+  return (
+    <View style={{ marginTop: 10 }}>
+      <Text style={S.secTitle}>Scenario Optimisation — What Happens If...</Text>
+      <View style={{ borderWidth: 1, borderColor: BD, borderRadius: 4, overflow: 'hidden' }}>
+        <View style={S.tHdr}>
+          <Text style={[S.tHCel, { flex: 3 }]}>If you...</Text>
+          <Text style={[S.tHCel, { flex: 2, textAlign: 'right' }]}>New Max Loan</Text>
+          <Text style={[S.tHCel, { flex: 2, textAlign: 'right' }]}>vs Baseline</Text>
+        </View>
+        {rows.map((r, i) => (
+          <View key={i} style={[S.tRow, i === rows.length - 1 && { borderBottomWidth: 0 }, i % 2 === 1 && { backgroundColor: SF }]}>
+            <Text style={[S.tCel, { flex: 3 }]}>{r.action}</Text>
+            <Text style={[S.tCel, { flex: 2, textAlign: 'right', fontFamily: 'Helvetica-Bold' }]}>{czkS(r.newEX)}</Text>
+            <Text style={[S.tCel, { flex: 2, textAlign: 'right', fontFamily: 'Helvetica-Bold', color: r.delta >= 0 ? OK : RK }]}>
+              {r.delta >= 0 ? '+' : ''}{czkS(Math.abs(r.delta))}
+            </Text>
+          </View>
+        ))}
+      </View>
+      <Text style={[S.footTxt, { marginTop: 4 }]}>
+        {'Baseline: ' + czkS(base) + '. All scenarios use Czech dual-test methodology at 4.89% / 6.89%.'}
+      </Text>
+    </View>
+  )
+}
+
+/* ── Pre-Approval Checklist ──────────────────────── */
+
+function PreApprovalChecklist({ formData }) {
+  const { entityType, contractType } = formData
+
+  const incomeDocs = entityType === 'osvc' ? [
+    'Last 2 completed tax returns (DPFO) with tax office stamp',
+    'Last 3 months bank statements — all business and personal accounts',
+    'Business registration extract (Zivnostensky rejstrik, max 3 months)',
+    'VAT returns — last 4 quarters (if VAT-registered)',
+  ] : entityType === 'sro' ? [
+    'Last 2 years company financial statements (rozvaha + VZZ)',
+    'Last 2 years personal tax returns (DPFO)',
+    'Company extract from Commercial Register (max 3 months old)',
+    'UBO declaration and director employment or service contract',
+  ] : [
+    'Last 3 months payslips from all employers',
+    'Employer salary confirmation (potvrzeni zamestnavatele)',
+    contractType === 'indefinite'
+      ? 'Indefinite employment contract — full copy'
+      : 'Employment contract with confirmed end date',
+    'Last 3 months bank statements (salary account)',
+  ]
+
+  const propertyDocs = [
+    'Preliminary purchase agreement or signed letter of intent',
+    'Current title deed extract (list vlastnictvi, max 3 months)',
+  ]
+
+  const allDocs = [...incomeDocs, ...propertyDocs]
+  const entityMap = { osvc: 'Self-Employed (OSVC)', sro: 's.r.o. Director', zamestnanec: 'Salaried Employee' }
+
+  return (
+    <View style={{ marginTop: 10 }}>
+      <Text style={S.secTitle}>Pre-Approval Document Checklist</Text>
+      <View style={S.card}>
+        <Text style={{ fontSize: 6.5, color: MU, marginBottom: 6 }}>
+          {'Profile: ' + (entityMap[entityType] ?? 'Standard') + '. Prepare these before your strategy session.'}
+        </Text>
+        {allDocs.map((doc, i) => (
+          <View key={i} style={{ flexDirection: 'row', alignItems: 'flex-start', marginBottom: i < allDocs.length - 1 ? 4 : 0 }}>
+            <View style={{ width: 7, height: 7, borderWidth: 1, borderColor: BD, borderRadius: 1, marginRight: 6, marginTop: 1 }} />
+            <Text style={{ fontSize: 7, color: IN, flex: 1, lineHeight: 1.35 }}>{doc}</Text>
+          </View>
+        ))}
+      </View>
+    </View>
+  )
+}
+
 /* ── PAGE 1 ──────────────────────────────────────── */
 
 function Page1({ ctx }) {
@@ -353,6 +502,9 @@ function Page1({ ctx }) {
         </View>
 
       </View>
+
+      {/* Underwriter's Perspective */}
+      <UnderwriterPerspective profile={profile} formData={formData} />
 
       <Ftr today={today} />
     </Page>
@@ -496,6 +648,9 @@ function Page2({ ctx }) {
         Selected bank (★) has the highest effective DSTI limit. Max Loan = MIN(Test A, Test B, DTI cap, LTV cap).
       </Text>
 
+      {/* Scenario Optimisation */}
+      <ScenarioOptimization formData={formData} profile={profile} />
+
       <Ftr today={today} />
     </Page>
   )
@@ -585,11 +740,14 @@ function Page3({ ctx }) {
 
       {/* Strategy */}
       <Text style={S.secTitle}>Recommended Strategy</Text>
-      <View style={{ marginBottom: 12 }}>
-        {actions.slice(0, 4).map((a, i) => (
+      <View style={{ marginBottom: 10 }}>
+        {actions.slice(0, 3).map((a, i) => (
           <StratItem key={i} n={i + 1} priority={a.priority} color={a.color} title={a.title} text={a.text} />
         ))}
       </View>
+
+      {/* Pre-Approval Checklist */}
+      <PreApprovalChecklist formData={formData} />
 
       {/* CTA block */}
       <View style={S.cta}>
