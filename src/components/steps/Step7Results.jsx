@@ -109,7 +109,7 @@ function buildFactors(f, simNetIncome) {
       const inProbation = isProbation || probationPeriod === 'yes'
       if (inProbation) {
         if (employmentSector === 'health' || employmentSector === 'education')
-          parts.push('Probation — ČSOB exception applies (Healthcare/Education); manual HQ underwriting route.')
+          parts.push('Probation — CSOB exception applies (Healthcare/Education); manual HQ underwriting route.')
         else
           parts.push('In probation period — most banks will decline until probation ends.')
       } else {
@@ -153,7 +153,7 @@ function buildFactors(f, simNetIncome) {
     })(),
     desc: (() => {
       if (entityType === 'osvc') {
-        const base = 'Sole traders assessed on 2-year average net profit from DPFO tax returns.'
+        const base = 'Sole traders assessed on 2-year average net profit from tax returns.'
         if (businessAgeMonths === null) return base
         const y = Math.floor(businessAgeMonths / 12)
         const m = businessAgeMonths % 12
@@ -538,9 +538,9 @@ function ApplicantProfilePanel({ formData, profile }) {
     ? (() => {
         const y = Math.floor(businessAgeMonths / 12)
         const m = businessAgeMonths % 12
-        if (y > 0 && m > 0) return `${y} yr ${m} mo`
-        if (y > 0) return `${y} yr`
-        return `${m} mo`
+        if (y > 0 && m > 0) return `Active for ${y} yr ${m} mo`
+        if (y > 0) return `Active for ${y} yr`
+        return `Active for ${m} mo`
       })()
     : 'Not verified'
 
@@ -559,10 +559,10 @@ function ApplicantProfilePanel({ formData, profile }) {
       : null
 
     const activeMethod = flags.includes('flat_tax_method') ? 'B' : 'A'
-    const statusLabel  = icoActiveStatus === 'AKTIVNÍ' ? 'Verified — Active' : icoActiveStatus ? icoActiveStatus : 'Not verified'
+    const statusLabel  = icoActiveStatus === 'AKTIVNÍ' ? 'Verified — Active' : icoActiveStatus ? 'Suspended / Inactive' : 'Not verified'
     const statusBadge  = icoActiveStatus === 'AKTIVNÍ' ? 'badge-success' : 'badge-warning'
     const historyLabel = businessActivityGap ? 'Interrupted' : businessAgeMonths !== null ? 'Continuous' : 'Unknown'
-    const taxLabel     = taxRegime === 'flat_tax' ? 'Flat Tax (Paušální)' : taxRegime === 'tax_return' ? 'Tax Return (DPFO)' : 'Not specified'
+    const taxLabel     = taxRegime === 'flat_tax' ? 'Flat Tax Regime' : taxRegime === 'tax_return' ? 'Standard Tax Return' : 'Not specified'
 
     return (
       <div className="space-y-5 pt-4">
@@ -574,7 +574,7 @@ function ApplicantProfilePanel({ formData, profile }) {
           </div>
           <div className="flex-1 min-w-0">
             <p className="font-semibold text-ink leading-tight">{businessName || 'Self-Employed Applicant'}</p>
-            <p className="text-xs text-ink-subtle">Sole trader (OSVČ) · {taxLabel}</p>
+            <p className="text-xs text-ink-subtle">Sole Trader · {taxLabel}</p>
           </div>
           {icoActiveStatus && (
             <span className={`${statusBadge} text-[10px] flex-shrink-0`}>{statusLabel}</span>
@@ -584,7 +584,7 @@ function ApplicantProfilePanel({ formData, profile }) {
         {/* Detail grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
           <DetailCell label="Verified Industry" value={naceSector || 'Not resolved'} />
-          <DetailCell label="Recognition Rate" value={`${coeffLabel} of turnover`} />
+          <DetailCell label="Income Bracket" value={`${coeffLabel} of turnover`} />
           <DetailCell label="Business Duration" value={businessDurationStr} />
           <DetailCell label="History Status" value={historyLabel} warn={businessActivityGap} />
         </div>
@@ -714,7 +714,7 @@ function ApplicantProfilePanel({ formData, profile }) {
       if (isNoticePeriod) return { label: 'Notice Period — Hard Block', cls: 'badge-risk' }
       if (inProbation && employmentSector !== 'health' && employmentSector !== 'education')
         return { label: 'Probation — Most Banks Decline', cls: 'badge-risk' }
-      if (inProbation) return { label: 'Probation — ČSOB Exception', cls: 'badge-warning' }
+      if (inProbation) return { label: 'Probation — CSOB Exception', cls: 'badge-warning' }
       if (contractType === 'agency' || contractType === 'dpc') return { label: 'Needs Review', cls: 'badge-warning' }
       if (contractType === 'indefinite') return { label: 'Strong', cls: 'badge-success' }
       return { label: 'Good', cls: 'badge bg-brand-50 text-brand-700 border border-brand-100' }
@@ -780,8 +780,8 @@ function ApplicantProfilePanel({ formData, profile }) {
           <div className="flex items-start gap-3 rounded-xl bg-warning-light border border-warning-border p-4">
             <Info size={14} className="text-warning-DEFAULT flex-shrink-0 mt-0.5" />
             <p className="text-xs text-warning-text leading-relaxed">
-              <strong>ČSOB exception — Healthcare / Education sector.</strong> Applicants in probation within
-              healthcare or education may qualify via ČSOB manual HQ underwriting. Other banks will decline
+              <strong>CSOB Exception — Healthcare / Education Sector.</strong> Applicants in probation within
+              healthcare or education may qualify via CSOB manual HQ underwriting. Other banks will decline
               until probation ends.
             </p>
           </div>
