@@ -295,6 +295,17 @@ export default function Step4Property({ data, onChange, onBack, onContinue }) {
               <option key={value} value={value}>{label}</option>
             ))}
           </select>
+          {isInvestment && parsedPurchasePrice > 0 && (
+            <p className="mt-2 text-[11px] text-warning-text leading-relaxed">
+              <span className="font-semibold">Required own funds (min. 30%):</span>{' '}
+              {formatCZK(Math.ceil(parsedPurchasePrice * 0.30))}
+            </p>
+          )}
+          {isInvestment && parsedPurchasePrice === 0 && (
+            <p className="mt-2 text-[11px] text-ink-subtle leading-relaxed">
+              Enter a purchase price above to see the minimum own funds required.
+            </p>
+          )}
         </div>
 
         <div>
