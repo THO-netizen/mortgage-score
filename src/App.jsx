@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect } from 'react'
+import { carouselRegistry } from './hooks/carouselRegistry.js'
 import { analytics }           from './services/analytics.js'
 import Header                  from './components/layout/Header.jsx'
 import HeroAnalysis            from './components/landing/HeroAnalysis.jsx'
@@ -128,6 +129,53 @@ export default function App() {
 
   useEffect(() => {
     analytics.track('landing_page_viewed', { referrer: document.referrer || 'direct' })
+  }, [])
+
+  // ── Global keyboard navigation ────────────────────────
+  useEffect(() => {
+    function isInViewport(el, threshold = 0.4) {
+      if (!el) return false
+      const rect = el.getBoundingClientRect()
+      const vh   = window.innerHeight
+      const overlap = Math.min(rect.bottom, vh) - Math.max(rect.top, 0)
+      return overlap / Math.min(rect.height, vh) >= threshold
+    }
+
+    function handleKeyDown(e) {
+      const tag      = document.activeElement?.tagName?.toUpperCase() ?? ''
+      const editable = ['INPUT', 'TEXTAREA', 'SELECT'].includes(tag) || !!document.activeElement?.isContentEditable
+
+      // Enter → click the active Continue/CTA button (skip when typing)
+      if (e.key === 'Enter' && !editable) {
+        const cta = document.querySelector('button.btn-cta:not([disabled])')
+        if (cta) { e.preventDefault(); cta.click(); return }
+      }
+
+      // All remaining shortcuts are suppressed when an input has focus
+      if (editable) return
+
+      // ArrowLeft / ArrowRight → carousel navigation (priority over page scroll)
+      if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+        const goRight = e.key === 'ArrowRight'
+        for (const [, c] of carouselRegistry) {
+          if (!isInViewport(c.getElement())) continue
+          if (goRight && c.canScrollNext()) { e.preventDefault(); c.scrollNext(); return }
+          if (!goRight && c.canScrollPrev()) { e.preventDefault(); c.scrollPrev(); return }
+          // Carousel in view but at its end — fall through to natural behaviour
+          return
+        }
+        return
+      }
+
+      // ArrowUp / ArrowDown → smooth page scroll
+      if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+        e.preventDefault()
+        window.scrollBy({ top: e.key === 'ArrowDown' ? 350 : -350, behavior: 'smooth' })
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
   }, [])
 
   // ── Form helpers ─────────────────────────────────────

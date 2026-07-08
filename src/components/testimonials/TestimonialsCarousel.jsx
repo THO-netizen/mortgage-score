@@ -1,6 +1,7 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import useEmblaCarousel from 'embla-carousel-react'
 import { ChevronLeft, ChevronRight, ExternalLink } from 'lucide-react'
+import { carouselRegistry } from '../../hooks/carouselRegistry.js'
 
 const VIDEOS = [
   {
@@ -158,6 +159,8 @@ function VideoCard({ id, title, desc }) {
 }
 
 export default function MortgageTipsLibrary() {
+  const sectionRef = useRef(null)
+
   const [emblaRef, emblaApi] = useEmblaCarousel({
     loop: false,
     align: 'start',
@@ -190,10 +193,34 @@ export default function MortgageTipsLibrary() {
   const scrollNext = useCallback(() => emblaApi?.scrollNext(), [emblaApi])
   const scrollTo   = useCallback((i) => emblaApi?.scrollTo(i), [emblaApi])
 
+  // Register with global keyboard handler
+  useEffect(() => {
+    carouselRegistry.set('mortgage-tips', {
+      scrollPrev,
+      scrollNext,
+      canScrollPrev: () => emblaApi?.canScrollPrev() ?? false,
+      canScrollNext: () => emblaApi?.canScrollNext() ?? false,
+      getElement:    () => sectionRef.current,
+    })
+    return () => carouselRegistry.delete('mortgage-tips')
+  }, [emblaApi, scrollPrev, scrollNext])
+
   const snapCount = emblaApi ? emblaApi.scrollSnapList().length : VIDEOS.length
 
+  const handleKeyDown = (e) => {
+    if (e.key === 'ArrowLeft')  { e.preventDefault(); scrollPrev() }
+    if (e.key === 'ArrowRight') { e.preventDefault(); scrollNext() }
+  }
+
   return (
-    <section className="bg-dark-900 py-20 overflow-hidden">
+    <section
+      ref={sectionRef}
+      className="bg-dark-900 py-20 overflow-hidden"
+      tabIndex={0}
+      onKeyDown={handleKeyDown}
+      aria-label="Mortgage Tips carousel — use arrow keys to navigate"
+      style={{ outline: 'none' }}
+    >
       <div className="max-w-6xl mx-auto px-4 sm:px-6">
 
         {/* Section header */}

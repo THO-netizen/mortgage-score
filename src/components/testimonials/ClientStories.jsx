@@ -1,5 +1,6 @@
 import { useRef, useState, useEffect } from 'react'
 import { ChevronLeft, ChevronRight, ExternalLink } from 'lucide-react'
+import { carouselRegistry } from '../../hooks/carouselRegistry.js'
 
 const TESTIMONIALS = [
   {
@@ -106,7 +107,8 @@ function TestimonialCard({ headline, summary, cardGradient, url, image }) {
 }
 
 export default function ClientStories() {
-  const scrollRef = useRef(null)
+  const scrollRef  = useRef(null)
+  const sectionRef = useRef(null)
   const [activeIdx, setActiveIdx] = useState(0)
   const [canPrev, setCanPrev]   = useState(false)
   const [canNext, setCanNext]   = useState(true)
@@ -144,8 +146,41 @@ export default function ClientStories() {
     return () => el.removeEventListener('scroll', onScroll)
   }, [])
 
+  // Register with global keyboard handler — all callbacks read scrollRef at call time
+  useEffect(() => {
+    const getStep = () => {
+      const el = scrollRef.current
+      if (!el) return 324
+      const card = el.querySelector('.testimonial-card')
+      return card ? card.offsetWidth + 24 : 324
+    }
+    carouselRegistry.set('client-stories', {
+      scrollPrev:    () => { const el = scrollRef.current; if (el) el.scrollBy({ left: -getStep(), behavior: 'smooth' }) },
+      scrollNext:    () => { const el = scrollRef.current; if (el) el.scrollBy({ left: +getStep(), behavior: 'smooth' }) },
+      canScrollPrev: () => (scrollRef.current?.scrollLeft ?? 0) > 10,
+      canScrollNext: () => {
+        const el = scrollRef.current
+        return el ? el.scrollLeft < el.scrollWidth - el.clientWidth - 10 : false
+      },
+      getElement: () => sectionRef.current,
+    })
+    return () => carouselRegistry.delete('client-stories')
+  }, [])
+
+  const handleKeyDown = (e) => {
+    if (e.key === 'ArrowLeft')  { e.preventDefault(); scrollBy(-1) }
+    if (e.key === 'ArrowRight') { e.preventDefault(); scrollBy(1) }
+  }
+
   return (
-    <section className="bg-dark-900 py-20 overflow-hidden">
+    <section
+      ref={sectionRef}
+      className="bg-dark-900 py-20 overflow-hidden"
+      tabIndex={0}
+      onKeyDown={handleKeyDown}
+      aria-label="Client Stories carousel — use arrow keys to navigate"
+      style={{ outline: 'none' }}
+    >
       <style>{`#t-track::-webkit-scrollbar { display: none; }`}</style>
 
       <div className="max-w-6xl mx-auto">
