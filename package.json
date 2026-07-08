@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@react-pdf/renderer": "^4.5.1",
+    "embla-carousel-react": "^8.6.0",
     "jspdf": "^4.2.1",
     "lucide-react": "^0.447.0",
     "react": "^18.3.1",
