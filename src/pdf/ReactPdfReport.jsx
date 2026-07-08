@@ -4,7 +4,10 @@ import {
   StyleSheet,
 } from '@react-pdf/renderer'
 import { pdf } from '@react-pdf/renderer'
-import { computeScore, computeMortgageProfile, monthlyPayment } from '../utils/scoringEngine.js'
+import {
+  computeScore, computeMortgageProfile, monthlyPayment,
+  CONTRACT_RATE_PA, DUAL_STRESS_RATE_PA,
+} from '../utils/scoringEngine.js'
 
 /* ── Palette — ivory / bronze ─────────────────────── */
 const N   = '#0F172A'
@@ -266,7 +269,7 @@ function LiabilitiesCard({ formData, profile }) {
   const debtPct = income > 1 ? (debt / income * 100) : 0
   const eX      = profile.eX || 0
   const years   = profile.maturity?.maxYears ?? 30
-  const mortPay = eX > 0 ? monthlyPayment(eX, 4.94, years) : 0
+  const mortPay = eX > 0 ? monthlyPayment(eX, CONTRACT_RATE_PA, years) : 0
   const combined = income > 1 ? ((debt + mortPay) / income * 100) : 0
   const combColor = combined > 40 ? RK : combined > 35 ? WA : OK
 
@@ -286,7 +289,7 @@ function LiabilitiesCard({ formData, profile }) {
         <View style={{ flex: 1, paddingRight: 10, marginRight: 10, borderRightWidth: 1, borderRightColor: BD }}>
           <Text style={{ fontSize: 6, color: SU, marginBottom: 2 }}>Est. Mortgage Repayment</Text>
           <Text style={{ fontSize: 13, fontFamily: 'Helvetica-Bold', color: IN }}>{czkS(mortPay)}/mo</Text>
-          <Text style={{ fontSize: 6, color: MU, marginTop: 2 }}>{'at 4.94% / ' + years + ' yr term'}</Text>
+          <Text style={{ fontSize: 6, color: MU, marginTop: 2 }}>{`at ${CONTRACT_RATE_PA}% / ${years} yr term`}</Text>
         </View>
         <View style={{ flex: 1 }}>
           <Text style={{ fontSize: 6, color: SU, marginBottom: 2 }}>Combined Debt Service</Text>
@@ -590,7 +593,7 @@ function EmployeeModule({ formData, profile }) {
 function UnderwriterPerspective({ profile, formData }) {
   const { dstiAtEX, ltvPct, maxLTVPct, effectiveIncome, existingDebt, eX, maturity } = profile
   const years   = maturity?.maxYears ?? 30
-  const mp      = eX > 0 ? monthlyPayment(eX, 4.94, years) : 0
+  const mp      = eX > 0 ? monthlyPayment(eX, CONTRACT_RATE_PA, years) : 0
   const surplus = Math.max(0, (effectiveIncome || 0) - mp - (existingDebt || 0) - 4_860)
 
   const dstiText = dstiAtEX > 40
@@ -671,7 +674,7 @@ function ScenarioOptimization({ formData, profile }) {
           </View>
         ))}
       </View>
-      <Text style={{ fontSize: 6, color: SU, marginTop: 3 }}>{'Baseline: ' + czkS(base) + ' · Dual-test at 4.94% / 5.89%'}</Text>
+      <Text style={{ fontSize: 6, color: SU, marginTop: 3 }}>{`Baseline: ${czkS(base)} · Dual-test at ${CONTRACT_RATE_PA}% / ${DUAL_STRESS_RATE_PA}%`}</Text>
     </View>
   )
 }
@@ -869,15 +872,17 @@ function Page1({ ctx }) {
 
   const scColor  = scCol(score)
   const riskBand = { zelena: 'Low Risk', oranzova: 'Moderate Risk', cervena: 'Higher Risk' }[riskStatus] || 'Under Assessment'
-  const winnerR  = bankResults?.[winnerBank]
-  const dstiLim  = winnerR ? winnerR.effectiveDSTI * 100 : 45
-  const stressPay = eX > 0 && (maturity?.maxYears > 0) ? monthlyPayment(eX, 5.89, maturity.maxYears) : 0
-  const stressDST = effectiveIncome > 0 ? Math.min(99, ((stressPay + existingDebt) / effectiveIncome) * 100) : 0
+  const winnerR   = bankResults?.[winnerBank]
+  const dstiLim   = winnerR?.effectiveDSTI != null ? winnerR.effectiveDSTI * 100 : 45
+  const stressPay = eX > 0 && (maturity?.maxYears > 0)
+    ? monthlyPayment(eX, DUAL_STRESS_RATE_PA, maturity.maxYears) : 0
+  const stressDST = effectiveIncome > 0
+    ? Math.min(99, ((stressPay + (existingDebt || 0)) / effectiveIncome) * 100) : 0
 
   const bars = [
-    { label: 'Debt Service (DSTI)', sub: 'at 4.94% fixation rate', value: dstiAtEX,  limit: dstiLim,   binding: bottleneck === 'DSTI' },
-    { label: 'Stress Test (DI)',    sub: 'at 5.89% CNB stress rate', value: stressDST, limit: 45,        binding: bottleneck !== 'DSTI' && bottleneck !== 'LTV' },
-    { label: 'LTV (Loan-to-Value)', sub: 'against collateral cap',  value: ltvPct,    limit: maxLTVPct, binding: bottleneck === 'LTV' },
+    { label: 'Debt Service (DSTI)', sub: `at ${CONTRACT_RATE_PA}% fixation rate`,       value: dstiAtEX,  limit: dstiLim, binding: bottleneck === 'DSTI' },
+    { label: `Stress Test (+1%)`,   sub: `at ${DUAL_STRESS_RATE_PA}% · limit ${dstiLim.toFixed(0)}%`, value: stressDST, limit: dstiLim, binding: bottleneck === 'DSTI' },
+    { label: 'LTV (Loan-to-Value)', sub: 'against collateral cap',                       value: ltvPct,    limit: maxLTVPct, binding: bottleneck === 'LTV' },
   ]
 
   const residLbl = {
@@ -916,11 +921,13 @@ function Page1({ ctx }) {
               <Text style={S.heroNum}>{czkS(eX)}</Text>
               <Text style={S.heroSub}>{'Based on ' + czkS(effectiveIncome) + '/mo recognised income'}</Text>
             </View>
-            <View>
-              <Text style={S.heroLbl}>Stress-Tested Floor · 5.89%</Text>
-              <Text style={[S.heroNum, { fontSize: 16, color: SU }]}>{czkS(eXStress)}</Text>
-              <Text style={S.heroSub}>Calculated at CNB stress rate</Text>
-            </View>
+            {eXStress > 0 && eXStress < eX && (
+              <View>
+                <Text style={S.heroLbl}>Stress-Tested Floor · {DUAL_STRESS_RATE_PA}%</Text>
+                <Text style={[S.heroNum, { fontSize: 16, color: SU }]}>{czkS(eXStress)}</Text>
+                <Text style={S.heroSub}>DI floor at legacy stress rate</Text>
+              </View>
+            )}
           </View>
 
           <View style={S.heroDiv} />
@@ -1092,7 +1099,7 @@ function Page3({ ctx }) {
       <View style={{ flexDirection: 'row', marginBottom: 8 }}>
         {[
           { lbl: 'Max Loan',           val: czkS(eX) },
-          { lbl: 'Stress Floor 5.89%', val: czkS(eXStress) },
+          { lbl: `Stress Floor ${DUAL_STRESS_RATE_PA}%`, val: eXStress > 0 && eXStress < eX ? czkS(eXStress) : czkS(eX) },
           { lbl: 'DSTI',               val: pctF(dstiAtEX) },
           { lbl: 'Readiness Score',    val: score + ' / 100' },
         ].map(({ lbl, val }, i) => (
@@ -1132,7 +1139,7 @@ function Page3({ ctx }) {
 
       {/* Disclaimer */}
       <Text style={{ fontSize: 6, color: SU, marginTop: 7, lineHeight: 1.45 }}>
-        {'This report was generated on ' + today + ' based on data provided by the applicant. All figures are indicative estimates using 2026 Czech bank underwriting methodology (dual-test at 4.94% / 5.89%). They do not constitute a guarantee of approval, a lending offer, or financial advice. Actual terms depend on individual bank assessment, property valuation, credit history, and credit committee approval. Produced by MortgageScore.cz.'}
+        {`This report was generated on ${today} based on data provided by the applicant. All figures are indicative estimates using 2026 Czech bank underwriting methodology (dual-test at ${CONTRACT_RATE_PA}% / ${DUAL_STRESS_RATE_PA}%). They do not constitute a guarantee of approval, a lending offer, or financial advice. Actual terms depend on individual bank assessment, property valuation, credit history, and credit committee approval. Produced by MortgageScore.cz.`}
       </Text>
 
       <Ftr today={today} />
