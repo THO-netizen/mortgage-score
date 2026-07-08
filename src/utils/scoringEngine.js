@@ -24,9 +24,10 @@ export const PAYOFF_AGES = {
   kb:    75,   // Komerční banka — most generous (= PAYOFF_AGE_MAX)
 }
 
-// Contractual & stressed interest rates (spec v3.0, fixed 2026)
-export const CONTRACT_RATE_PA = 4.89   // % p.a. — used in DSTI test (Test A)
-export const STRESS_RATE_PA   = 6.89   // % p.a. — contract + 2 pp, used in DI test (Test B)
+// Contractual & stressed interest rates (spec v4.0, updated 2026)
+export const CONTRACT_RATE_PA      = 4.89   // % p.a. — used in DSTI test (Test A)
+export const DUAL_STRESS_RATE_PA   = CONTRACT_RATE_PA + 1.0   // 5.89% — Test B: same DSTI formula at +1 pp
+export const STRESS_RATE_PA        = 6.89   // % p.a. — legacy DI test / eXStress display reference only
 
 // Turnover recognition default (spec v3.0: 0.70 is the standard per mBank/ČS/RB/UCB)
 // KB/ČSOB use taxable-profit base — use same 0.70 as a conservative fallback.
@@ -683,8 +684,9 @@ export function computeMortgageProfile(formData) {
 
   // ── Annuity factors: PV factor = loan / monthly_payment ──────────────────
   // loan = payment × PV_factor  →  max_loan = free_payment × PV_factor
-  const af       = annuityFactor(CONTRACT_RATE_PA, maturity.maxMonths)  // 4.89%
-  const afStress = annuityFactor(STRESS_RATE_PA,   maturity.maxMonths)  // 6.89%
+  const af           = annuityFactor(CONTRACT_RATE_PA,    maturity.maxMonths)  // 4.89%
+  const afDualStress = annuityFactor(DUAL_STRESS_RATE_PA, maturity.maxMonths)  // 5.89% — dual-rate Test B
+  const afStress     = annuityFactor(STRESS_RATE_PA,      maturity.maxMonths)  // 6.89% — DI display ref
 
   // ── Obligations (base — KK coeff applied per bank below) ─────────────────
   const splatky  = Number(monthlyLoanPayments) + Number(monthlyLeasing) + Number(otherObligations)
@@ -713,19 +715,27 @@ export function computeMortgageProfile(formData) {
     const effectiveDSTI = getBankEffectiveDSTI(key, bIncome, isYoung, isForeigner, ltvPct)
     const totalObl      = splatky + kkLimits * koefKK   // KTK not collected → 0
 
-    // Test A — DSTI (contract rate 4.89%)
+    // Test A — DSTI at contract rate (4.89%)
     let maxByDSTI = Infinity
     if (effectiveDSTI !== null) {
       const volnaSplatka = Math.max(0, effectiveDSTI * bIncome - totalObl)
       maxByDSTI = Math.round(volnaSplatka * af)
     }
 
-    // Test B — DI (stressed rate 6.89%)
+    // Test B — DSTI at stress rate (contract + 1pp = 5.89%); same DSTI limit, higher rate
+    let maxByDSTI_stress = Infinity
+    if (effectiveDSTI !== null) {
+      const volnaSplatka = Math.max(0, effectiveDSTI * bIncome - totalObl)
+      maxByDSTI_stress = Math.round(volnaSplatka * afDualStress)
+    }
+
+    // DI reference (6.89%) — kept for eXStress display only, not binding
     const disponibilni = Math.max(0, bIncome - livingCosts - reserve - totalObl)
     const maxByDI      = Math.round(disponibilni * afStress)
 
-    // krok_4: bonita = MIN(A, B)
-    const bonita = Math.min(maxByDSTI, maxByDI)
+    // krok_4: dual-rate bonita = MIN(DSTI@4.89%, DSTI@5.89%)
+    // afDualStress < af → maxByDSTI_stress ≤ maxByDSTI, so bonita = maxByDSTI_stress for DSTI banks
+    const bonita = Math.min(maxByDSTI, maxByDSTI_stress)
 
     // krok_5: DTI cap
     const maxByDTI = isFinite(dtiLim) ? Math.round(bIncome * 12 * dtiLim) : Infinity
@@ -736,14 +746,13 @@ export function computeMortgageProfile(formData) {
     // krok_7: bank result
     const maxLoan = Math.max(0, Math.min(bonita, maxByDTI, maxByLTV))
 
-    // Binding constraint label
+    // Binding constraint label (dual-rate: both tests are DSTI-based)
     let binding
-    if (maxByLTV < bonita && maxByLTV <= maxByDTI)     binding = 'LTV'
-    else if (maxByDTI < bonita)                        binding = 'DTI'
-    else if (isFinite(maxByDSTI) && maxByDSTI <= maxByDI) binding = 'DSTI'
-    else                                               binding = 'DI'
+    if (maxByLTV < bonita && maxByLTV <= maxByDTI) binding = 'LTV'
+    else if (maxByDTI < bonita)                    binding = 'DTI'
+    else                                           binding = 'DSTI'
 
-    bankResults[key] = { effectiveDSTI, maxByDSTI, maxByDI, bonita, maxByDTI, maxLoan, binding }
+    bankResults[key] = { effectiveDSTI, maxByDSTI, maxByDSTI_stress, maxByDI, bonita, maxByDTI, maxLoan, binding }
   }
 
   // ── krok_8: select winning bank ───────────────────────────────────────────
@@ -841,7 +850,7 @@ export function computeMortgageProfile(formData) {
     maturity,
     // E[X] / Var[X]
     eX, eXStress, varX, varCoeff,
-    headroom, af, afStress,
+    headroom, af, afDualStress, afStress,
     eXbyDSTI, eXbyDTI,
     // Risk
     bottleneck, riskStatus,

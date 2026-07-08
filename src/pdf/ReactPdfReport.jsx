@@ -671,7 +671,7 @@ function ScenarioOptimization({ formData, profile }) {
           </View>
         ))}
       </View>
-      <Text style={{ fontSize: 6, color: SU, marginTop: 3 }}>{'Baseline: ' + czkS(base) + ' · Dual-test at 4.94% / 5.50%'}</Text>
+      <Text style={{ fontSize: 6, color: SU, marginTop: 3 }}>{'Baseline: ' + czkS(base) + ' · Dual-test at 4.94% / 5.89%'}</Text>
     </View>
   )
 }
@@ -871,12 +871,12 @@ function Page1({ ctx }) {
   const riskBand = { zelena: 'Low Risk', oranzova: 'Moderate Risk', cervena: 'Higher Risk' }[riskStatus] || 'Under Assessment'
   const winnerR  = bankResults?.[winnerBank]
   const dstiLim  = winnerR ? winnerR.effectiveDSTI * 100 : 45
-  const stressPay = eX > 0 && (maturity?.maxYears > 0) ? monthlyPayment(eX, 5.50, maturity.maxYears) : 0
+  const stressPay = eX > 0 && (maturity?.maxYears > 0) ? monthlyPayment(eX, 5.89, maturity.maxYears) : 0
   const stressDST = effectiveIncome > 0 ? Math.min(99, ((stressPay + existingDebt) / effectiveIncome) * 100) : 0
 
   const bars = [
     { label: 'Debt Service (DSTI)', sub: 'at 4.94% fixation rate', value: dstiAtEX,  limit: dstiLim,   binding: bottleneck === 'DSTI' },
-    { label: 'Stress Test (DI)',    sub: 'at 5.50% CNB stress rate', value: stressDST, limit: 45,        binding: bottleneck !== 'DSTI' && bottleneck !== 'LTV' },
+    { label: 'Stress Test (DI)',    sub: 'at 5.89% CNB stress rate', value: stressDST, limit: 45,        binding: bottleneck !== 'DSTI' && bottleneck !== 'LTV' },
     { label: 'LTV (Loan-to-Value)', sub: 'against collateral cap',  value: ltvPct,    limit: maxLTVPct, binding: bottleneck === 'LTV' },
   ]
 
@@ -917,7 +917,7 @@ function Page1({ ctx }) {
               <Text style={S.heroSub}>{'Based on ' + czkS(effectiveIncome) + '/mo recognised income'}</Text>
             </View>
             <View>
-              <Text style={S.heroLbl}>Stress-Tested Floor · 5.50%</Text>
+              <Text style={S.heroLbl}>Stress-Tested Floor · 5.89%</Text>
               <Text style={[S.heroNum, { fontSize: 16, color: SU }]}>{czkS(eXStress)}</Text>
               <Text style={S.heroSub}>Calculated at CNB stress rate</Text>
             </View>
@@ -1092,7 +1092,7 @@ function Page3({ ctx }) {
       <View style={{ flexDirection: 'row', marginBottom: 8 }}>
         {[
           { lbl: 'Max Loan',           val: czkS(eX) },
-          { lbl: 'Stress Floor 5.50%', val: czkS(eXStress) },
+          { lbl: 'Stress Floor 5.89%', val: czkS(eXStress) },
           { lbl: 'DSTI',               val: pctF(dstiAtEX) },
           { lbl: 'Readiness Score',    val: score + ' / 100' },
         ].map(({ lbl, val }, i) => (
@@ -1132,7 +1132,7 @@ function Page3({ ctx }) {
 
       {/* Disclaimer */}
       <Text style={{ fontSize: 6, color: SU, marginTop: 7, lineHeight: 1.45 }}>
-        {'This report was generated on ' + today + ' based on data provided by the applicant. All figures are indicative estimates using 2026 Czech bank underwriting methodology (dual-test at 4.94% / 5.50%). They do not constitute a guarantee of approval, a lending offer, or financial advice. Actual terms depend on individual bank assessment, property valuation, credit history, and credit committee approval. Produced by MortgageScore.cz.'}
+        {'This report was generated on ' + today + ' based on data provided by the applicant. All figures are indicative estimates using 2026 Czech bank underwriting methodology (dual-test at 4.94% / 5.89%). They do not constitute a guarantee of approval, a lending offer, or financial advice. Actual terms depend on individual bank assessment, property valuation, credit history, and credit committee approval. Produced by MortgageScore.cz.'}
       </Text>
 
       <Ftr today={today} />
