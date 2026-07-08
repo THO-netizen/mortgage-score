@@ -1,238 +1,180 @@
-import { useRef, useState, useEffect } from 'react'
-import { ChevronLeft, ChevronRight, ExternalLink } from 'lucide-react'
+import { ExternalLink } from 'lucide-react'
 
-const TESTIMONIALS = [
+const VIDEOS = [
   {
-    id: 't1',
-    cardGradient: 'from-blue-700 via-blue-900 to-slate-900',
-    headline: 'From Nepal to Homeownership',
-    summary: 'After weeks of delays and pressure from the agency, our clients stayed patient and resilient. Today, they are finally holding the keys to their own home.',
-    url: 'https://www.facebook.com/photo?fbid=876677978314893&set=a.188236427159055',
-    image: '/testimonials/t1.jpg',
+    id: '3043071172518775',
+    title: 'How Czech Banks Calculate Your Max Loan',
+    desc: 'The exact dual-test formula underwriters use to set your borrowing ceiling.',
   },
   {
-    id: 't2',
-    cardGradient: 'from-violet-800 via-purple-900 to-slate-900',
-    headline: 'Success Story',
-    summary: 'Coming soon — stay tuned for another real client success story.',
-    url: 'https://www.facebook.com/photo?fbid=828753879773970&set=a.188236427159055',
-    image: '/testimonials/t2.jpg',
+    id: '2013647709171522',
+    title: 'DSTI Explained in 60 Seconds',
+    desc: 'Why Debt-Service-to-Income ratio is the single most important metric for approval.',
   },
   {
-    id: 't3',
-    cardGradient: 'from-emerald-800 via-teal-900 to-slate-900',
-    headline: 'Dream Home Secured',
-    summary: 'After countless viewings and unexpected obstacles, we found the perfect solution together. Now they are happily settled in their new home.',
-    url: 'https://www.facebook.com/photo?fbid=763146343001391&set=a.188236427159055',
-    image: '/testimonials/t3.jpg',
+    id: '3893330600957610',
+    title: 'OSVČ Mortgage Guide',
+    desc: 'Self-employed applicants face different rules — here is what to prepare before you apply.',
   },
   {
-    id: 't4',
-    cardGradient: 'from-sky-700 via-blue-900 to-slate-900',
-    headline: 'Persistence Wins',
-    summary: 'When others said financing was impossible, we took matters into our own hands. Mortgage approved and new apartment ready for joy.',
-    url: 'https://www.facebook.com/photo?fbid=733631289286230&set=a.188236427159055',
-    image: '/testimonials/t4.jpg',
+    id: '1154782076481763',
+    title: 'LTV: How Much Can You Borrow?',
+    desc: 'Loan-to-Value ratio sets your down-payment requirement and monthly repayment.',
   },
   {
-    id: 't5',
-    cardGradient: 'from-indigo-700 via-indigo-900 to-slate-900',
-    headline: 'Overcoming Hurdles',
-    summary: 'From daily calls to the mayor to navigating a dozen obstacles, our clients from Turkey finally secured their dream home.',
-    url: 'https://www.facebook.com/photo/?fbid=719423324040360&set=a.188236427159055',
-    image: '/testimonials/t5.jpg',
+    id: '637035798952912',
+    title: '5 Documents Every Applicant Needs',
+    desc: 'Prepare these five documents before your strategy session to fast-track pre-approval.',
   },
   {
-    id: 't6',
-    cardGradient: 'from-teal-700 via-cyan-900 to-slate-900',
-    headline: 'Investment Success',
-    summary: 'Congratulations on securing a beautiful investment apartment. Another happy client successfully moved forward.',
-    url: 'https://www.facebook.com/photo/?fbid=711247738191252&set=a.188236427159055',
-    image: '/testimonials/t6.jpg',
+    id: '3505855822878034',
+    title: 'Fixed vs. Variable Rate Mortgages',
+    desc: 'Understanding fixed and variable rate products in the Czech mortgage market.',
   },
   {
-    id: 't7',
-    cardGradient: 'from-rose-800 via-pink-900 to-slate-900',
-    headline: 'Resilience in Property',
-    summary: "We navigated the seller's bankruptcy and other unexpected hurdles during the process. We finally crossed the finish line to ownership.",
-    url: 'https://www.facebook.com/photo/?fbid=693770526605640&set=a.188236427159055',
-    image: '/testimonials/t7.jpg',
+    id: '1366161228843604',
+    title: 'Why Your Bank Rejected You',
+    desc: 'The most common rejection reasons and how to fix them before re-applying.',
+  },
+  {
+    id: '1100785461993862',
+    title: 'Income Recognition for Foreigners',
+    desc: 'Non-Czech citizens face additional scrutiny on income — here is how to position your file.',
+  },
+  {
+    id: '24632646016359230',
+    title: 'CNB Stress Test Demystified',
+    desc: 'The stress test checks if you can still repay if rates rise — here is how it works.',
+  },
+  {
+    id: '1260234258673232',
+    title: 'How to Increase Your Max Loan',
+    desc: 'Three proven strategies to expand your borrowing capacity before submitting.',
+  },
+  {
+    id: '750724387722459',
+    title: 'Reservation Deposits Explained',
+    desc: 'What happens to your deposit if financing falls through — and how to protect yourself.',
+  },
+  {
+    id: '1945799819553534',
+    title: 'When to Refinance Your Mortgage',
+    desc: 'How to lock in a better rate at the end of your fixation period.',
+  },
+  {
+    id: '2586878941676335',
+    title: 'Property Valuation Process',
+    desc: 'How banks assess value and why it can differ from your agreed purchase price.',
+  },
+  {
+    id: '1150390016931385',
+    title: 'Probation Period and Mortgages',
+    desc: 'On probation at work? Here is how it affects eligibility and which banks are flexible.',
+  },
+  {
+    id: '1339104001172260',
+    title: 'Own Funds: How Much Do You Need?',
+    desc: 'Minimum down-payment rules for Czech mortgages and strategies to reach the threshold.',
+  },
+  {
+    id: '24294507180244451',
+    title: 'Buying as an Expat in Czechia',
+    desc: 'Residency status, permit requirements, and which Czech banks work with non-EU applicants.',
+  },
+  {
+    id: '1551599372494437',
+    title: 'Understanding the Land Registry',
+    desc: 'What the katastru nemovitosti shows and why you must check it before signing.',
+  },
+  {
+    id: '743326638737121',
+    title: 'Mortgage Timeline: Week by Week',
+    desc: 'From first inquiry to key handover — a realistic timeline for the Czech mortgage process.',
+  },
+  {
+    id: '2953344864850635',
+    title: 'Tax Benefits for Czech Homeowners',
+    desc: 'Mortgage interest deductibility and other tax advantages available to property owners.',
+  },
+  {
+    id: '1577214269933680',
+    title: 'Red Flags: When Not to Buy',
+    desc: 'Market signals, financial warning signs, and property issues that mean it is better to wait.',
   },
 ]
 
-function TestimonialCard({ headline, summary, cardGradient, url, image }) {
+function VideoCard({ id, title, desc }) {
+  const reelUrl = `https://www.facebook.com/reel/${id}/`
+  const embedSrc = `https://www.facebook.com/plugins/video.php?href=${encodeURIComponent(reelUrl)}&show_text=false&width=500`
+
   return (
-    <a
-      href={url}
-      target="_blank"
-      rel="noopener noreferrer"
-      className={[
-        'testimonial-card',
-        'flex-shrink-0 w-[calc(100vw-56px)] max-w-[300px] sm:w-[300px]',
-        'rounded-xl overflow-hidden snap-start',
-        'border border-white/10',
-        'transition-all duration-300 ease-out',
-        'hover:-translate-y-2 hover:shadow-[0_12px_40px_rgba(37,99,235,0.30)]',
-        'group flex flex-col',
-      ].join(' ')}
-    >
-      {/* Image — fixed height, center-cropped */}
-      <div className="relative w-full h-52 flex-shrink-0 overflow-hidden">
-        <div className={`absolute inset-0 bg-gradient-to-br ${cardGradient}`} />
-        <img
-          src={image}
-          alt={headline}
-          className="absolute inset-0 w-full h-full object-cover object-center"
-          onError={(e) => { e.currentTarget.style.opacity = '0' }}
+    <div className="flex flex-col rounded-xl border border-white/10 bg-dark-800 overflow-hidden">
+      {/* 9:16 portrait iframe container */}
+      <div className="relative w-full" style={{ paddingBottom: '177.78%' }}>
+        <iframe
+          src={embedSrc}
+          title={title}
+          loading="lazy"
+          allow="autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share"
+          allowFullScreen
+          scrolling="no"
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            width: '100%',
+            height: '100%',
+            border: 'none',
+            overflow: 'hidden',
+          }}
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
       </div>
 
-      {/* Content — fixed min-height keeps all cards the same total size */}
-      <div className="bg-dark-800 p-5 flex flex-col flex-1">
-        <h3 className="text-white font-display text-[14px] font-bold leading-snug mb-2.5">
-          {headline}
+      {/* Card text */}
+      <div className="p-4 flex flex-col flex-1">
+        <h3 className="text-white font-semibold text-[13px] leading-snug mb-1.5">
+          {title}
         </h3>
-        <p className="text-slate-400 text-[12px] leading-relaxed mb-4 flex-1">
-          {summary}
+        <p className="text-slate-400 text-[11px] leading-relaxed flex-1 mb-3">
+          {desc}
         </p>
-        <div className="flex items-center gap-1.5 text-brand-400 text-[11px] font-semibold group-hover:text-brand-300 transition-colors mt-auto">
-          Read full story
+        <a
+          href={reelUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-1.5 text-brand-400 text-[11px] font-semibold hover:text-brand-300 transition-colors"
+        >
+          Watch Tip
           <ExternalLink size={10} />
-        </div>
+        </a>
       </div>
-    </a>
+    </div>
   )
 }
 
-export default function TestimonialsCarousel() {
-  const scrollRef = useRef(null)
-  const [activeIdx, setActiveIdx] = useState(0)
-  const [canPrev, setCanPrev]   = useState(false)
-  const [canNext, setCanNext]   = useState(true)
-
-  const getCardStep = () => {
-    const el = scrollRef.current
-    if (!el) return 324
-    const card = el.querySelector('.testimonial-card')
-    return card ? card.offsetWidth + 24 : 324  // card width + gap-6 (24px)
-  }
-
-  const scrollBy = (dir) => {
-    const el = scrollRef.current
-    if (!el) return
-    el.scrollBy({ left: dir * getCardStep(), behavior: 'smooth' })
-  }
-
-  const scrollToIndex = (i) => {
-    const el = scrollRef.current
-    if (!el) return
-    el.scrollTo({ left: i * getCardStep(), behavior: 'smooth' })
-  }
-
-  useEffect(() => {
-    const el = scrollRef.current
-    if (!el) return
-    const onScroll = () => {
-      setCanPrev(el.scrollLeft > 10)
-      setCanNext(el.scrollLeft < el.scrollWidth - el.clientWidth - 10)
-      const step = getCardStep()
-      setActiveIdx(Math.min(Math.round(el.scrollLeft / step), TESTIMONIALS.length - 1))
-    }
-    el.addEventListener('scroll', onScroll, { passive: true })
-    onScroll()
-    return () => el.removeEventListener('scroll', onScroll)
-  }, [])
-
+export default function MortgageTipsLibrary() {
   return (
-    <section className="bg-dark-900 py-20 overflow-hidden">
-      {/* Scrollbar suppression */}
-      <style>{`#t-track::-webkit-scrollbar { display: none; }`}</style>
-
-      <div className="max-w-6xl mx-auto">
+    <section className="bg-dark-900 py-20">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6">
 
         {/* Section header */}
-        <div className="text-center px-4 mb-12">
+        <div className="text-center mb-12">
           <p className="text-brand-400 text-[11px] font-bold tracking-[0.12em] uppercase mb-3">
-            Client Stories
+            Free Video Library
           </p>
           <h2 className="font-display text-3xl sm:text-4xl font-black text-white mb-4 leading-tight tracking-tight">
-            Real mortgage cases from expats and business owners in Czechia.
+            Mortgage Tips &amp; Insights
           </h2>
-          <p className="text-slate-400 max-w-lg mx-auto text-sm leading-relaxed">
-            See how clients successfully navigated the mortgage process and financed property in the Czech market.
+          <p className="text-slate-400 max-w-2xl mx-auto text-sm leading-relaxed">
+            Free expert videos to help you understand Czech mortgages, improve your borrowing capacity,
+            avoid common mistakes, and confidently navigate the entire home-buying process.
           </p>
         </div>
 
-        {/* Carousel */}
-        <div className="relative">
-
-          {/* Prev arrow */}
-          <button
-            onClick={() => scrollBy(-1)}
-            disabled={!canPrev}
-            aria-label="Previous testimonial"
-            className={[
-              'hidden sm:flex absolute left-2 top-[88px] z-10',
-              'w-10 h-10 rounded-full items-center justify-center',
-              'bg-dark-800 border border-white/10 text-white',
-              'transition-all duration-150',
-              canPrev
-                ? 'opacity-100 hover:bg-dark-700 hover:border-brand-500/40 cursor-pointer'
-                : 'opacity-0 pointer-events-none',
-            ].join(' ')}
-          >
-            <ChevronLeft size={18} />
-          </button>
-
-          {/* Scroll track */}
-          <div
-            id="t-track"
-            ref={scrollRef}
-            className="flex gap-6 overflow-x-auto snap-x snap-mandatory pb-2 px-6 sm:px-14"
-            style={{ scrollbarWidth: 'none', msOverflowStyle: 'none', WebkitOverflowScrolling: 'touch' }}
-          >
-            {TESTIMONIALS.map((t) => (
-              <TestimonialCard key={t.id} {...t} />
-            ))}
-            {/* End spacer */}
-            <div className="flex-shrink-0 w-2" aria-hidden="true" />
-          </div>
-
-          {/* Next arrow */}
-          <button
-            onClick={() => scrollBy(1)}
-            disabled={!canNext}
-            aria-label="Next testimonial"
-            className={[
-              'hidden sm:flex absolute right-2 top-[88px] z-10',
-              'w-10 h-10 rounded-full items-center justify-center',
-              'bg-dark-800 border border-white/10 text-white',
-              'transition-all duration-150',
-              canNext
-                ? 'opacity-100 hover:bg-dark-700 hover:border-brand-500/40 cursor-pointer'
-                : 'opacity-0 pointer-events-none',
-            ].join(' ')}
-          >
-            <ChevronRight size={18} />
-          </button>
-
-        </div>
-
-        {/* Navigation dots */}
-        <div className="flex justify-center items-center gap-2 mt-6 px-4">
-          {TESTIMONIALS.map((_, i) => (
-            <button
-              key={i}
-              onClick={() => scrollToIndex(i)}
-              aria-label={`Go to testimonial ${i + 1}`}
-              className={[
-                'rounded-full transition-all duration-300 focus:outline-none',
-                i === activeIdx
-                  ? 'w-5 h-1.5 bg-brand-400'
-                  : 'w-1.5 h-1.5 bg-slate-600 hover:bg-slate-500',
-              ].join(' ')}
-            />
+        {/* Responsive video grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+          {VIDEOS.map((v) => (
+            <VideoCard key={v.id} {...v} />
           ))}
         </div>
 
