@@ -489,7 +489,7 @@ function ReadinessCard({ factor }) {
             <span className="font-bold text-ink tabular-nums flex-shrink-0">{formatCZKShort(eX)}</span>
           </div>
           <div className="flex justify-between text-xs gap-2">
-            <span className="text-ink-muted min-w-0">Stress test @ 6.89%</span>
+            <span className="text-ink-muted min-w-0">Stress test @ 5.89%</span>
             <span className="font-semibold text-warning-text tabular-nums flex-shrink-0">{formatCZKShort(eXStress)}</span>
           </div>
           <div className="flex justify-between text-xs">
@@ -830,7 +830,7 @@ function BankResultsTable({ profile }) {
     <div className="rounded-xl border border-border overflow-hidden mt-4">
       <div className="bg-surface px-5 py-3 border-b border-border flex items-center justify-between">
         <p className="text-[11px] font-bold text-ink-subtle uppercase tracking-wide">Bank Loan Capacity</p>
-        <p className="text-[10px] text-ink-subtle">Test A @ 4.89% · Test B @ 6.89%</p>
+        <p className="text-[10px] text-ink-subtle">Test A @ 4.89% · Test B @ 5.89%</p>
       </div>
       <div className="overflow-x-auto w-full">
         <table className="min-w-max w-full text-xs">
@@ -1151,7 +1151,7 @@ function HeadlineVerdict({ score, cfg, profile, formData }) {
       return 'As a self-employed applicant, your income recognition method determines which lender to approach first — and it may not be the most obvious one.'
     if (formData.entityType === 'sro')
       return 'Your income is assessed under ESSO methodology. How your company financials are structured directly determines the recognised base.'
-    return `Your profile qualifies for up to ${formatCZKShort(eX)} under Czech bank dual-test methodology. The stress-tested floor at 6.89% is ${eXStress > 0 ? formatCZKShort(eXStress) : '—'}.`
+    return `Your profile qualifies for up to ${formatCZKShort(eX)} under Czech bank dual-test methodology (contract 4.89% / stress 5.89%). The conservative dual-rate result is binding.`
   })()
 
   return (
@@ -1187,10 +1187,10 @@ function HeadlineVerdict({ score, cfg, profile, formData }) {
                   {eX > 0 ? formatCZKShort(eX) : '—'}
                 </p>
               </div>
-              {eXStress > 0 && (
+              {eXStress > 0 && eXStress < eX && (
                 <div>
                   <p className="text-[10px] font-bold tracking-widest uppercase text-slate-500 mb-1">
-                    Stress-Tested Floor · 6.89%
+                    Stress-Tested Floor · 5.89%
                   </p>
                   <p className="font-display text-xl sm:text-2xl font-black text-slate-300 tabular-nums leading-tight">
                     {formatCZKShort(eXStress)}
@@ -1219,12 +1219,13 @@ function BindingConstraintBars({ profile }) {
   if (netIncome <= 0 || eX <= 0) return null
 
   const winnerResult  = bankResults?.[winnerBank]
-  const dstiLimit     = winnerResult ? winnerResult.effectiveDSTI * 100 : 45
+  const dstiLimit     = winnerResult?.effectiveDSTI != null ? winnerResult.effectiveDSTI * 100 : 45
+  // Stress bar: monthly payment at +1% (5.89%) for the conservative max loan
   const stressPayment = eX > 0 && maturity?.maxYears > 0
-    ? monthlyPayment(eX, 6.89, maturity.maxYears)
+    ? monthlyPayment(eX, 5.89, maturity.maxYears)
     : 0
   const stressDSTI    = netIncome > 0
-    ? Math.min(99, ((stressPayment + existingDebt) / netIncome) * 100)
+    ? Math.min(99, ((stressPayment + (existingDebt || 0)) / netIncome) * 100)
     : 0
 
   const bars = [
@@ -1236,11 +1237,11 @@ function BindingConstraintBars({ profile }) {
       isActive: bottleneck === 'DSTI',
     },
     {
-      label:    'Stress Test (DI Rate)',
-      sub:      `at 6.89% stress rate · CNB limit 45%`,
+      label:    'Stress Test (+1%)',
+      sub:      `at 5.89% stress rate · same DSTI limit ${dstiLimit.toFixed(0)}%`,
       value:    stressDSTI,
-      limit:    45,
-      isActive: bottleneck !== 'DSTI' && bottleneck !== 'LTV' && bottleneck !== 'DTI',
+      limit:    dstiLimit,
+      isActive: bottleneck === 'DSTI',
     },
     {
       label:    'LTV (Loan-to-Value)',
@@ -1515,12 +1516,12 @@ function HeroVerdictPost({ score, cfg, profile, formData }) {
   // Dynamic 2-3 sentence summary — no bank names
   const summary = (() => {
     const s1 = eX > 0
-      ? `Based on your profile, you qualify for an estimated maximum loan of ${formatCZKShort(eX)}, with a stress-tested floor of ${formatCZKShort(eXStress)} at the CNB 6.89% rate.`
+      ? `Based on your profile, you qualify for an estimated maximum loan of ${formatCZKShort(eX)} under the dual-rate stress test (4.89% / 5.89%). The lower of the two results is applied.`
       : 'Your profile has been assessed under the Czech bank dual-test methodology.'
 
     const s2 = bottleneck === 'LTV'
       ? 'Your loan-to-value ratio is the primary constraint — increasing your down-payment is the single highest-impact action to expand capacity.'
-      : bottleneck === 'DSTI' || bottleneck === 'DI'
+      : bottleneck === 'DSTI'
       ? 'Debt service ratio is the binding constraint; reducing monthly obligations before application directly expands available borrowing capacity.'
       : bottleneck === 'DTI'
       ? 'Your total debt-to-income ratio is the cap — reducing outstanding loan balances or growing the annual income base are the highest-return actions before applying.'
@@ -1572,9 +1573,9 @@ function HeroVerdictPost({ score, cfg, profile, formData }) {
                   {eX > 0 ? formatCZKShort(eX) : '—'}
                 </p>
               </div>
-              {eXStress > 0 && (
+              {eXStress > 0 && eXStress < eX && (
                 <div>
-                  <p className="text-[10px] text-ink-subtle uppercase tracking-wide mb-1">Stress-Tested Floor · 6.89%</p>
+                  <p className="text-[10px] text-ink-subtle uppercase tracking-wide mb-1">Stress-Tested Floor · 5.89%</p>
                   <p className="font-display text-xl font-black text-ink-muted tabular-nums leading-tight">
                     {formatCZKShort(eXStress)}
                   </p>
