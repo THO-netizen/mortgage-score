@@ -11,6 +11,7 @@ import Step4Property           from './components/steps/Step4Property.jsx'
 import ProcessingScreen        from './components/funnel/ProcessingScreen.jsx'
 import Step7Results            from './components/steps/Step7Results.jsx'
 import TestimonialsCarousel    from './components/testimonials/TestimonialsCarousel.jsx'
+import ClientStories           from './components/testimonials/ClientStories.jsx'
 
 // ─── Initial form state ───────────────────────────────
 const INITIAL_FORM = {
@@ -219,7 +220,7 @@ export default function App() {
         <>
           <HeroAnalysis onStart={handleStart} />
           <HowItWorksSection onStart={handleStart} />
-          <TestimonialsCarousel />
+          <ClientStories />
           <LandingFooter onStart={handleStart} />
         </>
       )}
