@@ -718,7 +718,7 @@ function RealCostsTable({ formData, profile }) {
   const total       = reservation + legalEscrow + valuation + landReg + reserve
 
   const rows = [
-    { item: 'Reservation deposit',       est: czkS(reservation),        note: 'Refundable if subject to financing clause' },
+    { item: 'Reservation deposit',       est: czkS(reservation),        note: 'Typically 3–5% of purchase price; usually credited towards the purchase price (check the agreement to confirm)' },
     { item: 'Legal / Notary (escrow)',   est: '~' + czkS(legalEscrow), note: 'Required for mortgage deed registration' },
     { item: 'Property valuation',        est: '~' + czkS(valuation),   note: 'Bank-commissioned; mandatory for mortgage' },
     { item: 'Land Registry lien fee',   est: czkS(landReg),            note: 'Flat filing fee for mortgage registration' },
