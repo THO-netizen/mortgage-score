@@ -778,9 +778,11 @@ export function computeMortgageProfile(formData) {
   }
 
   const winner = bankResults[winnerKey]
-  const eX     = Math.max(0, winner.maxLoan)
-  // eXStress: what the loan would be if DI test alone were used (display only)
-  const eXStress = Math.max(0, winner.maxByDI)
+  const eX       = Math.max(0, winner.maxLoan)
+  // eXBase:   DSTI capacity at 4.89% (before stress test reduction — always ≥ eXStress)
+  const eXBase   = Math.max(0, isFinite(winner.maxByDSTI) ? winner.maxByDSTI : eX)
+  // eXStress: DSTI capacity at 5.89% stress rate (always ≤ eXBase; may exceed eX when LTV/DTI also bind)
+  const eXStress = Math.max(0, isFinite(winner.maxByDSTI_stress) ? winner.maxByDSTI_stress : 0)
 
   // ── Derived legacy fields ─────────────────────────────────────────────────
   const annualIncome = effectiveIncome * 12
@@ -849,7 +851,7 @@ export function computeMortgageProfile(formData) {
     // Maturity
     maturity,
     // E[X] / Var[X]
-    eX, eXStress, varX, varCoeff,
+    eX, eXStress, eXBase, varX, varCoeff,
     headroom, af, afDualStress, afStress,
     eXbyDSTI, eXbyDTI,
     // Risk

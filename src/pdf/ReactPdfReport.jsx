@@ -921,11 +921,11 @@ function Page1({ ctx }) {
               <Text style={S.heroNum}>{czkS(eX)}</Text>
               <Text style={S.heroSub}>{'Based on ' + czkS(effectiveIncome) + '/mo recognised income'}</Text>
             </View>
-            {eXStress > 0 && eXStress < eX && (
+            {eXStress > 0 && (
               <View>
-                <Text style={S.heroLbl}>Stress-Tested Floor · {DUAL_STRESS_RATE_PA}%</Text>
+                <Text style={S.heroLbl}>Stress Capacity · {DUAL_STRESS_RATE_PA}%</Text>
                 <Text style={[S.heroNum, { fontSize: 16, color: SU }]}>{czkS(eXStress)}</Text>
-                <Text style={S.heroSub}>DI floor at legacy stress rate</Text>
+                <Text style={S.heroSub}>DSTI capacity at stress rate (pre LTV/DTI cap)</Text>
               </View>
             )}
           </View>
@@ -1099,7 +1099,7 @@ function Page3({ ctx }) {
       <View style={{ flexDirection: 'row', marginBottom: 8 }}>
         {[
           { lbl: 'Max Loan',           val: czkS(eX) },
-          { lbl: `Stress Floor ${DUAL_STRESS_RATE_PA}%`, val: eXStress > 0 && eXStress < eX ? czkS(eXStress) : czkS(eX) },
+          { lbl: `Stress Cap ${DUAL_STRESS_RATE_PA}%`, val: eXStress > 0 ? czkS(eXStress) : czkS(eX) },
           { lbl: 'DSTI',               val: pctF(dstiAtEX) },
           { lbl: 'Readiness Score',    val: score + ' / 100' },
         ].map(({ lbl, val }, i) => (

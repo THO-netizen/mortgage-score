@@ -84,7 +84,7 @@ function buildFactors(f, simNetIncome) {
 
   const profile = computeMortgageProfile({ ...f, netIncome: incomeForCalc })
   const { existingDebt, ltvPct, maxLTVPct, dtiRatio, maxDTIVal, maturity,
-    eX, eXStress, varX, dstiAtEX, bottleneck, flags, redFlags } = profile
+    eX, eXStress, eXBase, varX, dstiAtEX, bottleneck, flags, redFlags } = profile
 
   const loan = Math.max(0, purchasePrice - ownFunds)
   const own  = purchasePrice > 0 ? (ownFunds / purchasePrice) * 100 : 0
@@ -219,7 +219,7 @@ function buildFactors(f, simNetIncome) {
       : 'Enter your net monthly income in the Scenario Simulator below.',
     status: incomeForCalc > 0 && eX > 0 ? (eX > 3_000_000 ? 'strong' : eX > 1_000_000 ? 'good' : 'review') : 'review',
     // Pass through for extended card display
-    eX, eXStress, varX, dstiAtEX, bottleneck, maturity,
+    eX, eXStress, eXBase, varX, dstiAtEX, bottleneck, maturity,
     netIncome: incomeForCalc, existingDebt,
   }
 
@@ -463,7 +463,7 @@ function RiskMatrix({ formData, simNetIncome }) {
 
 function ReadinessCard({ factor }) {
   const { title, icon: Icon, detail, desc, status,
-    eX, eXStress, varX, dstiAtEX, bottleneck, maturity, netIncome, existingDebt } = factor
+    eX, eXStress, eXBase, varX, dstiAtEX, bottleneck, maturity, netIncome, existingDebt } = factor
   const { label, cls } = STATUS_CFG[status]
 
   return (
@@ -485,8 +485,8 @@ function ReadinessCard({ factor }) {
       {eX !== undefined && netIncome > 0 && eX > 0 && (
         <div className="mt-3 pt-3 border-t border-border space-y-1.5">
           <div className="flex justify-between text-xs gap-2">
-            <span className="text-ink-muted min-w-0">Expected loan @ 4.89% / {maturity?.maxYears ?? 20} yr</span>
-            <span className="font-bold text-ink tabular-nums flex-shrink-0">{formatCZKShort(eX)}</span>
+            <span className="text-ink-muted min-w-0">Base capacity @ 4.89% / {maturity?.maxYears ?? 20} yr</span>
+            <span className="font-bold text-ink tabular-nums flex-shrink-0">{formatCZKShort(eXBase ?? eX)}</span>
           </div>
           <div className="flex justify-between text-xs gap-2">
             <span className="text-ink-muted min-w-0">Stress test @ 5.89%</span>
@@ -1133,7 +1133,7 @@ function SummaryCard({ profile, formData }) {
 // ── Headline Verdict ───────────────────────────────────
 
 function HeadlineVerdict({ score, cfg, profile, formData }) {
-  const { eX, eXStress, riskStatus, bottleneck, effectiveIncome } = profile
+  const { eX, eXStress, eXBase, riskStatus, bottleneck, effectiveIncome } = profile
 
   const riskBand = {
     zelena:   'Low Risk',
@@ -1187,13 +1187,13 @@ function HeadlineVerdict({ score, cfg, profile, formData }) {
                   {eX > 0 ? formatCZKShort(eX) : '—'}
                 </p>
               </div>
-              {eXStress > 0 && eXStress < eX && (
+              {eXBase > 0 && eXBase !== eX && (
                 <div>
                   <p className="text-[10px] font-bold tracking-widest uppercase text-slate-500 mb-1">
-                    Stress-Tested Floor · 5.89%
+                    Base Rate · 4.89%
                   </p>
                   <p className="font-display text-xl sm:text-2xl font-black text-slate-300 tabular-nums leading-tight">
-                    {formatCZKShort(eXStress)}
+                    {formatCZKShort(eXBase)}
                   </p>
                 </div>
               )}
@@ -1505,7 +1505,7 @@ function RecommendedStrategy({ score, profile, formData }) {
 // ── Hero Verdict Post-Gate ────────────────────────────
 
 function HeroVerdictPost({ score, cfg, profile, formData }) {
-  const { eX, eXStress, riskStatus, bottleneck, effectiveIncome } = profile
+  const { eX, eXStress, eXBase, riskStatus, bottleneck, effectiveIncome } = profile
 
   const riskBand = {
     zelena:   'Low Risk',
@@ -1573,11 +1573,11 @@ function HeroVerdictPost({ score, cfg, profile, formData }) {
                   {eX > 0 ? formatCZKShort(eX) : '—'}
                 </p>
               </div>
-              {eXStress > 0 && eXStress < eX && (
+              {eXBase > 0 && eXBase !== eX && (
                 <div>
-                  <p className="text-[10px] text-ink-subtle uppercase tracking-wide mb-1">Stress-Tested Floor · 5.89%</p>
+                  <p className="text-[10px] text-ink-subtle uppercase tracking-wide mb-1">Base Rate · 4.89%</p>
                   <p className="font-display text-xl font-black text-ink-muted tabular-nums leading-tight">
-                    {formatCZKShort(eXStress)}
+                    {formatCZKShort(eXBase)}
                   </p>
                 </div>
               )}
