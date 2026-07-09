@@ -638,47 +638,6 @@ function UnderwriterPerspective({ profile, formData }) {
   )
 }
 
-/* ── Scenario Optimisation ────────────────────────── */
-
-function ScenarioOptimization({ formData, profile }) {
-  const base = profile.eX || 0
-  function safe(fd) {
-    try { return computeMortgageProfile(fd).eX || base } catch { return base }
-  }
-  const s1 = safe({ ...formData, ownFunds: (Number(formData.ownFunds) || 0) + 500_000 })
-  const s2 = safe({ ...formData, monthlyLoanPayments: Math.max(0, (Number(formData.monthlyLoanPayments) || 0) - 2_000) })
-  const s3 = safe({ ...formData, netIncome: Math.round((Number(formData.netIncome) || profile.effectiveIncome || 0) * 1.10) })
-
-  const rows = [
-    { action: 'Add 500k CZK to down-payment',          newEX: s1, delta: s1 - base },
-    { action: 'Clear 2,000 CZK/mo in loan payments',   newEX: s2, delta: s2 - base },
-    { action: 'Increase recognised income by 10%',     newEX: s3, delta: s3 - base },
-  ]
-
-  return (
-    <View style={{ marginBottom: 8 }}>
-      <Text style={S.secTitle}>Scenario Optimisation</Text>
-      <View style={{ borderWidth: 1, borderColor: BD, borderRadius: 4, overflow: 'hidden' }}>
-        <View style={S.tHdr}>
-          <Text style={[S.tHCel, { flex: 3 }]}>If you...</Text>
-          <Text style={[S.tHCel, { flex: 2, textAlign: 'right' }]}>New Max Loan</Text>
-          <Text style={[S.tHCel, { flex: 1.5, textAlign: 'right' }]}>vs Baseline</Text>
-        </View>
-        {rows.map((r, i) => (
-          <View key={i} style={[S.tRow, i === 2 && { borderBottomWidth: 0 }, i % 2 === 1 && { backgroundColor: SF }]}>
-            <Text style={[S.tCel, { flex: 3 }]}>{r.action}</Text>
-            <Text style={[S.tCel, { flex: 2, textAlign: 'right', fontFamily: 'Helvetica-Bold' }]}>{czkS(r.newEX)}</Text>
-            <Text style={[S.tCel, { flex: 1.5, textAlign: 'right', fontFamily: 'Helvetica-Bold', color: r.delta >= 0 ? OK : RK }]}>
-              {(r.delta >= 0 ? '+' : '') + czkS(Math.abs(r.delta))}
-            </Text>
-          </View>
-        ))}
-      </View>
-      <Text style={{ fontSize: 6, color: SU, marginTop: 3 }}>{`Baseline: ${czkS(base)} · Dual-test at ${CONTRACT_RATE_PA}% / ${DUAL_STRESS_RATE_PA}%`}</Text>
-    </View>
-  )
-}
-
 /* ── Pre-Approval Checklist ───────────────────────── */
 
 function PreApprovalChecklist({ formData }) {
@@ -1027,8 +986,6 @@ function Page2({ ctx }) {
       }
 
       <UnderwriterPerspective profile={profile} formData={formData} />
-
-      <ScenarioOptimization formData={formData} profile={profile} />
 
       <PreApprovalChecklist formData={formData} />
 
