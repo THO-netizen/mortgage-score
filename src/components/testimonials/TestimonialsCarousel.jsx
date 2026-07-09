@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import React, { useCallback, useEffect, useRef, useState } from 'react'
 import useEmblaCarousel from 'embla-carousel-react'
 import { ChevronLeft, ChevronRight, ExternalLink } from 'lucide-react'
 import { carouselRegistry } from '../../hooks/carouselRegistry.js'
@@ -106,9 +106,15 @@ const VIDEOS = [
   },
 ]
 
-function VideoCard({ id, title, desc }) {
+// ── VideoCard ─────────────────────────────────────────────────────────────────
+// Memoised so only the card whose isPlaying prop changes re-renders.
+// Cross-origin iframes cannot be controlled via JS API, so we switch the `src`
+// between a muted-autoplay URL and the static URL to start/stop playback.
+const VideoCard = React.memo(function VideoCard({ id, title, desc, isPlaying }) {
   const reelUrl  = `https://www.facebook.com/reel/${id}/`
-  const embedSrc = `https://www.facebook.com/plugins/video.php?href=${encodeURIComponent(reelUrl)}&show_text=false&width=500`
+  const staticSrc  = `https://www.facebook.com/plugins/video.php?href=${encodeURIComponent(reelUrl)}&show_text=false&width=500&mute=1`
+  const autoplaySrc = staticSrc + '&autoplay=1'
+  const embedSrc = isPlaying ? autoplaySrc : staticSrc
 
   return (
     <div className="flex flex-col rounded-xl border border-white/10 bg-dark-800 overflow-hidden h-full">
@@ -130,7 +136,7 @@ function VideoCard({ id, title, desc }) {
         />
       </div>
 
-      {/* Text content — fixed min-height keeps all cards the same below the reel */}
+      {/* Text content */}
       <div className="flex flex-col flex-1 p-4" style={{ minHeight: '112px' }}>
         <h3
           className="text-white font-semibold text-[13px] leading-snug mb-1.5"
@@ -156,10 +162,17 @@ function VideoCard({ id, title, desc }) {
       </div>
     </div>
   )
-}
+})
 
+// ── MortgageTipsLibrary ───────────────────────────────────────────────────────
 export default function MortgageTipsLibrary() {
-  const sectionRef = useRef(null)
+  const sectionRef     = useRef(null)   // the outer <section> element
+  const emblaViewportEl = useRef(null)  // the overflow:hidden Embla viewport element
+  // ratioMap stores the latest intersectionRatio for each video id (within the carousel viewport)
+  const ratioMap = useRef(new Map())
+
+  const [playingId,    setPlayingId]    = useState(null)   // id of the currently autoplaying card
+  const [sectionInView, setSectionInView] = useState(false) // section gating flag
 
   const [emblaRef, emblaApi] = useEmblaCarousel({
     loop: false,
@@ -167,8 +180,8 @@ export default function MortgageTipsLibrary() {
     dragFree: false,
   })
 
-  const [canPrev, setCanPrev] = useState(false)
-  const [canNext, setCanNext] = useState(true)
+  const [canPrev,       setCanPrev]       = useState(false)
+  const [canNext,       setCanNext]       = useState(true)
   const [selectedIndex, setSelectedIndex] = useState(0)
 
   const syncState = useCallback(() => {
@@ -193,7 +206,7 @@ export default function MortgageTipsLibrary() {
   const scrollNext = useCallback(() => emblaApi?.scrollNext(), [emblaApi])
   const scrollTo   = useCallback((i) => emblaApi?.scrollTo(i), [emblaApi])
 
-  // Register with global keyboard handler
+  // ── Keyboard registry ───────────────────────────────────────────────────────
   useEffect(() => {
     carouselRegistry.set('mortgage-tips', {
       scrollPrev,
@@ -205,12 +218,77 @@ export default function MortgageTipsLibrary() {
     return () => carouselRegistry.delete('mortgage-tips')
   }, [emblaApi, scrollPrev, scrollNext])
 
-  const snapCount = emblaApi ? emblaApi.scrollSnapList().length : VIDEOS.length
+  // ── Section visibility gate ─────────────────────────────────────────────────
+  // Stops all playback when the section is not visible on the page.
+  useEffect(() => {
+    const el = sectionRef.current
+    if (!el) return
+    const obs = new IntersectionObserver(
+      ([entry]) => {
+        setSectionInView(entry.isIntersecting)
+        if (!entry.isIntersecting) setPlayingId(null)
+      },
+      { threshold: 0.1 },
+    )
+    obs.observe(el)
+    return () => obs.disconnect()
+  }, [])
 
+  // ── Card visibility observer (autoplay logic) ───────────────────────────────
+  // Uses the Embla viewport as root so intersection ratios reflect how much of
+  // each slide is visible *within the carousel*, not the page.
+  // threshold: 0.6 means a card must be ≥60% visible in the carousel to qualify.
+  // Among qualifying cards (ties common at desktop), the one whose horizontal
+  // centre is closest to the carousel's centre wins.
+  useEffect(() => {
+    const viewport = emblaViewportEl.current
+    if (!viewport || !emblaApi) return
+
+    const obs = new IntersectionObserver(
+      (entries) => {
+        // Update ratio map with latest data for changed entries
+        entries.forEach(entry => {
+          const id = entry.target.dataset.videoId
+          if (id) ratioMap.current.set(id, entry.intersectionRatio)
+        })
+
+        // Find the best candidate: highest ratio, tiebroken by proximity to carousel centre
+        const viewportRect = viewport.getBoundingClientRect()
+        const viewportCx   = viewportRect.left + viewportRect.width / 2
+
+        let bestId    = null
+        let bestScore = -Infinity
+
+        ratioMap.current.forEach((ratio, id) => {
+          if (ratio < 0.6) return
+          const el = viewport.querySelector(`[data-video-id="${id}"]`)
+          if (!el) return
+          const rect     = el.getBoundingClientRect()
+          const cardCx   = rect.left + rect.width / 2
+          // score = ratio (0-1) minus normalised distance from centre (0-1)
+          const dist     = Math.abs(cardCx - viewportCx) / (viewportRect.width || 1)
+          const score    = ratio - dist
+          if (score > bestScore) { bestScore = score; bestId = id }
+        })
+
+        setPlayingId(bestId)
+      },
+      { root: viewport, threshold: [0, 0.6, 1.0] },
+    )
+
+    // Observe every slide container (each has data-video-id)
+    viewport.querySelectorAll('[data-video-id]').forEach(el => obs.observe(el))
+
+    return () => obs.disconnect()
+  }, [emblaApi]) // re-run when emblaApi is available (viewport element is ready)
+
+  // ── Keyboard handler (direct focus on section) ──────────────────────────────
   const handleKeyDown = (e) => {
     if (e.key === 'ArrowLeft')  { e.preventDefault(); scrollPrev() }
     if (e.key === 'ArrowRight') { e.preventDefault(); scrollNext() }
   }
+
+  const snapCount = emblaApi ? emblaApi.scrollSnapList().length : VIDEOS.length
 
   return (
     <section
@@ -257,16 +335,23 @@ export default function MortgageTipsLibrary() {
             <ChevronLeft size={17} />
           </button>
 
-          {/* Embla viewport */}
-          <div className="overflow-hidden cursor-grab active:cursor-grabbing" ref={emblaRef}>
+          {/* Embla viewport — dual ref: emblaRef for Embla + emblaViewportEl for IO root */}
+          <div
+            ref={(el) => { emblaRef(el); emblaViewportEl.current = el }}
+            className="overflow-hidden cursor-grab active:cursor-grabbing"
+          >
             <div className="flex" style={{ marginLeft: '-16px' }}>
               {VIDEOS.map((v) => (
                 <div
                   key={v.id}
+                  data-video-id={v.id}
                   className="flex-[0_0_100%] sm:flex-[0_0_50%] lg:flex-[0_0_33.333%] min-w-0"
                   style={{ paddingLeft: '16px' }}
                 >
-                  <VideoCard {...v} />
+                  <VideoCard
+                    {...v}
+                    isPlaying={v.id === playingId && sectionInView}
+                  />
                 </div>
               ))}
             </div>
