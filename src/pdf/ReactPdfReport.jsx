@@ -865,7 +865,7 @@ function MortgageRoadmap() {
 function Page1({ ctx }) {
   const { formData, profile, score, today } = ctx
   const {
-    eX, eXStress, dstiAtEX, ltvPct, maxLTVPct,
+    eX, eXStress, eXBase, dstiAtEX, ltvPct, maxLTVPct,
     bottleneck, winnerBank, bankResults, maturity,
     existingDebt, effectiveIncome, riskStatus,
   } = profile
@@ -914,17 +914,24 @@ function Page1({ ctx }) {
 
           <View style={S.heroDiv} />
 
-          {/* Max loan + stress floor */}
+          {/* Max loan + base rate + stress capacity */}
           <View style={{ flex: 1 }}>
-            <View style={{ marginBottom: 12, paddingBottom: 12, borderBottomWidth: 1, borderBottomColor: '#334155' }}>
+            <View style={{ marginBottom: 10, paddingBottom: 10, borderBottomWidth: 1, borderBottomColor: '#334155' }}>
               <Text style={S.heroLbl}>Estimated Maximum Loan</Text>
               <Text style={S.heroNum}>{czkS(eX)}</Text>
               <Text style={S.heroSub}>{'Based on ' + czkS(effectiveIncome) + '/mo recognised income'}</Text>
             </View>
+            {eXBase > 0 && eXBase !== eX && (
+              <View style={{ marginBottom: 10, paddingBottom: 10, borderBottomWidth: 1, borderBottomColor: '#334155' }}>
+                <Text style={S.heroLbl}>Base Rate · {CONTRACT_RATE_PA}%</Text>
+                <Text style={[S.heroNum, { fontSize: 15, color: SU }]}>{czkS(eXBase)}</Text>
+                <Text style={S.heroSub}>DSTI capacity before stress reduction</Text>
+              </View>
+            )}
             {eXStress > 0 && (
               <View>
                 <Text style={S.heroLbl}>Stress Capacity · {DUAL_STRESS_RATE_PA}%</Text>
-                <Text style={[S.heroNum, { fontSize: 16, color: SU }]}>{czkS(eXStress)}</Text>
+                <Text style={[S.heroNum, { fontSize: 15, color: SU }]}>{czkS(eXStress)}</Text>
                 <Text style={S.heroSub}>DSTI capacity at stress rate (pre LTV/DTI cap)</Text>
               </View>
             )}
@@ -1054,7 +1061,7 @@ function Page3({ ctx }) {
       title: 'Increase Down-Payment',
       text: 'LTV is binding at ' + ltvPct.toFixed(0) + '% vs a ' + maxLTVPct + '% cap. Increasing own funds by 5-10% expands borrowing capacity and improves rate pricing.',
     })
-  } else if (bottleneck === 'DSTI' || bottleneck === 'DI') {
+  } else if (bottleneck === 'DSTI') {
     actions.push({
       priority: 'High Impact', color: WA,
       title: 'Reduce Monthly Obligation Load',

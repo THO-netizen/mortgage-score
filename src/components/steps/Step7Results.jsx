@@ -12,6 +12,7 @@ import {
   monthlyPayment, annuityFactor,
   getMaxLTV, getMaxDTI, calcMaxMaturity,
   BANK_NAMES, BANK_KEYS,
+  CONTRACT_RATE_PA, DUAL_STRESS_RATE_PA,
 } from '../../utils/scoringEngine.js'
 import HowItWorks        from '../results/HowItWorks.jsx'
 import InlineLeadCapture from '../results/InlineLeadCapture.jsx'
@@ -485,11 +486,11 @@ function ReadinessCard({ factor }) {
       {eX !== undefined && netIncome > 0 && eX > 0 && (
         <div className="mt-3 pt-3 border-t border-border space-y-1.5">
           <div className="flex justify-between text-xs gap-2">
-            <span className="text-ink-muted min-w-0">Base capacity @ 4.89% / {maturity?.maxYears ?? 20} yr</span>
+            <span className="text-ink-muted min-w-0">Base capacity @ {CONTRACT_RATE_PA}% / {maturity?.maxYears ?? 20} yr</span>
             <span className="font-bold text-ink tabular-nums flex-shrink-0">{formatCZKShort(eXBase ?? eX)}</span>
           </div>
           <div className="flex justify-between text-xs gap-2">
-            <span className="text-ink-muted min-w-0">Stress test @ 5.89%</span>
+            <span className="text-ink-muted min-w-0">Stress capacity @ {DUAL_STRESS_RATE_PA}%</span>
             <span className="font-semibold text-warning-text tabular-nums flex-shrink-0">{formatCZKShort(eXStress)}</span>
           </div>
           <div className="flex justify-between text-xs">
@@ -821,7 +822,6 @@ function BankResultsTable({ profile }) {
 
   const bindingColor = {
     DSTI: 'bg-brand-50 text-brand-700',
-    DI:   'bg-warning-light text-warning-text',
     DTI:  'bg-risk-light text-risk-text',
     LTV:  'bg-surface text-ink-muted border border-border',
   }
@@ -830,7 +830,7 @@ function BankResultsTable({ profile }) {
     <div className="rounded-xl border border-border overflow-hidden mt-4">
       <div className="bg-surface px-5 py-3 border-b border-border flex items-center justify-between">
         <p className="text-[11px] font-bold text-ink-subtle uppercase tracking-wide">Bank Loan Capacity</p>
-        <p className="text-[10px] text-ink-subtle">Test A @ 4.89% · Test B @ 5.89%</p>
+        <p className="text-[10px] text-ink-subtle">Test A @ {CONTRACT_RATE_PA}% · Test B @ {DUAL_STRESS_RATE_PA}%</p>
       </div>
       <div className="overflow-x-auto w-full">
         <table className="min-w-max w-full text-xs">
@@ -838,8 +838,8 @@ function BankResultsTable({ profile }) {
             <tr className="border-b border-border bg-surface/50">
               <th className="text-left px-4 py-2.5 font-semibold text-ink-subtle whitespace-nowrap">Bank</th>
               <th className="text-right px-3 py-2.5 font-semibold text-ink-subtle whitespace-nowrap">DSTI cap</th>
-              <th className="text-right px-3 py-2.5 font-semibold text-ink-subtle whitespace-nowrap">Test A (DSTI)</th>
-              <th className="text-right px-3 py-2.5 font-semibold text-ink-subtle whitespace-nowrap">Test B (DI)</th>
+              <th className="text-right px-3 py-2.5 font-semibold text-ink-subtle whitespace-nowrap">Test A ({CONTRACT_RATE_PA}%)</th>
+              <th className="text-right px-3 py-2.5 font-semibold text-ink-subtle whitespace-nowrap">Test B ({DUAL_STRESS_RATE_PA}%)</th>
               <th className="text-right px-4 py-2.5 font-semibold text-ink-subtle whitespace-nowrap">Max Loan</th>
               <th className="text-center px-3 py-2.5 font-semibold text-ink-subtle whitespace-nowrap">Binding</th>
             </tr>
@@ -861,7 +861,7 @@ function BankResultsTable({ profile }) {
                     {isFinite(r.maxByDSTI) ? formatCZKShort(r.maxByDSTI) : '—'}
                   </td>
                   <td className="px-3 py-3 text-right tabular-nums text-ink-muted">
-                    {formatCZKShort(r.maxByDI)}
+                    {isFinite(r.maxByDSTI_stress) ? formatCZKShort(r.maxByDSTI_stress) : '—'}
                   </td>
                   <td className={`px-4 py-3 text-right font-bold tabular-nums ${isWinner ? 'text-success-text' : 'text-ink'}`}>
                     {formatCZKShort(r.maxLoan)}
@@ -880,7 +880,7 @@ function BankResultsTable({ profile }) {
       <div className="px-5 py-3 border-t border-border bg-surface/50 flex items-center gap-2 flex-wrap">
         <Info size={11} className="text-ink-subtle flex-shrink-0" />
         <p className="text-[10px] text-ink-subtle leading-relaxed">
-          Bonita = MIN(Test A, Test B). Max Loan = MIN(Bonita, DTI cap, LTV cap).
+          Bonita = MIN(Test A @ {CONTRACT_RATE_PA}%, Test B @ {DUAL_STRESS_RATE_PA}%). Max Loan = MIN(Bonita, DTI cap, LTV cap).
           Selected bank has the highest effective DSTI limit; ties broken by highest max loan.
         </p>
       </div>
@@ -1151,7 +1151,7 @@ function HeadlineVerdict({ score, cfg, profile, formData }) {
       return 'As a self-employed applicant, your income recognition method determines which lender to approach first — and it may not be the most obvious one.'
     if (formData.entityType === 'sro')
       return 'Your income is assessed under ESSO methodology. How your company financials are structured directly determines the recognised base.'
-    return `Your profile qualifies for up to ${formatCZKShort(eX)} under Czech bank dual-test methodology (contract 4.89% / stress 5.89%). The conservative dual-rate result is binding.`
+    return `Your profile qualifies for up to ${formatCZKShort(eX)} under Czech bank dual-test methodology (contract ${CONTRACT_RATE_PA}% / stress ${DUAL_STRESS_RATE_PA}%). The conservative dual-rate result is binding.`
   })()
 
   return (
@@ -1190,7 +1190,7 @@ function HeadlineVerdict({ score, cfg, profile, formData }) {
               {eXBase > 0 && eXBase !== eX && (
                 <div>
                   <p className="text-[10px] font-bold tracking-widest uppercase text-slate-500 mb-1">
-                    Base Rate · 4.89%
+                    Base Rate · {CONTRACT_RATE_PA}%
                   </p>
                   <p className="font-display text-xl sm:text-2xl font-black text-slate-300 tabular-nums leading-tight">
                     {formatCZKShort(eXBase)}
@@ -1220,9 +1220,9 @@ function BindingConstraintBars({ profile }) {
 
   const winnerResult  = bankResults?.[winnerBank]
   const dstiLimit     = winnerResult?.effectiveDSTI != null ? winnerResult.effectiveDSTI * 100 : 45
-  // Stress bar: monthly payment at +1% (5.89%) for the conservative max loan
+  // Stress bar: monthly payment at stress rate for the conservative max loan
   const stressPayment = eX > 0 && maturity?.maxYears > 0
-    ? monthlyPayment(eX, 5.89, maturity.maxYears)
+    ? monthlyPayment(eX, DUAL_STRESS_RATE_PA, maturity.maxYears)
     : 0
   const stressDSTI    = netIncome > 0
     ? Math.min(99, ((stressPayment + (existingDebt || 0)) / netIncome) * 100)
@@ -1231,14 +1231,14 @@ function BindingConstraintBars({ profile }) {
   const bars = [
     {
       label:    'Debt Service (DSTI)',
-      sub:      `at 4.89% fixation rate · limit ${dstiLimit.toFixed(0)}%`,
+      sub:      `at ${CONTRACT_RATE_PA}% fixation rate · limit ${dstiLimit.toFixed(0)}%`,
       value:    dstiAtEX,
       limit:    dstiLimit,
       isActive: bottleneck === 'DSTI',
     },
     {
       label:    'Stress Test (+1%)',
-      sub:      `at 5.89% stress rate · same DSTI limit ${dstiLimit.toFixed(0)}%`,
+      sub:      `at ${DUAL_STRESS_RATE_PA}% stress rate · same DSTI limit ${dstiLimit.toFixed(0)}%`,
       value:    stressDSTI,
       limit:    dstiLimit,
       isActive: bottleneck === 'DSTI',
@@ -1516,7 +1516,7 @@ function HeroVerdictPost({ score, cfg, profile, formData }) {
   // Dynamic 2-3 sentence summary — no bank names
   const summary = (() => {
     const s1 = eX > 0
-      ? `Based on your profile, you qualify for an estimated maximum loan of ${formatCZKShort(eX)} under the dual-rate stress test (4.89% / 5.89%). The lower of the two results is applied.`
+      ? `Based on your profile, you qualify for an estimated maximum loan of ${formatCZKShort(eX)} under the dual-rate stress test (${CONTRACT_RATE_PA}% / ${DUAL_STRESS_RATE_PA}%). The lower of the two results is applied.`
       : 'Your profile has been assessed under the Czech bank dual-test methodology.'
 
     const s2 = bottleneck === 'LTV'
@@ -1575,7 +1575,7 @@ function HeroVerdictPost({ score, cfg, profile, formData }) {
               </div>
               {eXBase > 0 && eXBase !== eX && (
                 <div>
-                  <p className="text-[10px] text-ink-subtle uppercase tracking-wide mb-1">Base Rate · 4.89%</p>
+                  <p className="text-[10px] text-ink-subtle uppercase tracking-wide mb-1">Base Rate · {CONTRACT_RATE_PA}%</p>
                   <p className="font-display text-xl font-black text-ink-muted tabular-nums leading-tight">
                     {formatCZKShort(eXBase)}
                   </p>
