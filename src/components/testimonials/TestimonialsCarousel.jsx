@@ -282,6 +282,47 @@ export default function MortgageTipsLibrary() {
     return () => obs.disconnect()
   }, [emblaApi]) // re-run when emblaApi is available (viewport element is ready)
 
+  // ── Touchpad / horizontal mousewheel support ────────────────────────────────
+  // Embla handles mouse-drag and touch-swipe natively. The only missing gesture
+  // is a two-finger horizontal swipe on a touchpad (or horizontal scroll wheel),
+  // which fires `wheel` events that Embla ignores by default.
+  // We intercept those events, accumulate the delta, and navigate slides once
+  // the accumulated delta exceeds a threshold — then reset for the next gesture.
+  useEffect(() => {
+    const viewport = emblaViewportEl.current
+    if (!viewport || !emblaApi) return
+
+    let accumulated = 0
+    let rafId
+
+    const onWheel = (e) => {
+      // Only intercept clearly horizontal scroll (|deltaX| > |deltaY|).
+      // Vertical scroll (trackpad up/down, scroll wheel) is left to the browser.
+      if (Math.abs(e.deltaX) <= Math.abs(e.deltaY)) return
+
+      e.preventDefault() // stop the page from scrolling horizontally
+
+      accumulated += e.deltaX
+      cancelAnimationFrame(rafId)
+      rafId = requestAnimationFrame(() => {
+        if (accumulated > 40) {
+          emblaApi.scrollNext()
+          accumulated = 0
+        } else if (accumulated < -40) {
+          emblaApi.scrollPrev()
+          accumulated = 0
+        }
+      })
+    }
+
+    // { passive: false } required so preventDefault() is honoured
+    viewport.addEventListener('wheel', onWheel, { passive: false })
+    return () => {
+      viewport.removeEventListener('wheel', onWheel)
+      cancelAnimationFrame(rafId)
+    }
+  }, [emblaApi])
+
   // ── Keyboard handler (direct focus on section) ──────────────────────────────
   const handleKeyDown = (e) => {
     if (e.key === 'ArrowLeft')  { e.preventDefault(); scrollPrev() }
