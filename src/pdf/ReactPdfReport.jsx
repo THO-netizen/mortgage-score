@@ -1201,6 +1201,179 @@ function Page3({ ctx }) {
   )
 }
 
+/* ── DISCOVERY PAGE (single-page summary) ──────────── */
+
+function DiscoveryPage({ ctx }) {
+  const { formData, profile, score, today } = ctx
+  const {
+    eX, dstiAtEX, bottleneck, winnerBank, bankResults, maturity,
+    existingDebt, effectiveIncome, riskStatus,
+    maxPropertyPrice, minOwnFunds, discoveryLTVPct,
+  } = profile
+  const isYoung = Number(formData.applicantAge) < 36
+
+  const scColor  = scCol(score)
+  const riskBand = { zelena: 'Low Risk', oranzova: 'Moderate Risk', cervena: 'Higher Risk' }[riskStatus] || 'Under Assessment'
+  const winnerR  = bankResults?.[winnerBank]
+  const dstiLim  = winnerR?.effectiveDSTI != null ? winnerR.effectiveDSTI * 100 : 45
+  const stressPay = eX > 0 && maturity?.maxYears > 0 ? monthlyPayment(eX, DUAL_STRESS_RATE_PA, maturity.maxYears) : 0
+  const stressDST = effectiveIncome > 0 ? Math.min(99, ((stressPay + (existingDebt || 0)) / effectiveIncome) * 100) : 0
+  const dname    = tr(formData.leadName || '', 22)
+  const ltvCap   = discoveryLTVPct || 80
+  const ownPct   = 100 - ltvCap
+
+  const residLbl = {
+    eu: 'EU Citizen', permanent: 'Permanent Res.',
+    longterm5plus: 'Long-term 5+ yr', longterm: 'Long-term Res.',
+    employment: 'Work Permit', other: 'Other',
+  }[formData.residenceStatus] || '—'
+  const entityLbl = { zamestnanec: 'Salaried', osvc: 'Self-Employed', sro: 's.r.o. Director' }[formData.entityType] || '—'
+
+  const bars = [
+    { label: 'Income Capacity', sub: `debt service at contract rate · limit ${dstiLim.toFixed(0)}%`,        value: dstiAtEX,  limit: dstiLim, binding: bottleneck === 'DSTI' },
+    { label: 'Debt Load',       sub: `obligation ratio at stress rate · same limit ${dstiLim.toFixed(0)}%`, value: stressDST, limit: dstiLim, binding: bottleneck === 'DI'   },
+    { label: 'Loan Term',       sub: 'age-based maturity cap',                                               value: maturity?.maxYears > 0 ? (maturity.maxYears / 40) * 100 : 0, limit: 100, binding: bottleneck === 'AGE' },
+  ]
+
+  const genericLabel = { DSTI: 'Income Capacity', DI: 'Debt Load', DTI: 'Debt Multiplier', AGE: 'Loan Term' }
+  const accentColor  = (bottleneck === 'DSTI' || bottleneck === 'DI') ? WA : OK
+  const capacityText = (bottleneck === 'DSTI' || bottleneck === 'DI')
+    ? `Income capacity is the key variable — at ${pctF(dstiAtEX)} utilisation. Reducing monthly obligations or increasing recognised income directly expands your property budget.`
+    : bottleneck === 'AGE'
+    ? 'The maximum loan term is constrained by age — this caps the monthly payment the lender can structure, which in turn limits the total loan.'
+    : `Profile is within all primary limits. Borrowing capacity of ${czkS(eX)} reflects income capacity and the best available limit ceiling.`
+
+  const quickFacts = [
+    { lbl: 'Residence',            val: tr(residLbl, 18),                                                col: IN  },
+    { lbl: 'Income Type',          val: entityLbl,                                                       col: IN  },
+    { lbl: 'Recognised Income',    val: effectiveIncome > 0 ? czkS(effectiveIncome) + '/mo' : '—',      col: IN  },
+    { lbl: 'Existing Obligations', val: (existingDebt || 0) > 0 ? czkS(existingDebt) + '/mo' : 'None', col: (existingDebt || 0) > 0 ? WA : OK },
+    { lbl: 'Max Loan Term',        val: maturity?.maxYears > 0 ? maturity.maxYears + ' yr' : '—',       col: IN  },
+  ]
+
+  return (
+    <Page size="A4" style={S.page}>
+      <Hdr label="Budget Discovery Assessment" n={1} total={1} />
+
+      {/* Compact hero */}
+      <View style={[S.hero, { padding: 12, marginBottom: 8 }]}>
+        <View style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2.5, backgroundColor: GL }} />
+        <View style={S.heroRow}>
+          <View style={{ width: 108 }}>
+            <ScoreGauge score={score} color={scColor} />
+            <Text style={{ fontSize: 7.5, fontFamily: 'Helvetica-Bold', color: scColor, marginTop: 4 }}>{scLab(score)}</Text>
+            <Text style={{ fontSize: 6.5, color: WH, lineHeight: 1.4, marginTop: 4 }}>{heroMsg(score, dname)}</Text>
+          </View>
+          <View style={S.heroDiv} />
+          <View style={{ flex: 1 }}>
+            <Text style={S.heroLbl}>Maximum Loan Estimate</Text>
+            <Text style={S.heroNum}>{czkS(eX)}</Text>
+            <Text style={S.heroSub}>{'Based on ' + czkS(effectiveIncome) + '/mo recognised income'}</Text>
+          </View>
+          <View style={S.heroDiv} />
+          <View style={{ width: 88 }}>
+            <Text style={S.heroLbl}>Risk Band</Text>
+            <Text style={{ fontSize: 9, fontFamily: 'Helvetica-Bold', color: WH, marginBottom: 10 }}>{riskBand}</Text>
+            <Text style={S.heroLbl}>Primary Factor</Text>
+            <Text style={{ fontSize: 9, fontFamily: 'Helvetica-Bold', color: WA }}>
+              {genericLabel[bottleneck] ?? (bottleneck || 'Within Range')}
+            </Text>
+          </View>
+        </View>
+      </View>
+
+      {/* Budget Discovery — primary output */}
+      <View style={{ marginBottom: 8 }}>
+        <Text style={S.secTitle}>Budget Discovery</Text>
+        <View style={{ borderWidth: 2, borderColor: GL, borderRadius: 4, overflow: 'hidden' }}>
+          <View style={{ backgroundColor: GLA, paddingHorizontal: 10, paddingVertical: 5, borderBottomWidth: 1, borderBottomColor: BD }}>
+            <Text style={{ fontSize: 6.5, color: MU }}>Indicative property price range based on your income capacity</Text>
+          </View>
+          <View style={{ flexDirection: 'row', padding: 10 }}>
+            <View style={{ flex: 2, backgroundColor: GLA, borderRadius: 4, borderWidth: 1, borderColor: GL + '55', padding: 10, marginRight: 8 }}>
+              <Text style={{ fontSize: 6, fontFamily: 'Helvetica-Bold', textTransform: 'uppercase', letterSpacing: 0.5, color: GL, marginBottom: 4 }}>Estimated Property Budget</Text>
+              <Text style={{ fontSize: 22, fontFamily: 'Helvetica-Bold', color: IN }}>{maxPropertyPrice > 0 ? czkS(maxPropertyPrice) : '—'}</Text>
+              <Text style={{ fontSize: 6.5, color: MU, marginTop: 3 }}>
+                {isYoung ? 'First Home Buyer (under 36) — ' + ltvCap + '% LTV' : 'Standard ČNB limit — ' + ltvCap + '% LTV'}
+              </Text>
+            </View>
+            <View style={{ flex: 1, backgroundColor: WH, borderRadius: 4, borderWidth: 1, borderColor: BD, padding: 10 }}>
+              <Text style={{ fontSize: 6, fontFamily: 'Helvetica-Bold', textTransform: 'uppercase', letterSpacing: 0.5, color: SU, marginBottom: 4 }}>Min. Own Funds</Text>
+              <Text style={{ fontSize: 18, fontFamily: 'Helvetica-Bold', color: IN }}>{minOwnFunds > 0 ? czkS(minOwnFunds) : '—'}</Text>
+              <Text style={{ fontSize: 6.5, color: MU, marginTop: 3 }}>{ownPct}% of property price</Text>
+            </View>
+          </View>
+          <View style={{ backgroundColor: SF, borderTopWidth: 1, borderTopColor: BD, padding: 8 }}>
+            <Text style={{ fontSize: 6.5, color: MU, lineHeight: 1.4 }}>
+              {'Maximum loan of ' + czkS(eX) + ' ÷ ' + ltvCap + '% = indicative property price. You will need at least ' + czkS(minOwnFunds) + ' (' + ownPct + '%) in confirmed own funds. Figures are indicative — final amounts depend on the specific property, bank assessment, and prevailing rates at time of application.'}
+            </Text>
+          </View>
+        </View>
+      </View>
+
+      {/* Capacity bars | Profile quick facts */}
+      <View style={{ flexDirection: 'row', marginBottom: 8 }}>
+        <View style={{ flex: 1, marginRight: 8 }}>
+          <Text style={S.secTitle}>Capacity Assessment</Text>
+          <View style={S.card}>
+            {bars.map(b => {
+              const color = b.value > b.limit ? RK : b.binding ? WA : OK
+              return <Bar key={b.label} {...b} color={color} />
+            })}
+          </View>
+        </View>
+        <View style={{ flex: 1 }}>
+          <Text style={S.secTitle}>Profile Quick Facts</Text>
+          <View style={[S.card, { paddingVertical: 6 }]}>
+            {quickFacts.map(({ lbl, val, col }, i) => (
+              <View key={lbl}>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 4 }}>
+                  <Text style={{ fontSize: 6.5, color: SU }}>{lbl}</Text>
+                  <Text style={{ fontSize: 6.5, fontFamily: 'Helvetica-Bold', color: col }}>{val}</Text>
+                </View>
+                {i < quickFacts.length - 1 && <View style={{ height: 0.5, backgroundColor: BD }} />}
+              </View>
+            ))}
+          </View>
+        </View>
+      </View>
+
+      {/* Capacity Summary */}
+      <View style={{ marginBottom: 8 }}>
+        <Text style={S.secTitle}>Capacity Summary</Text>
+        <View style={[S.card, { flexDirection: 'row', alignItems: 'center' }]}>
+          <View style={{ width: 3, backgroundColor: accentColor, alignSelf: 'stretch', borderRadius: 2, marginRight: 10 }} />
+          <View style={{ flex: 1 }}>
+            <Text style={{ fontSize: 7.5, fontFamily: 'Helvetica-Bold', color: IN, marginBottom: 3 }}>
+              {bottleneck ? ('Primary Factor: ' + (genericLabel[bottleneck] ?? bottleneck)) : 'All Capacity Limits Within Range'}
+            </Text>
+            <Text style={{ fontSize: 7, color: MU, lineHeight: 1.4 }}>{capacityText}</Text>
+          </View>
+        </View>
+      </View>
+
+      {/* CTA */}
+      <View style={[S.cta, { padding: 10 }]}>
+        <View style={{ width: '100%', height: 1.5, backgroundColor: GL, marginBottom: 8 }} />
+        <Text style={[S.ctaTitle, { fontSize: 10, marginBottom: 4 }]}>Ready to Define Your Budget?</Text>
+        <Text style={[S.ctaBody, { fontSize: 7, marginBottom: 8 }]}>
+          Book a 30-minute session to select the right property range, confirm your income recognition path, and initiate pre-approval within 2-3 weeks.
+        </Text>
+        <Link src="https://calendly.com/andy-lkadvisor/30min" style={S.ctaBtn}>
+          <Text style={S.ctaBtnTx}>Book Your Strategy Session</Text>
+        </Link>
+        <Text style={S.ctaSub}>Andy Le · Mortgage and Property Financing Specialist · MortgageScore.cz</Text>
+      </View>
+
+      <Text style={{ fontSize: 6, color: SU, marginTop: 6, lineHeight: 1.45 }}>
+        {`This report was generated on ${today} based on data provided by the applicant. All figures are indicative estimates using 2026 Czech bank underwriting methodology (dual-test at ${CONTRACT_RATE_PA}% / ${DUAL_STRESS_RATE_PA}%). They do not constitute a guarantee of approval, a lending offer, or financial advice. Actual terms depend on individual bank assessment, property valuation, credit history, and credit committee approval. Produced by MortgageScore.cz.`}
+      </Text>
+
+      <Ftr today={today} />
+    </Page>
+  )
+}
+
 /* ── Document ─────────────────────────────────────── */
 
 function MortgageDoc({ formData, userName }) {
@@ -1210,12 +1383,14 @@ function MortgageDoc({ formData, userName }) {
   const profile  = computeMortgageProfile(merged)
   const today    = new Date().toLocaleDateString('en-GB', { year: 'numeric', month: 'long', day: 'numeric' })
   const ctx      = { formData: merged, profile, score, today }
+  const isDiscovering = merged.propertyMode === 'discovering'
 
   return (
     <Document title="Mortgage Score Assessment" author="MortgageScore.cz" subject="Mortgage Pre-Scoring Report">
-      <Page1 ctx={ctx} />
-      <Page2 ctx={ctx} />
-      <Page3 ctx={ctx} />
+      {isDiscovering
+        ? <DiscoveryPage ctx={ctx} />
+        : [<Page1 key="p1" ctx={ctx} />, <Page2 key="p2" ctx={ctx} />, <Page3 key="p3" ctx={ctx} />]
+      }
     </Document>
   )
 }
