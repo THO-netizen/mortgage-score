@@ -505,6 +505,53 @@ function ReadinessCard({ factor }) {
   )
 }
 
+// ── Discovery Budget Card ──────────────────────────────
+
+function DiscoveryBudgetCard({ profile, formData }) {
+  const { maxPropertyPrice, minOwnFunds, discoveryLTVPct, eX } = profile
+  const isYoung = Number(formData.applicantAge) < 36
+
+  if (eX <= 0) return null
+
+  return (
+    <div className="rounded-card border-2 border-brand-200 overflow-hidden">
+      <div className="px-5 sm:px-6 py-4 border-b border-brand-200 bg-brand-50/80">
+        <p className="text-[10px] font-bold tracking-widest uppercase text-brand-700">Budget Discovery</p>
+        <p className="text-sm font-semibold text-brand-900 mt-0.5">Indicative property price range based on your income capacity</p>
+      </div>
+      <div className="bg-card p-5 sm:p-6 space-y-4">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="sm:col-span-2 rounded-xl border border-brand-200 bg-brand-50/40 p-5">
+            <p className="text-[10px] font-bold uppercase tracking-wide text-brand-600 mb-1">Max Property Price</p>
+            <p className="font-display text-3xl sm:text-4xl font-black text-brand-800 tabular-nums">
+              {formatCZKShort(maxPropertyPrice)}
+            </p>
+            <p className="text-xs text-brand-600 mt-2">
+              Income capacity ÷ {discoveryLTVPct}% ·{' '}
+              {isYoung ? 'First Home Buyer — under 36' : 'Standard ČNB limit'}
+            </p>
+          </div>
+          <div className="rounded-xl border border-border bg-surface p-5">
+            <p className="text-[10px] font-bold uppercase tracking-wide text-ink-subtle mb-1">Min. Own Funds</p>
+            <p className="font-display text-2xl font-black text-ink tabular-nums">
+              {formatCZKShort(minOwnFunds)}
+            </p>
+            <p className="text-xs text-ink-subtle mt-2">{100 - discoveryLTVPct}% of purchase price</p>
+          </div>
+        </div>
+        <div className="rounded-xl bg-surface border border-border px-4 py-3">
+          <p className="text-[11px] text-ink-muted leading-relaxed">
+            <strong className="text-ink">How this works:</strong> Your income capacity of {formatCZKShort(eX)} divided by {discoveryLTVPct}%
+            gives the maximum property price you can target. You will need at least {formatCZKShort(minOwnFunds)} ({100 - discoveryLTVPct}%) in
+            confirmed own funds. Figures are indicative — final amounts depend on the specific property, bank assessment, and
+            prevailing rates at time of application.
+          </p>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ── Applicant Profile Panel ────────────────────────────
 
 function ApplicantProfilePanel({ formData, profile }) {
@@ -1133,7 +1180,9 @@ function SummaryCard({ profile, formData }) {
 // ── Headline Verdict ───────────────────────────────────
 
 function HeadlineVerdict({ score, cfg, profile, formData }) {
-  const { eX, eXStress, eXBase, riskStatus, bottleneck, effectiveIncome } = profile
+  const { eX, eXStress, eXBase, riskStatus, bottleneck, effectiveIncome,
+    maxPropertyPrice, discoveryLTVPct } = profile
+  const isDiscovering = formData.propertyMode === 'discovering'
 
   const riskBand = {
     zelena:   'Low Risk',
@@ -1141,8 +1190,20 @@ function HeadlineVerdict({ score, cfg, profile, formData }) {
     cervena:  'Higher Risk',
   }[riskStatus] ?? 'Under Assessment'
 
+  const genericBottleneckLabel = {
+    DSTI: 'income capacity',
+    DTI:  'debt load',
+    AGE:  'loan term',
+    LTV:  'equity position',
+  }[bottleneck] ?? 'profile limits'
+
   const insightSentence = (() => {
     if (eX <= 0) return 'Enter your income to see your full borrowing capacity estimate.'
+    if (isDiscovering) {
+      if (bottleneck === 'DSTI' || bottleneck === 'DTI')
+        return `Your ${genericBottleneckLabel} is the key constraint. Reducing monthly obligations before applying would directly expand your budget range.`
+      return `Based on your income, you can target a property up to ${formatCZKShort(maxPropertyPrice)} with ${discoveryLTVPct}% financing.`
+    }
     if (bottleneck === 'LTV')
       return 'Your down-payment is the key lever — increasing own funds directly expands your maximum loan.'
     if (bottleneck === 'DTI')
@@ -1181,13 +1242,22 @@ function HeadlineVerdict({ score, cfg, profile, formData }) {
             <div className="grid grid-cols-2 gap-4 sm:gap-8">
               <div>
                 <p className="text-[10px] font-bold tracking-widest uppercase text-slate-500 mb-1">
-                  Estimated Maximum Loan
+                  {isDiscovering ? 'Borrowing Capacity' : 'Estimated Maximum Loan'}
                 </p>
                 <p className="font-display text-2xl sm:text-3xl font-black text-white tabular-nums leading-tight">
                   {eX > 0 ? formatCZKShort(eX) : '—'}
                 </p>
               </div>
-              {eXBase > 0 && eXBase !== eX && (
+              {isDiscovering && maxPropertyPrice > 0 ? (
+                <div>
+                  <p className="text-[10px] font-bold tracking-widest uppercase text-slate-500 mb-1">
+                    Target Property Price
+                  </p>
+                  <p className="font-display text-xl sm:text-2xl font-black text-slate-300 tabular-nums leading-tight">
+                    {formatCZKShort(maxPropertyPrice)}
+                  </p>
+                </div>
+              ) : (eXBase > 0 && eXBase !== eX) ? (
                 <div>
                   <p className="text-[10px] font-bold tracking-widest uppercase text-slate-500 mb-1">
                     Base Rate · {CONTRACT_RATE_PA}%
@@ -1196,7 +1266,7 @@ function HeadlineVerdict({ score, cfg, profile, formData }) {
                     {formatCZKShort(eXBase)}
                   </p>
                 </div>
-              )}
+              ) : null}
             </div>
             <p className="text-sm text-slate-400 leading-relaxed max-w-xl">{insightSentence}</p>
           </div>
@@ -1209,7 +1279,7 @@ function HeadlineVerdict({ score, cfg, profile, formData }) {
 
 // ── Binding Constraint Bars ────────────────────────────
 
-function BindingConstraintBars({ profile }) {
+function BindingConstraintBars({ profile, isDiscovering = false }) {
   const {
     eX, effectiveIncome, dstiAtEX, ltvPct, maxLTVPct,
     winnerBank, bankResults, maturity, existingDebt, bottleneck,
@@ -1220,7 +1290,6 @@ function BindingConstraintBars({ profile }) {
 
   const winnerResult  = bankResults?.[winnerBank]
   const dstiLimit     = winnerResult?.effectiveDSTI != null ? winnerResult.effectiveDSTI * 100 : 45
-  // Stress bar: monthly payment at stress rate for the conservative max loan
   const stressPayment = eX > 0 && maturity?.maxYears > 0
     ? monthlyPayment(eX, DUAL_STRESS_RATE_PA, maturity.maxYears)
     : 0
@@ -1228,38 +1297,71 @@ function BindingConstraintBars({ profile }) {
     ? Math.min(99, ((stressPayment + (existingDebt || 0)) / netIncome) * 100)
     : 0
 
-  const bars = [
-    {
-      label:    'Debt Service (DSTI)',
-      sub:      `at ${CONTRACT_RATE_PA}% fixation rate · limit ${dstiLimit.toFixed(0)}%`,
-      value:    dstiAtEX,
-      limit:    dstiLimit,
-      isActive: bottleneck === 'DSTI',
-    },
-    {
-      label:    'Stress Test (+1%)',
-      sub:      `at ${DUAL_STRESS_RATE_PA}% stress rate · same DSTI limit ${dstiLimit.toFixed(0)}%`,
-      value:    stressDSTI,
-      limit:    dstiLimit,
-      isActive: bottleneck === 'DSTI',
-    },
-    {
-      label:    'LTV (Loan-to-Value)',
-      sub:      `property collateral · cap ${maxLTVPct}%`,
-      value:    ltvPct,
-      limit:    maxLTVPct,
-      isActive: bottleneck === 'LTV',
-    },
-  ]
+  // PRAVIDLO_ANONYMITY: in discovery mode use generic labels — no DSTI/DTI/LTV terminology
+  const bars = isDiscovering
+    ? [
+        {
+          label:    'Income Capacity',
+          sub:      `debt service at contract rate · limit ${dstiLimit.toFixed(0)}%`,
+          value:    dstiAtEX,
+          limit:    dstiLimit,
+          isActive: bottleneck === 'DSTI',
+        },
+        {
+          label:    'Debt Load',
+          sub:      `obligation ratio at stress rate · same limit ${dstiLimit.toFixed(0)}%`,
+          value:    stressDSTI,
+          limit:    dstiLimit,
+          isActive: bottleneck === 'DSTI',
+        },
+        {
+          label:    'Loan Term',
+          sub:      `age-based maturity cap`,
+          value:    maturity?.maxYears > 0 ? (maturity.maxYears / 40) * 100 : 0,
+          limit:    100,
+          isActive: bottleneck === 'AGE',
+          displayValue: maturity?.maxYears > 0 ? `${maturity.maxYears} yr` : '—',
+          displayLimit: '40 yr max',
+        },
+      ]
+    : [
+        {
+          label:    'Debt Service (DSTI)',
+          sub:      `at ${CONTRACT_RATE_PA}% fixation rate · limit ${dstiLimit.toFixed(0)}%`,
+          value:    dstiAtEX,
+          limit:    dstiLimit,
+          isActive: bottleneck === 'DSTI',
+        },
+        {
+          label:    'Stress Test (+1%)',
+          sub:      `at ${DUAL_STRESS_RATE_PA}% stress rate · same DSTI limit ${dstiLimit.toFixed(0)}%`,
+          value:    stressDSTI,
+          limit:    dstiLimit,
+          isActive: bottleneck === 'DSTI',
+        },
+        {
+          label:    'LTV (Loan-to-Value)',
+          sub:      `property collateral · cap ${maxLTVPct}%`,
+          value:    ltvPct,
+          limit:    maxLTVPct,
+          isActive: bottleneck === 'LTV',
+        },
+      ]
 
   return (
     <div className="rounded-card border border-border bg-card overflow-hidden">
       <div className="px-5 sm:px-6 py-4 border-b border-border">
-        <p className="text-[10px] font-bold tracking-widest uppercase text-ink-subtle">Binding Constraint</p>
-        <p className="text-sm font-semibold text-ink mt-0.5">How your profile scores against each key regulatory limit</p>
+        <p className="text-[10px] font-bold tracking-widest uppercase text-ink-subtle">
+          {isDiscovering ? 'Capacity Assessment' : 'Binding Constraint'}
+        </p>
+        <p className="text-sm font-semibold text-ink mt-0.5">
+          {isDiscovering
+            ? 'How your financial profile scores against key qualification limits'
+            : 'How your profile scores against each key regulatory limit'}
+        </p>
       </div>
       <div className="p-5 sm:p-6 grid grid-cols-1 sm:grid-cols-3 gap-6">
-        {bars.map(({ label, sub, value, limit, isActive }) => {
+        {bars.map(({ label, sub, value, limit, isActive, displayValue, displayLimit }) => {
           const pct      = Math.min(100, limit > 0 ? (value / limit) * 100 : 0)
           const breached = value > limit
           const color    = breached ? '#EF4444' : isActive ? '#F59E0B' : '#10B981'
@@ -1281,9 +1383,11 @@ function BindingConstraintBars({ profile }) {
               </div>
               <div className="flex justify-between items-baseline">
                 <span className="font-display font-black tabular-nums text-base" style={{ color }}>
-                  {value.toFixed(1)}%
+                  {displayValue ?? `${value.toFixed(1)}%`}
                 </span>
-                <span className="text-[10px] text-ink-subtle">limit {limit.toFixed(0)}%</span>
+                <span className="text-[10px] text-ink-subtle">
+                  {displayLimit ?? `limit ${limit.toFixed(0)}%`}
+                </span>
               </div>
             </div>
           )
@@ -1505,7 +1609,9 @@ function RecommendedStrategy({ score, profile, formData }) {
 // ── Hero Verdict Post-Gate ────────────────────────────
 
 function HeroVerdictPost({ score, cfg, profile, formData }) {
-  const { eX, eXStress, eXBase, riskStatus, bottleneck, effectiveIncome } = profile
+  const { eX, eXStress, eXBase, riskStatus, bottleneck, effectiveIncome,
+    maxPropertyPrice, minOwnFunds, discoveryLTVPct } = profile
+  const isDiscovering = formData.propertyMode === 'discovering'
 
   const riskBand = {
     zelena:   'Low Risk',
@@ -1513,25 +1619,33 @@ function HeroVerdictPost({ score, cfg, profile, formData }) {
     cervena:  'Higher Risk',
   }[riskStatus] ?? 'Under Assessment'
 
-  // Dynamic 2-3 sentence summary — no bank names
+  // Dynamic 2-3 sentence summary — no bank names; generic labels in discovery mode
   const summary = (() => {
-    const s1 = eX > 0
-      ? `Based on your profile, you qualify for an estimated maximum loan of ${formatCZKShort(eX)} under the dual-rate stress test (${CONTRACT_RATE_PA}% / ${DUAL_STRESS_RATE_PA}%). The lower of the two results is applied.`
-      : 'Your profile has been assessed under the Czech bank dual-test methodology.'
+    const s1 = isDiscovering
+      ? eX > 0
+        ? `Based on your income profile, your estimated borrowing capacity is ${formatCZKShort(eX)}, allowing you to target properties up to ${formatCZKShort(maxPropertyPrice)} with a minimum own funds contribution of ${formatCZKShort(minOwnFunds)} (${discoveryLTVPct}% financing).`
+        : 'Your profile has been assessed under Czech bank dual-test methodology.'
+      : eX > 0
+        ? `Based on your profile, you qualify for an estimated maximum loan of ${formatCZKShort(eX)} under the dual-rate stress test (${CONTRACT_RATE_PA}% / ${DUAL_STRESS_RATE_PA}%). The lower of the two results is applied.`
+        : 'Your profile has been assessed under the Czech bank dual-test methodology.'
 
-    const s2 = bottleneck === 'LTV'
-      ? 'Your loan-to-value ratio is the primary constraint — increasing your down-payment is the single highest-impact action to expand capacity.'
-      : bottleneck === 'DSTI'
-      ? 'Debt service ratio is the binding constraint; reducing monthly obligations before application directly expands available borrowing capacity.'
-      : bottleneck === 'DTI'
-      ? 'Your total debt-to-income ratio is the cap — reducing outstanding loan balances or growing the annual income base are the highest-return actions before applying.'
-      : formData.entityType === 'osvc'
-      ? 'As a self-employed applicant, your income recognition method and turnover structure are the key variables — a specialist lender match significantly affects your final offer.'
-      : formData.entityType === 'sro'
-      ? 'Director income is assessed under ESSO methodology; the recognised figure depends on company financials, ownership structure, and fiscal history.'
-      : riskStatus === 'zelena'
-      ? 'Your profile scores in the strong band — most lenders will process this application through standard underwriting without additional conditions.'
-      : 'Income recognised is within standard bounds; a targeted lender selection will determine the best offer.'
+    const s2 = isDiscovering
+      ? (bottleneck === 'DSTI' || bottleneck === 'DTI')
+        ? 'Your obligation load is the key constraint — reducing monthly commitments before applying would directly expand your available budget range.'
+        : 'Your income capacity and debt load are within qualifying bounds for the estimated budget range shown above.'
+      : bottleneck === 'LTV'
+        ? 'Your loan-to-value ratio is the primary constraint — increasing your down-payment is the single highest-impact action to expand capacity.'
+        : bottleneck === 'DSTI'
+        ? 'Debt service ratio is the binding constraint; reducing monthly obligations before application directly expands available borrowing capacity.'
+        : bottleneck === 'DTI'
+        ? 'Your total debt-to-income ratio is the cap — reducing outstanding loan balances or growing the annual income base are the highest-return actions before applying.'
+        : formData.entityType === 'osvc'
+        ? 'As a self-employed applicant, your income recognition method and turnover structure are the key variables — a specialist lender match significantly affects your final offer.'
+        : formData.entityType === 'sro'
+        ? 'Director income is assessed under ESSO methodology; the recognised figure depends on company financials, ownership structure, and fiscal history.'
+        : riskStatus === 'zelena'
+        ? 'Your profile scores in the strong band — most lenders will process this application through standard underwriting without additional conditions.'
+        : 'Income recognised is within standard bounds; a targeted lender selection will determine the best offer.'
 
     const s3 = score >= 75
       ? 'Your profile is submission-ready — the next step is lender pre-approval, which typically completes within 2–3 weeks of a full application submission.'
@@ -1568,19 +1682,28 @@ function HeroVerdictPost({ score, cfg, profile, formData }) {
           <div className="flex-1 min-w-0">
             <div className="grid grid-cols-2 gap-4 sm:gap-6 mb-4">
               <div>
-                <p className="text-[10px] text-ink-subtle uppercase tracking-wide mb-1">Estimated Maximum Loan</p>
+                <p className="text-[10px] text-ink-subtle uppercase tracking-wide mb-1">
+                  {isDiscovering ? 'Borrowing Capacity' : 'Estimated Maximum Loan'}
+                </p>
                 <p className="font-display text-2xl font-black text-ink tabular-nums leading-tight">
                   {eX > 0 ? formatCZKShort(eX) : '—'}
                 </p>
               </div>
-              {eXBase > 0 && eXBase !== eX && (
+              {isDiscovering && maxPropertyPrice > 0 ? (
+                <div>
+                  <p className="text-[10px] text-ink-subtle uppercase tracking-wide mb-1">Target Property Price</p>
+                  <p className="font-display text-xl font-black text-ink-muted tabular-nums leading-tight">
+                    {formatCZKShort(maxPropertyPrice)}
+                  </p>
+                </div>
+              ) : (eXBase > 0 && eXBase !== eX) ? (
                 <div>
                   <p className="text-[10px] text-ink-subtle uppercase tracking-wide mb-1">Base Rate · {CONTRACT_RATE_PA}%</p>
                   <p className="font-display text-xl font-black text-ink-muted tabular-nums leading-tight">
                     {formatCZKShort(eXBase)}
                   </p>
                 </div>
-              )}
+              ) : null}
             </div>
             <p className="text-sm text-ink-muted leading-relaxed">{summary}</p>
           </div>
@@ -1772,6 +1895,9 @@ export default function Step7Results({ formData, onBack, onRestart }) {
   const [isUnlocked,    setIsUnlocked]    = useState(false)
   const [unlockedName,  setUnlockedName]  = useState('')
   const [pdfLoading,    setPdfLoading]    = useState(false)
+
+  const isDiscovering = formData.propertyMode === 'discovering'
+
   // E[X] for sticky header
   const resolvedIncome    = formData.netMonthlySalary > 0 ? formData.netMonthlySalary : formData.netIncome
   const incomeForHeader   = resolvedIncome || 0
@@ -1897,7 +2023,12 @@ export default function Step7Results({ formData, onBack, onRestart }) {
         ) : (
           <>
             {/* ── Binding Constraint Bars ─────────────── */}
-            <BindingConstraintBars profile={headerProfile} />
+            <BindingConstraintBars profile={headerProfile} isDiscovering={isDiscovering} />
+
+            {/* ── Discovery Budget Card (discovering mode only) ── */}
+            {isDiscovering && (
+              <DiscoveryBudgetCard profile={headerProfile} formData={formData} />
+            )}
 
             {/* ── Profile Breakdown Grid ──────────────── */}
             <ProfileBreakdownGrid formData={formData} profile={headerProfile} />

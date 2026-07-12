@@ -784,6 +784,13 @@ export function computeMortgageProfile(formData) {
   // eXStress: DSTI capacity at 5.89% stress rate (always ≤ eXBase; may exceed eX when LTV/DTI also bind)
   const eXStress = Math.max(0, isFinite(winner.maxByDSTI_stress) ? winner.maxByDSTI_stress : 0)
 
+  // krok_9: REVERZNI_DOPOCET_CENY_NEMOVITOSTI (discovery mode — no property defined)
+  // Derive max property price and minimum own funds from income-limited max loan.
+  // Uses age-based LTV only: ≤35 → 90%, 36+ → 80% (primary residence standard).
+  const discoveryLTVPct  = isYoung ? 90 : 80
+  const maxPropertyPrice = eX > 0 ? Math.round(eX / (discoveryLTVPct / 100)) : 0
+  const minOwnFunds      = maxPropertyPrice > 0 ? maxPropertyPrice - eX : 0
+
   // ── Derived legacy fields ─────────────────────────────────────────────────
   const annualIncome = effectiveIncome * 12
   const maxDTIVal    = getMaxDTI(propertyPurpose)
@@ -854,6 +861,8 @@ export function computeMortgageProfile(formData) {
     eX, eXStress, eXBase, varX, varCoeff,
     headroom, af, afDualStress, afStress,
     eXbyDSTI, eXbyDTI,
+    // krok_9 discovery outputs (valid whenever purchasePrice === 0)
+    discoveryLTVPct, maxPropertyPrice, minOwnFunds,
     // Risk
     bottleneck, riskStatus,
     // Per-bank results (new — Step 7 can surface these)
