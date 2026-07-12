@@ -224,6 +224,32 @@ function StratItem({ n, priority, color, title, text }) {
 /* ── Own Funds Verdict ────────────────────────────── */
 
 function OwnFundsCard({ formData, profile }) {
+  const isDiscovering = formData.propertyMode === 'discovering'
+
+  if (isDiscovering) {
+    const maxPP     = profile.maxPropertyPrice || 0
+    const minOF     = profile.minOwnFunds || 0
+    const ltvCap    = profile.discoveryLTVPct || 80
+    const ownPct    = 100 - ltvCap
+    return (
+      <View style={{ marginTop: 10 }}>
+        <Text style={S.secTitle}>Budget Estimate</Text>
+        <View style={[S.card, { flexDirection: 'row' }]}>
+          <View style={{ flex: 1, paddingRight: 10, marginRight: 10, borderRightWidth: 1, borderRightColor: BD }}>
+            <Text style={{ fontSize: 6, color: SU, marginBottom: 2 }}>Maximum Property Price</Text>
+            <Text style={{ fontSize: 13, fontFamily: 'Helvetica-Bold', color: IN }}>{maxPP > 0 ? czkS(maxPP) : '—'}</Text>
+            <Text style={{ fontSize: 6, color: MU, marginTop: 2 }}>at current borrowing capacity</Text>
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={{ fontSize: 6, color: SU, marginBottom: 2 }}>Minimum Own Funds Required</Text>
+            <Text style={{ fontSize: 13, fontFamily: 'Helvetica-Bold', color: IN }}>{minOF > 0 ? czkS(minOF) : '—'}</Text>
+            <Text style={{ fontSize: 6, color: MU, marginTop: 2 }}>{ownPct + '% of property price (LTV ' + ltvCap + '% cap)'}</Text>
+          </View>
+        </View>
+      </View>
+    )
+  }
+
   const pp      = Number(formData.purchasePrice) || 0
   const of      = Number(formData.ownFunds) || 0
   const maxLTV  = profile.maxLTVPct || 80
@@ -679,27 +705,41 @@ function PreApprovalChecklist({ formData }) {
 
 /* ── Binding Constraint Summary ───────────────────── */
 
-function BindingConstraintSummary({ profile }) {
+function BindingConstraintSummary({ profile, formData = {} }) {
   const { bottleneck, dstiAtEX, ltvPct, maxLTVPct, eX } = profile
-  const explanation = bottleneck === 'DSTI'
-    ? ('Debt service ratio is binding at ' + pctF(dstiAtEX) + '. Reducing monthly obligations or selecting a lender with a higher DSTI cap directly increases available capacity.')
-    : bottleneck === 'DI'
-    ? ('Disposable income (after living costs and obligations) is the binding constraint at ' + pctF(dstiAtEX) + ' debt service. Reducing monthly commitments is the highest-impact action.')
-    : bottleneck === 'LTV'
-    ? ('LTV is binding at ' + ltvPct.toFixed(0) + '% vs a ' + maxLTVPct + '% cap. Increasing own funds by 5% directly unlocks additional borrowing capacity.')
-    : bottleneck === 'DTI'
-    ? 'Total debt-to-income ratio is the binding constraint. Reducing outstanding loan balances or increasing the annual income base are the highest-return actions before application.'
-    : ('Profile is within all primary limits. Maximum loan of ' + czkS(eX) + ' reflects income capacity and the best available DSTI ceiling.')
+  const isDiscovering = formData.propertyMode === 'discovering'
+
+  const genericLabel = { DSTI: 'Income Capacity', DI: 'Debt Load', DTI: 'Debt Multiplier', AGE: 'Loan Term', LTV: 'Equity Position' }
+
+  const explanation = isDiscovering
+    ? (bottleneck === 'DSTI' || bottleneck === 'DI'
+        ? ('Income capacity is the key variable — at ' + pctF(dstiAtEX) + ' utilisation. Reducing monthly obligations or increasing recognised income directly expands your property budget.')
+        : bottleneck === 'AGE'
+        ? 'The maximum loan term is constrained by age — this caps the monthly payment the lender can structure, which in turn limits the total loan.'
+        : ('Profile is within all primary limits. Borrowing capacity of ' + czkS(eX) + ' reflects income capacity and the best available limit ceiling.'))
+    : (bottleneck === 'DSTI'
+        ? ('Debt service ratio is binding at ' + pctF(dstiAtEX) + '. Reducing monthly obligations or selecting a lender with a higher DSTI cap directly increases available capacity.')
+        : bottleneck === 'DI'
+        ? ('Disposable income (after living costs and obligations) is the binding constraint at ' + pctF(dstiAtEX) + ' debt service. Reducing monthly commitments is the highest-impact action.')
+        : bottleneck === 'LTV'
+        ? ('LTV is binding at ' + ltvPct.toFixed(0) + '% vs a ' + maxLTVPct + '% cap. Increasing own funds by 5% directly unlocks additional borrowing capacity.')
+        : bottleneck === 'DTI'
+        ? 'Total debt-to-income ratio is the binding constraint. Reducing outstanding loan balances or increasing the annual income base are the highest-return actions before application.'
+        : ('Profile is within all primary limits. Maximum loan of ' + czkS(eX) + ' reflects income capacity and the best available DSTI ceiling.'))
+
   const accentColor = bottleneck === 'LTV' ? RK : bottleneck ? WA : OK
+  const titleText = isDiscovering
+    ? (bottleneck ? ('Primary Factor: ' + (genericLabel[bottleneck] ?? bottleneck)) : 'All Capacity Limits Within Range')
+    : (bottleneck ? ('Binding: ' + bottleneck) : 'All Constraints Within Limits')
 
   return (
     <View>
-      <Text style={S.secTitle}>Binding Constraint Summary</Text>
+      <Text style={S.secTitle}>{isDiscovering ? 'Capacity Summary' : 'Binding Constraint Summary'}</Text>
       <View style={[S.card, { flexDirection: 'row', alignItems: 'center' }]}>
         <View style={{ width: 3, backgroundColor: accentColor, alignSelf: 'stretch', borderRadius: 2, marginRight: 10 }} />
         <View style={{ flex: 1 }}>
           <Text style={{ fontSize: 7.5, fontFamily: 'Helvetica-Bold', color: IN, marginBottom: 3 }}>
-            {bottleneck ? ('Binding: ' + bottleneck) : 'All Constraints Within Limits'}
+            {titleText}
           </Text>
           <Text style={{ fontSize: 7, color: MU, lineHeight: 1.4 }}>{explanation}</Text>
         </View>
@@ -829,7 +869,9 @@ function Page1({ ctx }) {
     eX, eXStress, eXBase, dstiAtEX, ltvPct, maxLTVPct,
     bottleneck, winnerBank, bankResults, maturity,
     existingDebt, effectiveIncome, riskStatus,
+    maxPropertyPrice, minOwnFunds,
   } = profile
+  const isDiscovering = formData.propertyMode === 'discovering'
 
   const scColor  = scCol(score)
   const riskBand = { zelena: 'Low Risk', oranzova: 'Moderate Risk', cervena: 'Higher Risk' }[riskStatus] || 'Under Assessment'
@@ -840,11 +882,17 @@ function Page1({ ctx }) {
   const stressDST = effectiveIncome > 0
     ? Math.min(99, ((stressPay + (existingDebt || 0)) / effectiveIncome) * 100) : 0
 
-  const bars = [
-    { label: 'Debt Service (DSTI)', sub: `Test A at ${CONTRACT_RATE_PA}% contract rate`,         value: dstiAtEX,  limit: dstiLim, binding: bottleneck === 'DSTI' || bottleneck === 'DI' },
-    { label: `Stress Test / DI`,    sub: `Test B at ${DUAL_STRESS_RATE_PA}% · income after costs`, value: stressDST, limit: dstiLim, binding: bottleneck === 'DSTI' || bottleneck === 'DI' },
-    { label: 'LTV (Loan-to-Value)', sub: 'against collateral cap',                               value: ltvPct,    limit: maxLTVPct, binding: bottleneck === 'LTV' },
-  ]
+  const bars = isDiscovering
+    ? [
+        { label: 'Income Capacity', sub: `debt service at contract rate · limit ${dstiLim.toFixed(0)}%`,       value: dstiAtEX,  limit: dstiLim, binding: bottleneck === 'DSTI' },
+        { label: 'Debt Load',       sub: `obligation ratio at stress rate · same limit ${dstiLim.toFixed(0)}%`, value: stressDST, limit: dstiLim, binding: bottleneck === 'DI' },
+        { label: 'Loan Term',       sub: 'age-based maturity cap',                                              value: maturity?.maxYears > 0 ? (maturity.maxYears / 40) * 100 : 0, limit: 100, binding: bottleneck === 'AGE' },
+      ]
+    : [
+        { label: 'Debt Service (DSTI)', sub: `Test A at ${CONTRACT_RATE_PA}% contract rate`,           value: dstiAtEX,  limit: dstiLim,   binding: bottleneck === 'DSTI' || bottleneck === 'DI' },
+        { label: 'Stress Test / DI',    sub: `Test B at ${DUAL_STRESS_RATE_PA}% · income after costs`, value: stressDST, limit: dstiLim,   binding: bottleneck === 'DSTI' || bottleneck === 'DI' },
+        { label: 'LTV (Loan-to-Value)', sub: 'against collateral cap',                                 value: ltvPct,    limit: maxLTVPct, binding: bottleneck === 'LTV' },
+      ]
 
   const residLbl = {
     eu: 'EU Citizen', permanent: 'Permanent Res.',
@@ -878,24 +926,37 @@ function Page1({ ctx }) {
           {/* Max loan + base rate + stress capacity */}
           <View style={{ flex: 1 }}>
             <View style={{ marginBottom: 10, paddingBottom: 10, borderBottomWidth: 1, borderBottomColor: '#334155' }}>
-              <Text style={S.heroLbl}>Estimated Maximum Loan</Text>
+              <Text style={S.heroLbl}>{isDiscovering ? 'Borrowing Capacity' : 'Estimated Maximum Loan'}</Text>
               <Text style={S.heroNum}>{czkS(eX)}</Text>
               <Text style={S.heroSub}>{'Based on ' + czkS(effectiveIncome) + '/mo recognised income'}</Text>
             </View>
-            {eXBase > 0 && eXBase !== eX && (
-              <View style={{ marginBottom: 10, paddingBottom: 10, borderBottomWidth: 1, borderBottomColor: '#334155' }}>
-                <Text style={S.heroLbl}>Base Rate · {CONTRACT_RATE_PA}%</Text>
-                <Text style={[S.heroNum, { fontSize: 15, color: SU }]}>{czkS(eXBase)}</Text>
-                <Text style={S.heroSub}>DSTI capacity before stress reduction</Text>
-              </View>
-            )}
-            {eXStress > 0 && (
-              <View>
-                <Text style={S.heroLbl}>Stress Capacity · {DUAL_STRESS_RATE_PA}%</Text>
-                <Text style={[S.heroNum, { fontSize: 15, color: SU }]}>{czkS(eXStress)}</Text>
-                <Text style={S.heroSub}>DSTI capacity at stress rate (pre LTV/DTI cap)</Text>
-              </View>
-            )}
+            {isDiscovering
+              ? (maxPropertyPrice > 0 && (
+                  <View>
+                    <Text style={S.heroLbl}>Target Property Price</Text>
+                    <Text style={[S.heroNum, { fontSize: 15, color: SU }]}>{czkS(maxPropertyPrice)}</Text>
+                    <Text style={S.heroSub}>{minOwnFunds > 0 ? czkS(minOwnFunds) + ' min. own funds required' : 'max. price at current capacity'}</Text>
+                  </View>
+                ))
+              : (
+                  <>
+                    {eXBase > 0 && eXBase !== eX && (
+                      <View style={{ marginBottom: 10, paddingBottom: 10, borderBottomWidth: 1, borderBottomColor: '#334155' }}>
+                        <Text style={S.heroLbl}>Base Rate · {CONTRACT_RATE_PA}%</Text>
+                        <Text style={[S.heroNum, { fontSize: 15, color: SU }]}>{czkS(eXBase)}</Text>
+                        <Text style={S.heroSub}>DSTI capacity before stress reduction</Text>
+                      </View>
+                    )}
+                    {eXStress > 0 && (
+                      <View>
+                        <Text style={S.heroLbl}>Stress Capacity · {DUAL_STRESS_RATE_PA}%</Text>
+                        <Text style={[S.heroNum, { fontSize: 15, color: SU }]}>{czkS(eXStress)}</Text>
+                        <Text style={S.heroSub}>DSTI capacity at stress rate (pre LTV/DTI cap)</Text>
+                      </View>
+                    )}
+                  </>
+                )
+            }
           </View>
 
           <View style={S.heroDiv} />
@@ -904,8 +965,12 @@ function Page1({ ctx }) {
           <View style={{ width: 100 }}>
             <Text style={S.heroLbl}>Risk Band</Text>
             <Text style={{ fontSize: 9.5, fontFamily: 'Helvetica-Bold', color: WH, marginBottom: 12 }}>{riskBand}</Text>
-            <Text style={S.heroLbl}>Binding Constraint</Text>
-            <Text style={{ fontSize: 9.5, fontFamily: 'Helvetica-Bold', color: WA }}>{bottleneck || 'Within Limits'}</Text>
+            <Text style={S.heroLbl}>{isDiscovering ? 'Primary Factor' : 'Binding Constraint'}</Text>
+            <Text style={{ fontSize: 9.5, fontFamily: 'Helvetica-Bold', color: WA }}>
+              {isDiscovering
+                ? ({ DSTI: 'Income Capacity', DI: 'Debt Load', DTI: 'Debt Multiplier', AGE: 'Loan Term', LTV: 'Equity Position' }[bottleneck] ?? (bottleneck || 'Within Range'))
+                : (bottleneck || 'Within Limits')}
+            </Text>
           </View>
 
         </View>
@@ -948,11 +1013,20 @@ function Page1({ ctx }) {
               <Text style={S.pVal}>{effectiveIncome > 0 ? czkS(effectiveIncome) + '/mo' : '—'}</Text>
               <Text style={S.pSub}>{formData.entityType === 'osvc' ? 'Turnover-based' : 'Net salary'}</Text>
             </View>
-            <View style={S.pCard}>
-              <Text style={S.pLbl}>Property</Text>
-              <Text style={S.pVal}>{czkS(formData.purchasePrice)}</Text>
-              <Text style={S.pSub}>{own + ' own funds · LTV ' + ltvPct.toFixed(0) + '%'}</Text>
-            </View>
+            {isDiscovering
+              ? (
+                <View style={S.pCard}>
+                  <Text style={S.pLbl}>Budget Range</Text>
+                  <Text style={S.pVal}>{maxPropertyPrice > 0 ? czkS(maxPropertyPrice) : '—'}</Text>
+                  <Text style={S.pSub}>{minOwnFunds > 0 ? czkS(minOwnFunds) + ' min. own funds' : 'max. property price'}</Text>
+                </View>
+              ) : (
+                <View style={S.pCard}>
+                  <Text style={S.pLbl}>Property</Text>
+                  <Text style={S.pVal}>{czkS(formData.purchasePrice)}</Text>
+                  <Text style={S.pSub}>{own + ' own funds · LTV ' + ltvPct.toFixed(0) + '%'}</Text>
+                </View>
+              )}
           </View>
         </View>
 
@@ -991,7 +1065,7 @@ function Page2({ ctx }) {
 
       <PreApprovalChecklist formData={formData} />
 
-      <BindingConstraintSummary profile={profile} />
+      <BindingConstraintSummary profile={profile} formData={formData} />
 
       <Ftr today={today} />
     </Page>
@@ -1002,7 +1076,8 @@ function Page2({ ctx }) {
 
 function Page3({ ctx }) {
   const { formData, profile, score, today } = ctx
-  const { bottleneck, redFlags, ltvPct, maxLTVPct, eX, eXStress, dstiAtEX } = profile
+  const { bottleneck, redFlags, ltvPct, maxLTVPct, eX, eXStress, dstiAtEX, maxPropertyPrice, minOwnFunds } = profile
+  const isDiscovering = formData.propertyMode === 'discovering'
 
   const actions = []
 
@@ -1014,7 +1089,7 @@ function Page3({ ctx }) {
     })
   }
 
-  if (bottleneck === 'LTV' || ltvPct > maxLTVPct * 0.92) {
+  if (!isDiscovering && (bottleneck === 'LTV' || ltvPct > maxLTVPct * 0.92)) {
     actions.push({
       priority: 'High Impact', color: WA,
       title: 'Increase Down-Payment',
@@ -1049,6 +1124,14 @@ function Page3({ ctx }) {
     })
   }
 
+  if (isDiscovering && actions.length < 2) {
+    actions.push({
+      priority: 'Next Step', color: OK,
+      title: 'Explore Properties Within Budget',
+      text: 'Your borrowing capacity supports a maximum property price of ' + (maxPropertyPrice > 0 ? czkS(maxPropertyPrice) : 'as calculated') + '. With ' + (minOwnFunds > 0 ? czkS(minOwnFunds) : 'the required own funds') + ' available, you can begin shortlisting properties within this budget range.',
+    })
+  }
+
   while (actions.length < 2) {
     actions.push({
       priority: score >= 75 ? 'Next Step' : 'Recommended', color: OK,
@@ -1059,18 +1142,27 @@ function Page3({ ctx }) {
     })
   }
 
+  const chips = isDiscovering
+    ? [
+        { lbl: 'Borrowing Capacity',  val: czkS(eX) },
+        { lbl: 'Max. Property Price', val: maxPropertyPrice > 0 ? czkS(maxPropertyPrice) : '—' },
+        { lbl: 'Income Capacity',     val: pctF(dstiAtEX) },
+        { lbl: 'Readiness Score',     val: score + ' / 100' },
+      ]
+    : [
+        { lbl: 'Max Loan',                     val: czkS(eX) },
+        { lbl: `Stress Cap ${DUAL_STRESS_RATE_PA}%`, val: eXStress > 0 ? czkS(eXStress) : czkS(eX) },
+        { lbl: 'DSTI',                         val: pctF(dstiAtEX) },
+        { lbl: 'Readiness Score',              val: score + ' / 100' },
+      ]
+
   return (
     <Page size="A4" style={S.page}>
       <Hdr label="Strategy and Next Steps" n={3} total={3} />
 
       {/* Metric chips */}
       <View style={{ flexDirection: 'row', marginBottom: 8 }}>
-        {[
-          { lbl: 'Max Loan',           val: czkS(eX) },
-          { lbl: `Stress Cap ${DUAL_STRESS_RATE_PA}%`, val: eXStress > 0 ? czkS(eXStress) : czkS(eX) },
-          { lbl: 'DSTI',               val: pctF(dstiAtEX) },
-          { lbl: 'Readiness Score',    val: score + ' / 100' },
-        ].map(({ lbl, val }, i) => (
+        {chips.map(({ lbl, val }, i) => (
           <View key={lbl} style={[S.chip, i < 3 && { marginRight: 6 }]}>
             <Text style={S.chipLbl}>{lbl}</Text>
             <Text style={S.chipVal}>{val}</Text>
