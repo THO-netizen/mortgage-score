@@ -356,6 +356,8 @@ function ScoreGauge({ score, color }) {
         className="gauge-glow"
         style={{ transition: 'stroke-dashoffset 1.4s cubic-bezier(.4,0,.2,1)' }}
       />
+      {/* Dark inner fill so score text is always readable regardless of container bg */}
+      <circle cx="80" cy="80" r="28" fill="#0F172A" />
       <text x="80" y="76" textAnchor="middle"
         fill="#FFFFFF" fontSize="30" fontWeight="800"
         fontFamily="Manrope, Inter, sans-serif">{score}</text>
