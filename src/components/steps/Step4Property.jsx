@@ -97,6 +97,8 @@ export default function Step4Property({ data, onChange, onBack, onContinue }) {
       onChange('ownFunds',      0)
       setPurchasePriceRaw('')
       setOwnFundsRaw('')
+      // Navigate immediately — no property fields required in discovery mode
+      onContinue()
     } else {
       // Restore sensible defaults so the LTV bar has something to show
       onChange('purchasePrice', 5_500_000)
