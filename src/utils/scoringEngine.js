@@ -671,6 +671,9 @@ export function computeMortgageProfile(formData) {
 
   const age       = Number(applicantAge)
   const isYoung   = age < FIRST_HOME_LTV_AGE_THRESHOLD
+  // In discovery mode age only drives krok_9 LTV% (90 vs 80) — NOT per-bank DSTI limits.
+  // Using standard (36+) DSTI limits for all ages ensures bonita is age-neutral in discovery.
+  const isYoungForBonita = isDiscoveryMode ? false : isYoung
   // RB restricts to 0.45 DSTI for non-EU/non-permanent applicants
   const isForeigner = !['eu', 'permanent'].includes(residenceStatus)
 
@@ -699,8 +702,9 @@ export function computeMortgageProfile(formData) {
   const afStress     = afDualStress                                             // alias — same rate
 
   // ── Obligations (base — KK coeff applied per bank below) ─────────────────
-  const splatky  = Number(monthlyLoanPayments) + Number(monthlyLeasing) + Number(otherObligations)
-  const kkLimits = Number(creditCardLimits)
+  // || 0 guards against null / '' / NaN from unfilled optional fields
+  const splatky  = (Number(monthlyLoanPayments) || 0) + (Number(monthlyLeasing) || 0) + (Number(otherObligations) || 0)
+  const kkLimits = Number(creditCardLimits) || 0
   const cc5      = Math.round(kkLimits * 0.05)   // display field (standard 5%)
 
   // ── Living costs for DI test (krok_3) ────────────────────────────────────
@@ -722,7 +726,7 @@ export function computeMortgageProfile(formData) {
       ? perBankIncome[key]
       : effectiveIncome
 
-    const effectiveDSTI = getBankEffectiveDSTI(key, bIncome, isYoung, isForeigner, ltvPct)
+    const effectiveDSTI = getBankEffectiveDSTI(key, bIncome, isYoungForBonita, isForeigner, ltvPct)
     const totalObl      = splatky + kkLimits * koefKK   // KTK not collected → 0
 
     // krok_2 — Test A: DSTI at contract rate (4.89%)
