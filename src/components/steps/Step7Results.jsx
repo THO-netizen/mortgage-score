@@ -357,7 +357,7 @@ function ScoreGauge({ score, color }) {
         style={{ transition: 'stroke-dashoffset 1.4s cubic-bezier(.4,0,.2,1)' }}
       />
       <text x="80" y="76" textAnchor="middle"
-        fill="#0F172A" fontSize="30" fontWeight="800"
+        fill="#FFFFFF" fontSize="30" fontWeight="800"
         fontFamily="Manrope, Inter, sans-serif">{score}</text>
       <text x="80" y="96" textAnchor="middle"
         fill="#94A3B8" fontSize="11"
