@@ -290,7 +290,9 @@ function OwnFundsCard({ formData, profile }) {
 /* ── Liabilities Card ─────────────────────────────── */
 
 function LiabilitiesCard({ formData, profile }) {
-  const debt    = Number(formData.monthlyLoanPayments) || 0
+  // Use engine's existingDebt (splatky + cc5) — includes loan repayments,
+  // leasing, other obligations, and 5% of credit card limits.
+  const debt    = profile.existingDebt || 0
   const income  = profile.effectiveIncome || 1
   const debtPct = income > 1 ? (debt / income * 100) : 0
   const eX      = profile.eX || 0
@@ -309,7 +311,7 @@ function LiabilitiesCard({ formData, profile }) {
             {debt > 0 ? czkS(debt) + '/mo' : 'None'}
           </Text>
           <Text style={{ fontSize: 6, color: MU, marginTop: 2 }}>
-            {debt > 0 ? (debtPct.toFixed(0) + '% of recognised income') : 'No existing loan payments'}
+            {debt > 0 ? (debtPct.toFixed(0) + '% of recognised income') : 'No existing obligations'}
           </Text>
         </View>
         <View style={{ flex: 1, paddingRight: 10, marginRight: 10, borderRightWidth: 1, borderRightColor: BD }}>
