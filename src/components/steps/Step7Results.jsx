@@ -1663,9 +1663,9 @@ function HeroVerdictPost({ score, cfg, profile, formData }) {
         <p className="text-[10px] font-bold tracking-widest uppercase text-ink-subtle mb-5">Your Assessment Result</p>
         <div className="flex flex-col sm:flex-row items-start gap-6 sm:gap-8">
 
-          {/* Score gauge */}
+          {/* Score number */}
           <div className="flex items-center gap-4 flex-shrink-0">
-            <ScoreGauge score={score} color={cfg.color} />
+            <p className="font-display text-[72px] font-black text-blue-900 leading-none tabular-nums w-36 text-center flex-shrink-0">{score}</p>
             <div className="min-w-0">
               <p className="text-[10px] text-ink-subtle uppercase tracking-wide mb-0.5">Readiness Score</p>
               <p className="font-display text-xl font-black text-ink leading-tight">{cfg.label}</p>
