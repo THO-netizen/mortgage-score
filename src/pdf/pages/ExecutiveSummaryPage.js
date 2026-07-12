@@ -21,7 +21,7 @@ export function drawExecutiveSummaryPage(doc, ctx) {
 
   heroMetric(doc, 'Readiness Score', `${score} / 100`, scoreLabel(score), M, y, metW)
   heroMetric(doc, 'Max Loan (E[X])', czkShort(eX), 'At contract rate (4.89% p.a.)', M + metW + 2, y, metW)
-  heroMetric(doc, 'Stress-Tested Max', czkShort(eXStress), 'At stressed rate (6.89% p.a.)', M + (metW + 2) * 2, y, metW)
+  heroMetric(doc, 'Stress-Tested Max', czkShort(eXStress), 'At stressed rate (5.89% p.a.)', M + (metW + 2) * 2, y, metW)
   y += 36
 
   // ── Secondary metrics row ─────────────────────────────

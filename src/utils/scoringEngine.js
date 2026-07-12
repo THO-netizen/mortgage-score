@@ -27,7 +27,7 @@ export const PAYOFF_AGES = {
 // Contractual & stressed interest rates — business override: stress premium = +1 pp (not spec's +2 pp)
 export const CONTRACT_RATE_PA      = 4.89   // % p.a. — Test A (DSTI formula at contract rate)
 export const DUAL_STRESS_RATE_PA   = CONTRACT_RATE_PA + 1.0   // 5.89% — Test B (DI formula at stress rate)
-export const STRESS_RATE_PA        = 6.89   // % p.a. — reference only (not used in calculations)
+export const STRESS_RATE_PA        = DUAL_STRESS_RATE_PA   // alias — equals 5.89% (business override)
 
 // Turnover recognition default (spec v3.0: 0.70 is the standard per mBank/ČS/RB/UCB)
 // KB/ČSOB use taxable-profit base — use same 0.70 as a conservative fallback.
@@ -641,7 +641,7 @@ export function computeVarianceCoeff(formData) {
 /**
  * Runs the full Dvojtest underwriting model per spec v3.0:
  *   krok_2 Test A (DSTI): max_loan = (DSTI_limit × income − obligations) × PV_factor(4.89%)
- *   krok_3 Test B (DI):   max_loan = (income − living_costs − 5%reserve − obligations) × PV_factor(6.89%)
+ *   krok_3 Test B (DI):   max_loan = (income − living_costs − 5%reserve − obligations) × PV_factor(5.89%)
  *   krok_4 bonita[bank] = MIN(Test A, Test B)
  *   krok_5 DTI cap
  *   krok_6 LTV cap (only when purchasePrice > 0; skipped otherwise → Infinity)
@@ -686,9 +686,9 @@ export function computeMortgageProfile(formData) {
 
   // ── Annuity factors: PV factor = loan / monthly_payment ──────────────────
   // loan = payment × PV_factor  →  max_loan = free_payment × PV_factor
-  // spec v3.0: only two rates — 4.89% (Test A) and 6.89% (Test B/DI stress)
+  // Two rates: 4.89% (Test A / DSTI) and 5.89% (Test B / DI stress = contract + 1 pp)
   const af           = annuityFactor(CONTRACT_RATE_PA,    maturity.maxMonths)  // 4.89% — Test A (DSTI)
-  const afDualStress = annuityFactor(DUAL_STRESS_RATE_PA, maturity.maxMonths)  // 6.89% — Test B (DI stress)
+  const afDualStress = annuityFactor(DUAL_STRESS_RATE_PA, maturity.maxMonths)  // 5.89% — Test B (DI stress)
   const afStress     = afDualStress                                             // alias — same rate
 
   // ── Obligations (base — KK coeff applied per bank below) ─────────────────
@@ -726,9 +726,8 @@ export function computeMortgageProfile(formData) {
       maxByDSTI = Math.round(volnaSplatka * af)
     }
 
-    // krok_3 — Test B: Disponibilní příjem (DI) at stress rate (6.89%)
-    // max_uver_dle_DI = (income − living_costs − reserve − obligations) / annuity_factor_6.89%
-    // This is the ONLY correct Test B per spec v3.0 — NOT a DSTI@stress formula.
+    // krok_3 — Test B: Disponibilní příjem (DI) at stress rate (5.89% = contract + 1 pp)
+    // max_uver_dle_DI = (income − living_costs − reserve − obligations) / annuity_factor_5.89%
     const disponibilni   = Math.max(0, bIncome - livingCosts - reserve - totalObl)
     const maxByDI        = Math.round(disponibilni * afDualStress)
     const maxByDSTI_stress = maxByDI   // alias kept for backward-compat in bankResults object
@@ -772,7 +771,7 @@ export function computeMortgageProfile(formData) {
   const eX       = Math.max(0, winner.maxLoan)
   // eXBase:   Test A capacity (DSTI@4.89%) — always ≥ eX when DTI/LTV also bind
   const eXBase   = Math.max(0, isFinite(winner.maxByDSTI) ? winner.maxByDSTI : eX)
-  // eXStress: Test B capacity (DI@6.89%) — disponibilní příjem limit (pre LTV/DTI caps)
+  // eXStress: Test B capacity (DI@5.89%) — disponibilní příjem limit (pre LTV/DTI caps)
   const eXStress = Math.max(0, isFinite(winner.maxByDI)   ? winner.maxByDI   : 0)
 
   // krok_9: REVERZNI_DOPOCET_CENY_NEMOVITOSTI (discovery mode — no property defined)

@@ -135,7 +135,7 @@ export function drawConstraintAnalysisPage(doc, ctx) {
 
   const bottleneckText = {
     DSTI: `The Debt Service-to-Income ratio (DSTI) is the binding constraint. At ${pct(dstiAtEX)} utilisation against the 45% ceiling, available headroom is ${pct(45 - (dstiAtEX ?? 0))}. This is driven by the combination of recognised income (${czk(effectiveIncome)}/mo) and existing obligations (${czk(existingDebt ?? 0)}/mo). Reducing monthly obligations or increasing recognised income are the primary levers.`,
-    DI:   `The Stressed Income test (Test B at 6.89%) is the binding constraint — it produces a lower maximum than the DSTI test. This reflects Czech regulation requiring banks to use the more conservative of the two results. Increasing income or extending the loan term are the most direct responses.`,
+    DI:   `The Stressed Income test (Test B at 5.89%) is the binding constraint — it produces a lower maximum than the DSTI test. This reflects Czech regulation requiring banks to use the more conservative of the two results. Increasing income or extending the loan term are the most direct responses.`,
     DTI:  `The Debt-to-Income multiple (DTI) is the binding constraint — the total loan would exceed ${maxDTIVal}× annual income. This is a volume constraint rather than a monthly payment constraint. The only lever is increasing recognised annual income, which expands the DTI headroom directly.`,
     LTV:  `Loan-to-Value is the binding constraint. Income capacity supports a larger loan, but the purchase structure hits the ${maxLTVPct}% LTV ceiling. The remedy is increased own funds — each CZK 100,000 added to the deposit reduces LTV and can unlock additional loan capacity within income limits.`,
   }

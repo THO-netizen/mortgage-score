@@ -117,7 +117,7 @@ export function buildExpertCommentary(formData, profile, score) {
   if (eX > 0 && eXStress > 0) {
     const stressPct = ((eX - eXStress) / eX * 100).toFixed(0)
     paragraphs.push(
-      `The stress-tested loan capacity — computed at a 6.89% rate (contract rate plus 200 basis points) — is ${czkShort(eXStress)}, representing a ${stressPct}% reduction from the contractual-rate maximum. ` +
+      `The stress-tested loan capacity — computed at a 5.89% rate (contract rate plus 100 basis points) — is ${czkShort(eXStress)}, representing a ${stressPct}% reduction from the contractual-rate maximum. ` +
       `Czech banks use the more conservative of the two test results (DSTI at contract rate vs. DI at stressed rate) as the binding limit, which is the methodology reflected in this assessment.`
     )
   }
@@ -306,7 +306,7 @@ export function buildFinalSummary(formData, profile, score) {
   )
 
   bullets.push(
-    `Maximum assessed loan: ${czkShort(eX)} (E[X] at contract rate). Stress-tested floor: ${czkShort(eXStress)} at 6.89% p.a. The binding constraint is ${bottleneck ?? 'the DSTI ceiling'}.`
+    `Maximum assessed loan: ${czkShort(eX)} (E[X] at contract rate). Stress-tested floor: ${czkShort(eXStress)} at 5.89% p.a. The binding constraint is ${bottleneck ?? 'the DSTI ceiling'}.`
   )
 
   if (feasible) {

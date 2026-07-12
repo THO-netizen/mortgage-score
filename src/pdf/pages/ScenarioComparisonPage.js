@@ -102,7 +102,7 @@ export function drawScenarioComparisonPage(doc, ctx) {
   doc.text('HOW SCENARIOS ARE CALCULATED', M, y)
   y += 6
 
-  const note = 'Each scenario applies the same Czech bank dual-test methodology (DSTI at 4.89% / DI at 6.89%) to the modified input, taking the minimum of the two test results as the binding maximum loan. Changes to income directly expand DSTI headroom; changes to debt reduce the monthly obligation load that competes with the mortgage payment; changes to own funds shift the LTV position and may unlock higher loan caps.'
+  const note = 'Each scenario applies the same Czech bank dual-test methodology (DSTI at 4.89% / DI at 5.89%) to the modified input, taking the minimum of the two test results as the binding maximum loan. Changes to income directly expand DSTI headroom; changes to debt reduce the monthly obligation load that competes with the mortgage payment; changes to own funds shift the LTV position and may unlock higher loan caps.'
   y = bodyText(doc, note, y, { size: 8.5, lineH: 5 })
 
   y += 4
