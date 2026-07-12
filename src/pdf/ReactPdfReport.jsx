@@ -682,7 +682,9 @@ function PreApprovalChecklist({ formData }) {
 function BindingConstraintSummary({ profile }) {
   const { bottleneck, dstiAtEX, ltvPct, maxLTVPct, eX } = profile
   const explanation = bottleneck === 'DSTI'
-    ? ('DSTI is binding at ' + pctF(dstiAtEX) + '. Reducing monthly obligations or selecting a lender with a higher DSTI cap directly increases available capacity.')
+    ? ('Debt service ratio is binding at ' + pctF(dstiAtEX) + '. Reducing monthly obligations or selecting a lender with a higher DSTI cap directly increases available capacity.')
+    : bottleneck === 'DI'
+    ? ('Disposable income (after living costs and obligations) is the binding constraint at ' + pctF(dstiAtEX) + ' debt service. Reducing monthly commitments is the highest-impact action.')
     : bottleneck === 'LTV'
     ? ('LTV is binding at ' + ltvPct.toFixed(0) + '% vs a ' + maxLTVPct + '% cap. Increasing own funds by 5% directly unlocks additional borrowing capacity.')
     : bottleneck === 'DTI'
@@ -839,9 +841,9 @@ function Page1({ ctx }) {
     ? Math.min(99, ((stressPay + (existingDebt || 0)) / effectiveIncome) * 100) : 0
 
   const bars = [
-    { label: 'Debt Service (DSTI)', sub: `at ${CONTRACT_RATE_PA}% fixation rate`,       value: dstiAtEX,  limit: dstiLim, binding: bottleneck === 'DSTI' },
-    { label: `Stress Test (+1%)`,   sub: `at ${DUAL_STRESS_RATE_PA}% · limit ${dstiLim.toFixed(0)}%`, value: stressDST, limit: dstiLim, binding: bottleneck === 'DSTI' },
-    { label: 'LTV (Loan-to-Value)', sub: 'against collateral cap',                       value: ltvPct,    limit: maxLTVPct, binding: bottleneck === 'LTV' },
+    { label: 'Debt Service (DSTI)', sub: `Test A at ${CONTRACT_RATE_PA}% contract rate`,         value: dstiAtEX,  limit: dstiLim, binding: bottleneck === 'DSTI' || bottleneck === 'DI' },
+    { label: `Stress Test / DI`,    sub: `Test B at ${DUAL_STRESS_RATE_PA}% · income after costs`, value: stressDST, limit: dstiLim, binding: bottleneck === 'DSTI' || bottleneck === 'DI' },
+    { label: 'LTV (Loan-to-Value)', sub: 'against collateral cap',                               value: ltvPct,    limit: maxLTVPct, binding: bottleneck === 'LTV' },
   ]
 
   const residLbl = {
@@ -1018,11 +1020,13 @@ function Page3({ ctx }) {
       title: 'Increase Down-Payment',
       text: 'LTV is binding at ' + ltvPct.toFixed(0) + '% vs a ' + maxLTVPct + '% cap. Increasing own funds by 5-10% expands borrowing capacity and improves rate pricing.',
     })
-  } else if (bottleneck === 'DSTI') {
+  } else if (bottleneck === 'DSTI' || bottleneck === 'DI') {
     actions.push({
       priority: 'High Impact', color: WA,
       title: 'Reduce Monthly Obligation Load',
-      text: 'Debt service ratio is the binding constraint. Closing credit card limits and paying down revolving credit directly increases DSTI headroom before application.',
+      text: bottleneck === 'DI'
+        ? 'Disposable income after living costs is the binding limit. Clearing credit card limits and paying down revolving debt expands capacity — each freed CZK of monthly budget multiplies significantly into additional loan headroom.'
+        : 'Debt service ratio is the binding constraint. Closing credit card limits and paying down revolving credit directly increases DSTI headroom before application.',
     })
   }
 

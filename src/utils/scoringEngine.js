@@ -24,10 +24,10 @@ export const PAYOFF_AGES = {
   kb:    75,   // Komerční banka — most generous (= PAYOFF_AGE_MAX)
 }
 
-// Contractual & stressed interest rates (spec v4.0, updated 2026)
-export const CONTRACT_RATE_PA      = 4.89   // % p.a. — used in DSTI test (Test A)
-export const DUAL_STRESS_RATE_PA   = CONTRACT_RATE_PA + 1.0   // 5.89% — Test B: same DSTI formula at +1 pp
-export const STRESS_RATE_PA        = 6.89   // % p.a. — legacy DI test / eXStress display reference only
+// Contractual & stressed interest rates — spec v3.0 (stres_prirazka_pa = 0.02 → +2 pp)
+export const CONTRACT_RATE_PA      = 4.89   // % p.a. — Test A (DSTI formula at contract rate)
+export const DUAL_STRESS_RATE_PA   = CONTRACT_RATE_PA + 2.0   // 6.89% — Test B (DI formula at stress rate)
+export const STRESS_RATE_PA        = 6.89   // % p.a. — alias; equals DUAL_STRESS_RATE_PA
 
 // Turnover recognition default (spec v3.0: 0.70 is the standard per mBank/ČS/RB/UCB)
 // KB/ČSOB use taxable-profit base — use same 0.70 as a conservative fallback.
@@ -639,12 +639,14 @@ export function computeVarianceCoeff(formData) {
 // ─── Master profile engine (spec v3.0 — Dvojtest) ────────────────────────────
 
 /**
- * Runs the full 2026 Dvojtest underwriting model:
- *   Test A (DSTI): max_loan = (DSTI × income − obligations) × PV_factor(4.89%)
- *   Test B (DI):   max_loan = (income − živnáklady − 5%reserve − obligations) × PV_factor(6.89%)
- *   bonita = MIN(A, B)
- *   max_loan[bank] = MIN(bonita, DTI_cap, LTV_cap)
- *   winner = bank with highest effective DSTI (→ highest achievable amount)
+ * Runs the full Dvojtest underwriting model per spec v3.0:
+ *   krok_2 Test A (DSTI): max_loan = (DSTI_limit × income − obligations) × PV_factor(4.89%)
+ *   krok_3 Test B (DI):   max_loan = (income − living_costs − 5%reserve − obligations) × PV_factor(6.89%)
+ *   krok_4 bonita[bank] = MIN(Test A, Test B)
+ *   krok_5 DTI cap
+ *   krok_6 LTV cap (only when purchasePrice > 0; skipped otherwise → Infinity)
+ *   krok_7 max_loan[bank] = MIN(bonita, DTI_cap, LTV_cap)
+ *   krok_8 winner = argmax_by_maxLoan (NOT argmax_by_DSTI per spec)
  *   eX = max_loan[winner]
  */
 export function computeMortgageProfile(formData) {
@@ -684,9 +686,10 @@ export function computeMortgageProfile(formData) {
 
   // ── Annuity factors: PV factor = loan / monthly_payment ──────────────────
   // loan = payment × PV_factor  →  max_loan = free_payment × PV_factor
-  const af           = annuityFactor(CONTRACT_RATE_PA,    maturity.maxMonths)  // 4.89%
-  const afDualStress = annuityFactor(DUAL_STRESS_RATE_PA, maturity.maxMonths)  // 5.89% — dual-rate Test B
-  const afStress     = annuityFactor(STRESS_RATE_PA,      maturity.maxMonths)  // 6.89% — DI display ref
+  // spec v3.0: only two rates — 4.89% (Test A) and 6.89% (Test B/DI stress)
+  const af           = annuityFactor(CONTRACT_RATE_PA,    maturity.maxMonths)  // 4.89% — Test A (DSTI)
+  const afDualStress = annuityFactor(DUAL_STRESS_RATE_PA, maturity.maxMonths)  // 6.89% — Test B (DI stress)
+  const afStress     = afDualStress                                             // alias — same rate
 
   // ── Obligations (base — KK coeff applied per bank below) ─────────────────
   const splatky  = Number(monthlyLoanPayments) + Number(monthlyLeasing) + Number(otherObligations)
@@ -715,74 +718,62 @@ export function computeMortgageProfile(formData) {
     const effectiveDSTI = getBankEffectiveDSTI(key, bIncome, isYoung, isForeigner, ltvPct)
     const totalObl      = splatky + kkLimits * koefKK   // KTK not collected → 0
 
-    // Test A — DSTI at contract rate (4.89%)
+    // krok_2 — Test A: DSTI at contract rate (4.89%)
+    // max_uver_dle_DSTI = (DSTI_limit × income − obligations) / annuity_factor_4.89%
     let maxByDSTI = Infinity
     if (effectiveDSTI !== null) {
       const volnaSplatka = Math.max(0, effectiveDSTI * bIncome - totalObl)
       maxByDSTI = Math.round(volnaSplatka * af)
     }
 
-    // Test B — DSTI at stress rate (contract + 1pp = 5.89%); same DSTI limit, higher rate
-    let maxByDSTI_stress = Infinity
-    if (effectiveDSTI !== null) {
-      const volnaSplatka = Math.max(0, effectiveDSTI * bIncome - totalObl)
-      maxByDSTI_stress = Math.round(volnaSplatka * afDualStress)
-    }
+    // krok_3 — Test B: Disponibilní příjem (DI) at stress rate (6.89%)
+    // max_uver_dle_DI = (income − living_costs − reserve − obligations) / annuity_factor_6.89%
+    // This is the ONLY correct Test B per spec v3.0 — NOT a DSTI@stress formula.
+    const disponibilni   = Math.max(0, bIncome - livingCosts - reserve - totalObl)
+    const maxByDI        = Math.round(disponibilni * afDualStress)
+    const maxByDSTI_stress = maxByDI   // alias kept for backward-compat in bankResults object
 
-    // DI reference (6.89%) — kept for eXStress display only, not binding
-    const disponibilni = Math.max(0, bIncome - livingCosts - reserve - totalObl)
-    const maxByDI      = Math.round(disponibilni * afStress)
-
-    // krok_4: dual-rate bonita = MIN(DSTI@4.89%, DSTI@5.89%)
-    // afDualStress < af → maxByDSTI_stress ≤ maxByDSTI, so bonita = maxByDSTI_stress for DSTI banks
-    const bonita = Math.min(maxByDSTI, maxByDSTI_stress)
+    // krok_4: bonita = MIN(Test A, Test B) per spec — takes the lower of the two
+    const bonita = Math.min(maxByDSTI, maxByDI)
 
     // krok_5: DTI cap
     const maxByDTI = isFinite(dtiLim) ? Math.round(bIncome * 12 * dtiLim) : Infinity
 
-    // krok_6: LTV cap
+    // krok_6: LTV cap — Infinity when purchasePrice = 0 (discovery mode → skip)
     const maxByLTV = isFinite(ltvCapLoan) ? Math.round(ltvCapLoan) : Infinity
 
     // krok_7: bank result
     const maxLoan = Math.max(0, Math.min(bonita, maxByDTI, maxByLTV))
 
-    // Binding constraint label (dual-rate: both tests are DSTI-based)
+    // Binding constraint (internal — never shown to client per PRAVIDLO_ANONYMITY)
     let binding
-    if (maxByLTV < bonita && maxByLTV <= maxByDTI) binding = 'LTV'
-    else if (maxByDTI < bonita)                    binding = 'DTI'
-    else                                           binding = 'DSTI'
+    if      (maxByLTV < bonita && maxByLTV <= maxByDTI) binding = 'LTV'
+    else if (maxByDTI < bonita)                         binding = 'DTI'
+    else if (maxByDI  < maxByDSTI)                      binding = 'DI'
+    else                                                binding = 'DSTI'
 
     bankResults[key] = { effectiveDSTI, maxByDSTI, maxByDSTI_stress, maxByDI, bonita, maxByDTI, maxLoan, binding }
   }
 
-  // ── krok_8: select winning bank ───────────────────────────────────────────
-  // Primary sort: highest effectiveDSTI; tie → highest maxLoan
-  // UCB has null DSTI — compared purely on maxLoan
+  // ── krok_8: select winning bank (argmax by maxLoan per spec v3.0) ──────────
+  // Spec: "vitezna_banka = argmax_po_bankach(max_uver[banka])"
+  // NOT argmax(DSTI) — highest DSTI does not guarantee highest amount when other limits bind.
   let winnerKey  = BANK_KEYS[0]
-  let winnerDSTI = bankResults[BANK_KEYS[0]].effectiveDSTI ?? -1
   let winnerLoan = bankResults[BANK_KEYS[0]].maxLoan
 
   for (const key of BANK_KEYS.slice(1)) {
-    const r    = bankResults[key]
-    const dsti = r.effectiveDSTI ?? -1
-    if (dsti > winnerDSTI || (dsti === winnerDSTI && r.maxLoan > winnerLoan)) {
+    if (bankResults[key].maxLoan > winnerLoan) {
       winnerKey  = key
-      winnerDSTI = dsti
-      winnerLoan = r.maxLoan
+      winnerLoan = bankResults[key].maxLoan
     }
   }
-  // Let UCB compete on pure maxLoan (overrides DSTI winner only if strictly higher)
-  if ((bankResults['ucb']?.maxLoan ?? 0) > winnerLoan) {
-    winnerKey  = 'ucb'
-    winnerLoan = bankResults['ucb'].maxLoan
-  }
 
-  const winner = bankResults[winnerKey]
+  const winner   = bankResults[winnerKey]
   const eX       = Math.max(0, winner.maxLoan)
-  // eXBase:   DSTI capacity at 4.89% (before stress test reduction — always ≥ eXStress)
+  // eXBase:   Test A capacity (DSTI@4.89%) — always ≥ eX when DTI/LTV also bind
   const eXBase   = Math.max(0, isFinite(winner.maxByDSTI) ? winner.maxByDSTI : eX)
-  // eXStress: DSTI capacity at 5.89% stress rate (always ≤ eXBase; may exceed eX when LTV/DTI also bind)
-  const eXStress = Math.max(0, isFinite(winner.maxByDSTI_stress) ? winner.maxByDSTI_stress : 0)
+  // eXStress: Test B capacity (DI@6.89%) — disponibilní příjem limit (pre LTV/DTI caps)
+  const eXStress = Math.max(0, isFinite(winner.maxByDI)   ? winner.maxByDI   : 0)
 
   // krok_9: REVERZNI_DOPOCET_CENY_NEMOVITOSTI (discovery mode — no property defined)
   // Derive max property price and minimum own funds from income-limited max loan.
@@ -815,12 +806,13 @@ export function computeMortgageProfile(formData) {
   const varCoeff = computeVarianceCoeff(formData)
   const varX     = Math.round(eX * varCoeff)
 
-  // ── Bottleneck ────────────────────────────────────────────────────────────
+  // ── Bottleneck (profile-level — internal; generic label shown to client) ──
+  // Values: 'DSTI' | 'DI' | 'DTI' | 'LTV' | 'AGE'
   let bottleneck
-  if      (ltvBreached)              bottleneck = 'LTV'
-  else if (dtiBreached)              bottleneck = 'DTI'
+  if      (ltvBreached)                          bottleneck = 'LTV'
+  else if (dtiBreached)                          bottleneck = 'DTI'
   else if (age > 50 && maturity.maxMonths < 300) bottleneck = 'AGE'
-  else                               bottleneck = winner.binding
+  else                                           bottleneck = winner.binding
 
   // ── Risk matrix ───────────────────────────────────────────────────────────
   let riskStatus = 'zelena'

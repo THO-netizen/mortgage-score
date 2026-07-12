@@ -380,7 +380,8 @@ function RiskMatrix({ formData, simNetIncome }) {
   const bottleneckDesc = {
     LTV:  `LTV ${ltvPct.toFixed(0)}% exceeds ${maxLTVPct}% cap`,
     DTI:  `DTI ${dtiRatio.toFixed(1)}× exceeds ${maxDTIVal}× limit`,
-    DSTI: `DSTI ${dstiAtEX.toFixed(0)}% at or near 45% CNB ceiling`,
+    DSTI: `Debt service ratio ${dstiAtEX.toFixed(0)}% at or near 45% ČNB ceiling`,
+    DI:   `Disposable income (after living costs & reserve) is the binding constraint`,
     AGE:  `Age constraint limits maturity to ${maturity.maxYears} years`,
   }[bottleneck] ?? 'Profile within all limits'
 
@@ -1200,12 +1201,14 @@ function HeadlineVerdict({ score, cfg, profile, formData }) {
   const insightSentence = (() => {
     if (eX <= 0) return 'Enter your income to see your full borrowing capacity estimate.'
     if (isDiscovering) {
-      if (bottleneck === 'DSTI' || bottleneck === 'DTI')
+      if (bottleneck === 'DSTI' || bottleneck === 'DI' || bottleneck === 'DTI')
         return `Your ${genericBottleneckLabel} is the key constraint. Reducing monthly obligations before applying would directly expand your budget range.`
       return `Based on your income, you can target a property up to ${formatCZKShort(maxPropertyPrice)} with ${discoveryLTVPct}% financing.`
     }
     if (bottleneck === 'LTV')
       return 'Your down-payment is the key lever — increasing own funds directly expands your maximum loan.'
+    if (bottleneck === 'DI')
+      return 'Your disposable income after living costs and obligations is the binding constraint. Reducing monthly commitments is the highest-impact action.'
     if (bottleneck === 'DTI')
       return 'Your total debt load is the binding constraint. Reducing existing obligations before applying will have the highest impact on capacity.'
     if (formData.entityType === 'osvc')
@@ -1327,17 +1330,17 @@ function BindingConstraintBars({ profile, isDiscovering = false }) {
     : [
         {
           label:    'Debt Service (DSTI)',
-          sub:      `at ${CONTRACT_RATE_PA}% fixation rate · limit ${dstiLimit.toFixed(0)}%`,
+          sub:      `Test A at ${CONTRACT_RATE_PA}% contract rate · limit ${dstiLimit.toFixed(0)}%`,
           value:    dstiAtEX,
           limit:    dstiLimit,
-          isActive: bottleneck === 'DSTI',
+          isActive: bottleneck === 'DSTI' || bottleneck === 'DI',
         },
         {
-          label:    'Stress Test (+1%)',
-          sub:      `at ${DUAL_STRESS_RATE_PA}% stress rate · same DSTI limit ${dstiLimit.toFixed(0)}%`,
+          label:    'Stress Test / DI',
+          sub:      `Test B at ${DUAL_STRESS_RATE_PA}% stress rate · income after living costs & obligations`,
           value:    stressDSTI,
           limit:    dstiLimit,
-          isActive: bottleneck === 'DSTI',
+          isActive: bottleneck === 'DSTI' || bottleneck === 'DI',
         },
         {
           label:    'LTV (Loan-to-Value)',
@@ -1535,7 +1538,9 @@ function RecommendedStrategy({ score, profile, formData }) {
     actions.push({
       priority: 'High Impact', color: '#F59E0B',
       title: 'Reduce Monthly Obligation Load',
-      text: 'Debt service ratio is the binding constraint. Closing credit card limits and paying down loans before application directly increases available DSTI headroom.',
+      text: bottleneck === 'DI'
+        ? 'Disposable income after living costs is the binding limit. Closing credit card limits and clearing loans before application directly expands available capacity — each CZK of freed monthly budget multiplies to significant additional loan headroom.'
+        : 'Debt service ratio is the binding constraint. Closing credit card limits and paying down loans before application directly increases available DSTI headroom.',
     })
   } else if (bottleneck === 'DTI') {
     actions.push({
@@ -1635,6 +1640,8 @@ function HeroVerdictPost({ score, cfg, profile, formData }) {
         : 'Your income capacity and debt load are within qualifying bounds for the estimated budget range shown above.'
       : bottleneck === 'LTV'
         ? 'Your loan-to-value ratio is the primary constraint — increasing your down-payment is the single highest-impact action to expand capacity.'
+        : bottleneck === 'DI'
+        ? 'Your disposable income (after living costs and obligations) is the binding constraint — reducing monthly commitments before application is the highest-impact action.'
         : bottleneck === 'DSTI'
         ? 'Debt service ratio is the binding constraint; reducing monthly obligations before application directly expands available borrowing capacity.'
         : bottleneck === 'DTI'
