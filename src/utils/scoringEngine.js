@@ -24,10 +24,10 @@ export const PAYOFF_AGES = {
   kb:    75,   // Komerční banka — most generous (= PAYOFF_AGE_MAX)
 }
 
-// Contractual & stressed interest rates — spec v3.0 (stres_prirazka_pa = 0.02 → +2 pp)
+// Contractual & stressed interest rates — business override: stress premium = +1 pp (not spec's +2 pp)
 export const CONTRACT_RATE_PA      = 4.89   // % p.a. — Test A (DSTI formula at contract rate)
-export const DUAL_STRESS_RATE_PA   = CONTRACT_RATE_PA + 2.0   // 6.89% — Test B (DI formula at stress rate)
-export const STRESS_RATE_PA        = 6.89   // % p.a. — alias; equals DUAL_STRESS_RATE_PA
+export const DUAL_STRESS_RATE_PA   = CONTRACT_RATE_PA + 1.0   // 5.89% — Test B (DI formula at stress rate)
+export const STRESS_RATE_PA        = 6.89   // % p.a. — reference only (not used in calculations)
 
 // Turnover recognition default (spec v3.0: 0.70 is the standard per mBank/ČS/RB/UCB)
 // KB/ČSOB use taxable-profit base — use same 0.70 as a conservative fallback.
