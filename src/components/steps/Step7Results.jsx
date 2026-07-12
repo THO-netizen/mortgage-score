@@ -523,7 +523,7 @@ function DiscoveryBudgetCard({ profile, formData }) {
       <div className="bg-card p-5 sm:p-6 space-y-4">
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div className="sm:col-span-2 rounded-xl border border-brand-200 bg-brand-50/40 p-5">
-            <p className="text-[10px] font-bold uppercase tracking-wide text-brand-600 mb-1">Max Property Price</p>
+            <p className="text-[10px] font-bold uppercase tracking-wide text-brand-600 mb-1">Estimated Property Budget</p>
             <p className="font-display text-3xl sm:text-4xl font-black text-brand-800 tabular-nums">
               {formatCZKShort(maxPropertyPrice)}
             </p>
@@ -1203,7 +1203,7 @@ function HeadlineVerdict({ score, cfg, profile, formData }) {
     if (isDiscovering) {
       if (bottleneck === 'DSTI' || bottleneck === 'DI' || bottleneck === 'DTI')
         return `Your ${genericBottleneckLabel} is the key constraint. Reducing monthly obligations before applying would directly expand your budget range.`
-      return `Based on your income, you can target a property up to ${formatCZKShort(maxPropertyPrice)} with ${discoveryLTVPct}% financing.`
+      return `Your estimated maximum loan is ${formatCZKShort(eX)}. See the Budget Discovery section below for the estimated property price range.`
     }
     if (bottleneck === 'LTV')
       return 'Your down-payment is the key lever — increasing own funds directly expands your maximum loan.'
@@ -1245,22 +1245,13 @@ function HeadlineVerdict({ score, cfg, profile, formData }) {
             <div className="grid grid-cols-2 gap-4 sm:gap-8">
               <div>
                 <p className="text-[10px] font-bold tracking-widest uppercase text-slate-500 mb-1">
-                  {isDiscovering ? 'Borrowing Capacity' : 'Estimated Maximum Loan'}
+                  Maximum Loan Estimate
                 </p>
                 <p className="font-display text-2xl sm:text-3xl font-black text-white tabular-nums leading-tight">
                   {eX > 0 ? formatCZKShort(eX) : '—'}
                 </p>
               </div>
-              {isDiscovering && maxPropertyPrice > 0 ? (
-                <div>
-                  <p className="text-[10px] font-bold tracking-widest uppercase text-slate-500 mb-1">
-                    Target Property Price
-                  </p>
-                  <p className="font-display text-xl sm:text-2xl font-black text-slate-300 tabular-nums leading-tight">
-                    {formatCZKShort(maxPropertyPrice)}
-                  </p>
-                </div>
-              ) : (eXBase > 0 && eXBase !== eX) ? (
+              {!isDiscovering && (eXBase > 0 && eXBase !== eX) ? (
                 <div>
                   <p className="text-[10px] font-bold tracking-widest uppercase text-slate-500 mb-1">
                     Base Rate · {CONTRACT_RATE_PA}%
@@ -1628,7 +1619,7 @@ function HeroVerdictPost({ score, cfg, profile, formData }) {
   const summary = (() => {
     const s1 = isDiscovering
       ? eX > 0
-        ? `Based on your income profile, your estimated borrowing capacity is ${formatCZKShort(eX)}, allowing you to target properties up to ${formatCZKShort(maxPropertyPrice)} with a minimum own funds contribution of ${formatCZKShort(minOwnFunds)} (${discoveryLTVPct}% financing).`
+        ? `Based on your income profile, your estimated maximum loan is ${formatCZKShort(eX)}. See the Budget Discovery section for your estimated property price range and minimum own funds required.`
         : 'Your profile has been assessed under Czech bank dual-test methodology.'
       : eX > 0
         ? `Based on your profile, you qualify for an estimated maximum loan of ${formatCZKShort(eX)} under the dual-rate stress test (${CONTRACT_RATE_PA}% / ${DUAL_STRESS_RATE_PA}%). The lower of the two results is applied.`
@@ -1690,20 +1681,13 @@ function HeroVerdictPost({ score, cfg, profile, formData }) {
             <div className="grid grid-cols-2 gap-4 sm:gap-6 mb-4">
               <div>
                 <p className="text-[10px] text-ink-subtle uppercase tracking-wide mb-1">
-                  {isDiscovering ? 'Borrowing Capacity' : 'Estimated Maximum Loan'}
+                  Maximum Loan Estimate
                 </p>
                 <p className="font-display text-2xl font-black text-ink tabular-nums leading-tight">
                   {eX > 0 ? formatCZKShort(eX) : '—'}
                 </p>
               </div>
-              {isDiscovering && maxPropertyPrice > 0 ? (
-                <div>
-                  <p className="text-[10px] text-ink-subtle uppercase tracking-wide mb-1">Target Property Price</p>
-                  <p className="font-display text-xl font-black text-ink-muted tabular-nums leading-tight">
-                    {formatCZKShort(maxPropertyPrice)}
-                  </p>
-                </div>
-              ) : (eXBase > 0 && eXBase !== eX) ? (
+              {!isDiscovering && (eXBase > 0 && eXBase !== eX) ? (
                 <div>
                   <p className="text-[10px] text-ink-subtle uppercase tracking-wide mb-1">Base Rate · {CONTRACT_RATE_PA}%</p>
                   <p className="font-display text-xl font-black text-ink-muted tabular-nums leading-tight">

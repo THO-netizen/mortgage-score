@@ -236,9 +236,9 @@ function OwnFundsCard({ formData, profile }) {
         <Text style={S.secTitle}>Budget Estimate</Text>
         <View style={[S.card, { flexDirection: 'row' }]}>
           <View style={{ flex: 1, paddingRight: 10, marginRight: 10, borderRightWidth: 1, borderRightColor: BD }}>
-            <Text style={{ fontSize: 6, color: SU, marginBottom: 2 }}>Maximum Property Price</Text>
+            <Text style={{ fontSize: 6, color: SU, marginBottom: 2 }}>Estimated Property Budget</Text>
             <Text style={{ fontSize: 13, fontFamily: 'Helvetica-Bold', color: IN }}>{maxPP > 0 ? czkS(maxPP) : '—'}</Text>
-            <Text style={{ fontSize: 6, color: MU, marginTop: 2 }}>at current borrowing capacity</Text>
+            <Text style={{ fontSize: 6, color: MU, marginTop: 2 }}>at current maximum loan capacity</Text>
           </View>
           <View style={{ flex: 1 }}>
             <Text style={{ fontSize: 6, color: SU, marginBottom: 2 }}>Minimum Own Funds Required</Text>
@@ -928,19 +928,11 @@ function Page1({ ctx }) {
           {/* Max loan + base rate + stress capacity */}
           <View style={{ flex: 1 }}>
             <View style={{ marginBottom: 10, paddingBottom: 10, borderBottomWidth: 1, borderBottomColor: '#334155' }}>
-              <Text style={S.heroLbl}>{isDiscovering ? 'Borrowing Capacity' : 'Estimated Maximum Loan'}</Text>
+              <Text style={S.heroLbl}>Maximum Loan Estimate</Text>
               <Text style={S.heroNum}>{czkS(eX)}</Text>
               <Text style={S.heroSub}>{'Based on ' + czkS(effectiveIncome) + '/mo recognised income'}</Text>
             </View>
-            {isDiscovering
-              ? (maxPropertyPrice > 0 && (
-                  <View>
-                    <Text style={S.heroLbl}>Target Property Price</Text>
-                    <Text style={[S.heroNum, { fontSize: 15, color: SU }]}>{czkS(maxPropertyPrice)}</Text>
-                    <Text style={S.heroSub}>{minOwnFunds > 0 ? czkS(minOwnFunds) + ' min. own funds required' : 'max. price at current capacity'}</Text>
-                  </View>
-                ))
-              : (
+            {!isDiscovering && (
                   <>
                     {eXBase > 0 && eXBase !== eX && (
                       <View style={{ marginBottom: 10, paddingBottom: 10, borderBottomWidth: 1, borderBottomColor: '#334155' }}>
@@ -1018,9 +1010,9 @@ function Page1({ ctx }) {
             {isDiscovering
               ? (
                 <View style={S.pCard}>
-                  <Text style={S.pLbl}>Budget Range</Text>
+                  <Text style={S.pLbl}>Est. Property Budget</Text>
                   <Text style={S.pVal}>{maxPropertyPrice > 0 ? czkS(maxPropertyPrice) : '—'}</Text>
-                  <Text style={S.pSub}>{minOwnFunds > 0 ? czkS(minOwnFunds) + ' min. own funds' : 'max. property price'}</Text>
+                  <Text style={S.pSub}>{minOwnFunds > 0 ? czkS(minOwnFunds) + ' min. own funds' : 'indicative max. price'}</Text>
                 </View>
               ) : (
                 <View style={S.pCard}>
@@ -1146,10 +1138,10 @@ function Page3({ ctx }) {
 
   const chips = isDiscovering
     ? [
-        { lbl: 'Borrowing Capacity',  val: czkS(eX) },
-        { lbl: 'Max. Property Price', val: maxPropertyPrice > 0 ? czkS(maxPropertyPrice) : '—' },
-        { lbl: 'Income Capacity',     val: pctF(dstiAtEX) },
-        { lbl: 'Readiness Score',     val: score + ' / 100' },
+        { lbl: 'Maximum Loan',          val: czkS(eX) },
+        { lbl: 'Est. Property Budget',  val: maxPropertyPrice > 0 ? czkS(maxPropertyPrice) : '—' },
+        { lbl: 'Income Capacity',       val: pctF(dstiAtEX) },
+        { lbl: 'Readiness Score',       val: score + ' / 100' },
       ]
     : [
         { lbl: 'Max Loan',                     val: czkS(eX) },
