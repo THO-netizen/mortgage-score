@@ -671,9 +671,12 @@ export function computeMortgageProfile(formData) {
 
   const age       = Number(applicantAge)
   const isYoung   = age < FIRST_HOME_LTV_AGE_THRESHOLD
-  // In discovery mode age only drives krok_9 LTV% (90 vs 80) — NOT per-bank DSTI limits.
-  // Using standard (36+) DSTI limits for all ages ensures bonita is age-neutral in discovery.
-  const isYoungForBonita = isDiscoveryMode ? false : isYoung
+  // Age is ONLY a variable for the LTV constant:
+  //   krok_6 → getMaxLTV(propertyPurpose, age)   — 70 / 80 / 90%
+  //   krok_9 → discoveryLTVPct = isYoung ? 90 : 80
+  // It must NOT affect per-bank DSTI limits (bonita). Both property modes
+  // share the same bonita algorithm; age-based DSTI variation is removed entirely.
+  const isYoungForBonita = false
   // RB restricts to 0.45 DSTI for non-EU/non-permanent applicants
   const isForeigner = !['eu', 'permanent'].includes(residenceStatus)
 
