@@ -653,8 +653,7 @@ export function computeMortgageProfile(formData) {
   const {
     applicantAge        = 35,
     numberOfApplicants  = 1,
-    purchasePrice       = 0,
-    ownFunds            = 0,
+    propertyMode        = 'defined',
     propertyPurpose     = 'primary',
     monthlyLoanPayments = 0,
     creditCardLimits    = 0,
@@ -662,6 +661,13 @@ export function computeMortgageProfile(formData) {
     otherObligations    = 0,
     residenceStatus     = '',
   } = formData
+
+  // Discovery mode bypass: krok_6 (LTV cap) is unconditionally skipped when
+  // propertyMode='discovering'. Force purchasePrice=0 regardless of form state
+  // so ltvCapLoan=Infinity and maxByLTV=Infinity in every per-bank calculation.
+  const isDiscoveryMode = propertyMode === 'discovering'
+  const purchasePrice   = isDiscoveryMode ? 0 : Number(formData.purchasePrice ?? 0)
+  const ownFunds        = isDiscoveryMode ? 0 : Number(formData.ownFunds ?? 0)
 
   const age       = Number(applicantAge)
   const isYoung   = age < FIRST_HOME_LTV_AGE_THRESHOLD
@@ -672,12 +678,13 @@ export function computeMortgageProfile(formData) {
   const incomeResult = computeEffectiveIncome(formData)
   const { effectiveIncome, baseIncome, haircut, flags, redFlags, perBankIncome = {} } = incomeResult
 
-  // ── LTV ──────────────────────────────────────────────────────────────────
-  const loanAmount  = Math.max(0, Number(purchasePrice) - Number(ownFunds))
+  // ── LTV — krok_6 ─────────────────────────────────────────────────────────
+  // purchasePrice=0 in discovery mode → ltvCapLoan=Infinity → maxByLTV=Infinity
+  const loanAmount  = Math.max(0, purchasePrice - ownFunds)
   const ltvPct      = purchasePrice > 0 ? (loanAmount / purchasePrice) * 100 : 0
   const maxLTVPct   = getMaxLTV(propertyPurpose, age)
   const ltvBreached = purchasePrice > 0 && ltvPct > maxLTVPct
-  const ltvCapLoan  = purchasePrice > 0 ? (maxLTVPct / 100) * Number(purchasePrice) : Infinity
+  const ltvCapLoan  = purchasePrice > 0 ? (maxLTVPct / 100) * purchasePrice : Infinity
 
   // ── Max maturity ─────────────────────────────────────────────────────────
   // Use standard (30yr) cap by default. The 40yr extension is mBank-specific and

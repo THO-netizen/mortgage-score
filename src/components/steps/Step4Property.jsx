@@ -85,8 +85,8 @@ export default function Step4Property({ data, onChange, onBack, onContinue }) {
     ? Math.ceil(parsedPurchasePrice * ((100 - maxLTVPct) / 100)) - parsedOwnFunds
     : 0
 
-  // canContinue: discovery → just timeline; defined → purpose + timeline
-  const canContinue = isDiscovering ? !!purchaseTimeline : !!propertyPurpose && !!purchaseTimeline
+  // canContinue: discovery → always true (mode switch auto-navigates); defined → purpose + timeline
+  const canContinue = isDiscovering ? true : !!propertyPurpose && !!purchaseTimeline
 
   // ── Switch mode ────────────────────────────────────────
   function switchMode(mode) {

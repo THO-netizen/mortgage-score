@@ -377,6 +377,7 @@ export default function App() {
                   {currentStep === 4 && (
                     <Step4Property
                       data={{
+                        propertyMode:     formData.propertyMode,
                         purchasePrice:    formData.purchasePrice,
                         ownFunds:         formData.ownFunds,
                         propertyPurpose:  formData.propertyPurpose,
