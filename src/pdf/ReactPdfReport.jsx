@@ -1383,14 +1383,11 @@ function MortgageDoc({ formData, userName }) {
   const profile  = computeMortgageProfile(merged)
   const today    = new Date().toLocaleDateString('en-GB', { year: 'numeric', month: 'long', day: 'numeric' })
   const ctx      = { formData: merged, profile, score, today }
-  const isDiscovering = merged.propertyMode === 'discovering'
-
   return (
     <Document title="Mortgage Score Assessment" author="MortgageScore.cz" subject="Mortgage Pre-Scoring Report">
-      {isDiscovering
-        ? <DiscoveryPage ctx={ctx} />
-        : [<Page1 key="p1" ctx={ctx} />, <Page2 key="p2" ctx={ctx} />, <Page3 key="p3" ctx={ctx} />]
-      }
+      <Page1 ctx={ctx} />
+      <Page2 ctx={ctx} />
+      <Page3 ctx={ctx} />
     </Document>
   )
 }
