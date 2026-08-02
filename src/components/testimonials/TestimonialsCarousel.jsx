@@ -1,101 +1,92 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react'
-import { ChevronLeft, ChevronRight, Play } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Play, ExternalLink } from 'lucide-react'
 import { carouselRegistry } from '../../hooks/carouselRegistry.js'
+import { VIDEO_LIBRARY, TOPIC_LABELS } from '../../data/videoLibrary.js'
 
-const VIDEOS = [
-  {
-    id: '3043071172518775',
-    title: 'Escrow: Protect Your Money',
-    desc: 'How escrow protects buyers and sellers during a Czech property transaction.',
-    category: 'process',
-  },
-  {
-    id: '1154782076481763',
-    title: 'Never Sign Before Pre-Approval',
-    desc: 'Getting pre-approved can save you from losing your reservation deposit.',
-    category: 'strategy',
-  },
-  {
-    id: '637035798952912',
-    title: 'Personal Ownership vs Cooperative',
-    desc: 'Not every apartment can be financed with a mortgage.',
-    category: 'property',
-  },
-  {
-    id: '1100785461993862',
-    title: 'Bank Valuation Can Change Everything',
-    desc: 'Banks lend based on their own valuation, not the purchase price.',
-    category: 'financing',
-  },
-  {
-    id: '24632646016359230',
-    title: 'Why Two People Get Different Rates',
-    desc: 'What influences the rate you receive from the same bank.',
-    category: 'financing',
-  },
-  {
-    id: '1339104001172260',
-    title: 'How Much Mortgage Can You Get?',
-    desc: 'The basic rule banks use for estimating borrowing capacity.',
-    category: 'capacity',
-  },
-  {
-    id: '2586878941676335',
-    title: 'Repay Your Mortgage Faster',
-    desc: 'Czech law allows 25% annual repayment without penalties.',
-    category: 'strategy',
-  },
-  {
-    id: '1150390016931385',
-    title: '1% Rate Difference = Over 1M CZK',
-    desc: 'Why choosing the right lender matters long-term.',
-    category: 'financing',
-  },
-  {
-    id: '2953344864850635',
-    title: 'Know Your Budget Before Hunting',
-    desc: 'Start with your mortgage capacity, not property listings.',
-    category: 'capacity',
-  },
-  {
-    id: '1577214269933680',
-    title: 'Why Was Your Mortgage Rejected?',
-    desc: 'How DSTI, DTI and bank methodology change outcomes.',
-    category: 'capacity',
-  },
-]
+const VIDEOS = VIDEO_LIBRARY.filter(v => v.available)
 
-const VideoCard = React.memo(function VideoCard({ id, title, desc }) {
-  const reelUrl = `https://www.facebook.com/reel/${id}/`
+const VideoCard = React.memo(function VideoCard({ video }) {
+  const [playing, setPlaying] = useState(false)
+  const topicLabel = video.topics?.[0]
+    ? TOPIC_LABELS[video.topics[0]] || video.topics[0]
+    : null
 
   return (
-    <a
-      href={reelUrl}
-      target="_blank"
-      rel="noopener noreferrer"
-      className="group block rounded-xl border border-border/60 bg-white overflow-hidden transition-all duration-200 hover:border-border-strong hover:shadow-md"
-      aria-label={`Watch: ${title}`}
-    >
-      {/* Thumbnail area with play button */}
-      <div className="relative aspect-video bg-dark-900 flex items-center justify-center">
-        <div className="absolute inset-0 bg-gradient-to-br from-dark-800 to-dark-900" />
-        <div className="relative w-12 h-12 rounded-full bg-white/10 border border-white/20 flex items-center justify-center transition-all duration-200 group-hover:bg-white/20 group-hover:scale-110">
-          <Play size={18} className="text-white ml-0.5" fill="currentColor" />
-        </div>
-        <span className="absolute bottom-2 right-2 text-[10px] text-white/60 bg-black/40 px-1.5 py-0.5 rounded">
-          Video
-        </span>
-      </div>
+    <div className="group block rounded-xl border border-border/60 bg-white overflow-hidden transition-all duration-200 hover:border-border-strong hover:shadow-md">
+      {/* Poster / Player area */}
+      <button
+        type="button"
+        onClick={() => setPlaying(true)}
+        className="relative w-full aspect-video bg-dark-900 focus:outline-none focus:ring-2 focus:ring-bronze/40"
+        aria-label={`Play video: ${video.title}`}
+      >
+        {playing ? (
+          <iframe
+            src={`https://www.facebook.com/plugins/video.php?href=${encodeURIComponent(video.facebookUrl)}&show_text=false`}
+            className="absolute inset-0 w-full h-full"
+            style={{ border: 'none' }}
+            allow="autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share"
+            allowFullScreen
+            title={video.title}
+          />
+        ) : (
+          <>
+            {/* Branded poster */}
+            <div className="absolute inset-0 bg-gradient-to-br from-[#1a2332] to-[#0F172A] flex flex-col items-center justify-center px-4">
+              <div
+                className="absolute inset-0 pointer-events-none"
+                style={{
+                  opacity: 0.05,
+                  backgroundImage:
+                    'linear-gradient(rgba(255,255,255,.4) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.4) 1px, transparent 1px)',
+                  backgroundSize: '24px 24px',
+                }}
+              />
+              {topicLabel && (
+                <span className="relative z-10 mb-2 px-2.5 py-0.5 rounded-full text-[10px] font-medium bg-white/10" style={{ color: '#C9A96E' }}>
+                  {topicLabel}
+                </span>
+              )}
+              <p className="relative z-10 font-display text-[13px] font-bold text-white text-center leading-snug max-w-[180px]">
+                {video.title}
+              </p>
+            </div>
+            {/* Play button */}
+            <div className="absolute inset-0 z-20 flex items-center justify-center pointer-events-none">
+              <div className="w-11 h-11 rounded-full bg-white/90 flex items-center justify-center shadow-lg transition-transform duration-200 group-hover:scale-110">
+                <Play size={16} className="text-dark-900 ml-0.5" fill="#0F172A" />
+              </div>
+            </div>
+            {/* Duration */}
+            {video.duration && (
+              <span className="absolute bottom-2 right-2 z-20 text-[10px] text-white/80 bg-black/50 px-1.5 py-0.5 rounded backdrop-blur-sm">
+                {video.duration}
+              </span>
+            )}
+          </>
+        )}
+      </button>
+
       {/* Content */}
       <div className="p-3.5">
-        <p className="text-[13px] font-semibold text-ink leading-snug mb-1 line-clamp-2 group-hover:text-dark-700">
-          {title}
+        <p className="text-[13px] font-semibold text-ink leading-snug mb-1 line-clamp-2">
+          {video.title}
         </p>
         <p className="text-[11px] text-ink-muted leading-relaxed line-clamp-2">
-          {desc}
+          {video.description}
         </p>
+        <a
+          href={video.facebookUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-1 mt-2 text-[11px] font-medium hover:underline min-h-[44px]"
+          style={{ color: '#C9A96E' }}
+        >
+          <ExternalLink size={10} />
+          Watch on Facebook
+        </a>
       </div>
-    </a>
+    </div>
   )
 })
 
@@ -154,13 +145,13 @@ export default function MortgageTipsLibrary() {
         {/* Header */}
         <div className="mb-8 sm:mb-10">
           <p className="text-[11px] font-semibold tracking-widest uppercase mb-2" style={{ color: '#C9A96E' }}>
-            Selected guidance
+            Expert guidance
           </p>
           <h2 className="font-display text-xl sm:text-2xl font-extrabold text-ink tracking-tight">
-            Videos for your situation
+            Mortgage insights library
           </h2>
           <p className="text-sm text-ink-muted mt-1 max-w-lg">
-            Short expert videos on Czech mortgage topics relevant to your assessment.
+            Short expert videos on Czech mortgage topics — from pre-approval to property handover.
           </p>
         </div>
 
@@ -190,7 +181,7 @@ export default function MortgageTipsLibrary() {
                 data-video-card=""
                 className="flex-shrink-0 w-[260px] sm:w-[280px] snap-start"
               >
-                <VideoCard {...v} />
+                <VideoCard video={v} />
               </div>
             ))}
             <div className="flex-shrink-0 w-4" aria-hidden="true" />

@@ -15,8 +15,9 @@ import {
   CONTRACT_RATE_PA, DUAL_STRESS_RATE_PA,
   LIVING_MIN_CZK, HOUSING_COSTS_CZK, RESERVE_KOEF, ZM_ADDITIONAL_ADULT_CZK,
 } from '../../utils/scoringEngine.js'
-import HowItWorks        from '../results/HowItWorks.jsx'
-import InlineLeadCapture from '../results/InlineLeadCapture.jsx'
+import HowItWorks            from '../results/HowItWorks.jsx'
+import InlineLeadCapture     from '../results/InlineLeadCapture.jsx'
+import VideoRecommendations  from '../results/VideoRecommendations.jsx'
 
 // ── Constants ──────────────────────────────────────────
 
@@ -2242,6 +2243,9 @@ export default function Step7Results({ formData, onBack, onRestart }) {
         </div>
 
         <JourneyTimeline />
+
+        {/* ── Personalized Video Recommendations ───── */}
+        <VideoRecommendations formData={formData} profile={headerProfile} score={score} />
 
         {/* ── Strategy call + PDF — combined CTA ───── */}
         <div className="rounded-2xl bg-dark-900 border border-white/10 px-4 sm:px-10 py-6 sm:py-8">
