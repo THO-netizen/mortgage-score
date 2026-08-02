@@ -1882,8 +1882,16 @@ function AccordionSection({ title, subtitle, icon: Icon, defaultOpen = false, ch
 // ── Main Results Dashboard ────────────────────────────
 
 export default function Step7Results({ formData, onBack, onRestart }) {
-  const score = computeScore(formData)
-  const cfg   = scoreCfg(score)
+  let score, cfg, headerProfile, maxLoanForHeader, essoProfile, essoHardBlock, essoMedRisk
+
+  try {
+    score = computeScore(formData)
+    cfg   = scoreCfg(score)
+  } catch (err) {
+    console.error('[Step7Results] computeScore failed:', err, { formData })
+    score = 0
+    cfg   = scoreCfg(0)
+  }
 
   const [isUnlocked,    setIsUnlocked]    = useState(false)
   const [unlockedName,  setUnlockedName]  = useState('')
@@ -1891,16 +1899,40 @@ export default function Step7Results({ formData, onBack, onRestart }) {
 
   const isDiscovering = formData.propertyMode === 'discovering'
 
-  // E[X] for sticky header
+  // E[X] for sticky header — resolve income for all entity types
   const resolvedIncome    = formData.netMonthlySalary > 0 ? formData.netMonthlySalary : formData.netIncome
   const incomeForHeader   = resolvedIncome || 0
-  const headerProfile     = computeMortgageProfile({ ...formData, netIncome: incomeForHeader })
-  const maxLoanForHeader  = headerProfile.eX
+
+  try {
+    headerProfile    = computeMortgageProfile({ ...formData, netIncome: incomeForHeader })
+    maxLoanForHeader = headerProfile.eX
+  } catch (err) {
+    console.error('[Step7Results] computeMortgageProfile failed:', err, { formData, incomeForHeader })
+    headerProfile = {
+      eX: 0, eXStress: 0, eXBase: 0, varX: 0, varCoeff: 0, dstiAtEX: 0, tentativeDSTI: 0,
+      effectiveIncome: 0, baseIncome: 0, haircut: 1, flags: [], redFlags: [], perBankIncome: {},
+      existingDebt: 0, cc5: 0, householdExpenses: 0, numberOfApplicants: 1, livingCosts: 0, reserve: 0,
+      loanAmount: 0, ltvPct: 0, maxLTVPct: 80, ltvBreached: false,
+      dtiRatio: 0, maxDTIVal: 9, dtiBreached: false, annualIncome: 0,
+      maturity: { maxMonths: 360, maxYears: 30, canExtend: false, policyMax: 360 },
+      headroom: 0, af: 0, afDualStress: 0, afStress: 0, eXbyDSTI: 0, eXbyDTI: 0,
+      discoveryLTVPct: 80, maxPropertyPrice: 0, minOwnFunds: 0,
+      bottleneck: 'DSTI', riskStatus: 'oranzova', bankResults: {}, winnerBank: 'mbank',
+    }
+    maxLoanForHeader = 0
+  }
 
   // ESSO flags
-  const essoProfile   = formData.entityType === 'sro' ? computeMortgageProfile(formData) : null
-  const essoHardBlock = essoProfile?.redFlags.includes('sro_negative_financials') || essoProfile?.redFlags.includes('sro_insufficient_history')
-  const essoMedRisk   = essoProfile && !essoHardBlock && essoProfile.flags.includes('sro_medium_risk_50pct_cap')
+  try {
+    essoProfile   = formData.entityType === 'sro' ? computeMortgageProfile(formData) : null
+    essoHardBlock = essoProfile?.redFlags.includes('sro_negative_financials') || essoProfile?.redFlags.includes('sro_insufficient_history')
+    essoMedRisk   = essoProfile && !essoHardBlock && essoProfile.flags.includes('sro_medium_risk_50pct_cap')
+  } catch (err) {
+    console.error('[Step7Results] ESSO profile computation failed:', err)
+    essoProfile = null
+    essoHardBlock = false
+    essoMedRisk = false
+  }
 
   return (
     <main className="animate-fade-up">

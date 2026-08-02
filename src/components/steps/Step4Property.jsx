@@ -90,21 +90,25 @@ export default function Step4Property({ data, onChange, onBack, onContinue }) {
 
   // ── Switch mode ────────────────────────────────────────
   function switchMode(mode) {
-    onChange('propertyMode', mode)
-    if (mode === 'discovering') {
-      // Clear property specifics — engine will skip krok_6 (LTV cap = Infinity)
-      onChange('purchasePrice', 0)
-      onChange('ownFunds',      0)
-      setPurchasePriceRaw('')
-      setOwnFundsRaw('')
-      // Navigate immediately — no property fields required in discovery mode
-      onContinue()
-    } else {
-      // Restore sensible defaults so the LTV bar has something to show
-      onChange('purchasePrice', 5_500_000)
-      onChange('ownFunds',      1_200_000)
-      setPurchasePriceRaw('5 500 000')
-      setOwnFundsRaw('1 200 000')
+    try {
+      onChange('propertyMode', mode)
+      if (mode === 'discovering') {
+        // Clear property specifics — engine will skip krok_6 (LTV cap = Infinity)
+        onChange('purchasePrice', 0)
+        onChange('ownFunds',      0)
+        setPurchasePriceRaw('')
+        setOwnFundsRaw('')
+        // Navigate immediately — no property fields required in discovery mode
+        onContinue()
+      } else {
+        // Restore sensible defaults so the LTV bar has something to show
+        onChange('purchasePrice', 5_500_000)
+        onChange('ownFunds',      1_200_000)
+        setPurchasePriceRaw('5 500 000')
+        setOwnFundsRaw('1 200 000')
+      }
+    } catch (err) {
+      console.error('[Step4Property] switchMode failed:', err, { mode })
     }
   }
 

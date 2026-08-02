@@ -650,6 +650,26 @@ export function computeVarianceCoeff(formData) {
  *   eX = max_loan[winner]
  */
 export function computeMortgageProfile(formData) {
+  try {
+    return _computeMortgageProfileInner(formData)
+  } catch (err) {
+    console.error('[scoringEngine] computeMortgageProfile threw:', err, { propertyMode: formData?.propertyMode, entityType: formData?.entityType })
+    return {
+      baseIncome: 0, effectiveIncome: 0, haircut: 1, flags: [], redFlags: [], perBankIncome: {},
+      existingDebt: 0, cc5: 0, householdExpenses: 0, numberOfApplicants: 1, livingCosts: 0, reserve: 0,
+      loanAmount: 0, ltvPct: 0, maxLTVPct: 80, ltvBreached: false,
+      dtiRatio: 0, maxDTIVal: 9, dtiBreached: false, annualIncome: 0,
+      dstiAtEX: 0, tentativeDSTI: 0,
+      maturity: { maxMonths: 360, maxYears: 30, canExtend: false, policyMax: 360, monthsConservative: 360, monthsGenerous: 360, payoffAgeConservative: 70, payoffAgeGenerous: 75 },
+      eX: 0, eXStress: 0, eXBase: 0, varX: 0, varCoeff: 0,
+      headroom: 0, af: 0, afDualStress: 0, afStress: 0, eXbyDSTI: 0, eXbyDTI: 0,
+      discoveryLTVPct: 80, maxPropertyPrice: 0, minOwnFunds: 0,
+      bottleneck: 'DSTI', riskStatus: 'oranzova', bankResults: {}, winnerBank: 'mbank',
+    }
+  }
+}
+
+function _computeMortgageProfileInner(formData) {
   const {
     applicantAge        = 35,
     numberOfApplicants  = 1,
