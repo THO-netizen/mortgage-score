@@ -1,5 +1,4 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react'
-import useEmblaCarousel from 'embla-carousel-react'
 import { ChevronLeft, ChevronRight, Play } from 'lucide-react'
 import { carouselRegistry } from '../../hooks/carouselRegistry.js'
 
@@ -7,369 +6,206 @@ const VIDEOS = [
   {
     id: '3043071172518775',
     title: 'Escrow: Protect Your Money',
-    desc: 'Learn how escrow protects both buyers and sellers during a property transaction and helps you avoid unnecessary stress, fraud, or losing your money.',
-  },
-  {
-    id: '2013647709171522',
-    title: 'English Isn\'t Always Enough',
-    desc: 'Many people assume English is enough when buying property in the Czech Republic. Learn why language barriers can still create expensive misunderstandings.',
-  },
-  {
-    id: '3893330600957610',
-    title: 'Married? Czech Property Law May Surprise You',
-    desc: 'Even if only one spouse signs the purchase contract, Czech law may consider the property jointly owned. Understand how this affects future selling, refinancing, or divorce.',
+    desc: 'How escrow protects buyers and sellers during a Czech property transaction.',
+    category: 'process',
   },
   {
     id: '1154782076481763',
-    title: 'Never Sign Before Mortgage Pre-Approval',
-    desc: 'Found your dream apartment? Getting pre-approved before signing can save you from losing your reservation deposit if the bank declines your mortgage.',
+    title: 'Never Sign Before Pre-Approval',
+    desc: 'Getting pre-approved can save you from losing your reservation deposit.',
+    category: 'strategy',
   },
   {
     id: '637035798952912',
-    title: 'Personal Ownership vs Cooperative Housing',
-    desc: 'Not every apartment can be financed with a mortgage. Learn the key differences between private ownership (OV) and cooperative housing (DV).',
-  },
-  {
-    id: '3505855822878034',
-    title: 'Property Viewing Checklist',
-    desc: 'Before making an offer, make sure you know exactly what to inspect. A few overlooked details can cost hundreds of thousands later.',
-  },
-  {
-    id: '1366161228843604',
-    title: 'Over 36? You May Still Need Only 10% Down',
-    desc: 'Buying with a younger partner may allow you to qualify for a 90% mortgage, even if you\'re over 36. Learn how the LTV rules actually work.',
+    title: 'Personal Ownership vs Cooperative',
+    desc: 'Not every apartment can be financed with a mortgage.',
+    category: 'property',
   },
   {
     id: '1100785461993862',
     title: 'Bank Valuation Can Change Everything',
-    desc: 'Banks lend based on their own valuation — not the agreed purchase price. Understand how this can affect your required down payment.',
+    desc: 'Banks lend based on their own valuation, not the purchase price.',
+    category: 'financing',
   },
   {
     id: '24632646016359230',
-    title: 'Why Two People Get Different Mortgage Rates',
-    desc: 'Even at the same bank, mortgage rates depend on your financial profile. Learn what influences the rate you receive.',
-  },
-  {
-    id: '1260234258673232',
-    title: 'Hidden Easements Explained',
-    desc: 'An easement can give someone else legal rights over your property. Always check the Land Registry before buying.',
-  },
-  {
-    id: '750724387722459',
-    title: 'How to Negotiate a Better Property Price',
-    desc: 'Simple negotiation strategies that can help you save thousands when buying a property.',
-  },
-  {
-    id: '1945799819553534',
-    title: 'Mortgage Pre-Approval Gives You an Advantage',
-    desc: 'A pre-approved mortgage lets you negotiate like a cash buyer — but missing important deadlines can become expensive.',
-  },
-  {
-    id: '2586878941676335',
-    title: 'Repay Your Mortgage Faster — for Free',
-    desc: 'Czech law allows you to repay up to 25% of your mortgage each year without penalties. Learn how this can save years of repayments.',
-  },
-  {
-    id: '1150390016931385',
-    title: 'A 1% Rate Difference Can Cost Over 1 Million CZK',
-    desc: 'Small interest rate differences have a huge long-term impact. Learn why choosing the right lender matters.',
+    title: 'Why Two People Get Different Rates',
+    desc: 'What influences the rate you receive from the same bank.',
+    category: 'financing',
   },
   {
     id: '1339104001172260',
     title: 'How Much Mortgage Can You Get?',
-    desc: 'Discover the basic rule banks use when estimating borrowing capacity — and why income and existing debts matter.',
+    desc: 'The basic rule banks use for estimating borrowing capacity.',
+    category: 'capacity',
   },
   {
-    id: '24294507180244451',
-    title: 'Only 10% Down for Couples',
-    desc: 'If one partner is under 36, many couples can qualify for a mortgage with only a 10% down payment.',
+    id: '2586878941676335',
+    title: 'Repay Your Mortgage Faster',
+    desc: 'Czech law allows 25% annual repayment without penalties.',
+    category: 'strategy',
   },
   {
-    id: '1551599372494437',
-    title: 'Ask These 3 Questions Before Signing',
-    desc: 'Before accepting any mortgage offer, make sure you ask these three essential questions.',
-  },
-  {
-    id: '743326638737121',
-    title: 'Rent vs Buying',
-    desc: 'Every rent payment builds someone else\'s wealth. See when buying property may become the smarter financial decision.',
+    id: '1150390016931385',
+    title: '1% Rate Difference = Over 1M CZK',
+    desc: 'Why choosing the right lender matters long-term.',
+    category: 'financing',
   },
   {
     id: '2953344864850635',
-    title: 'Know Your Budget Before House Hunting',
-    desc: 'Don\'t fall in love with a property before knowing what the bank will actually lend you. Start with your mortgage capacity.',
+    title: 'Know Your Budget Before Hunting',
+    desc: 'Start with your mortgage capacity, not property listings.',
+    category: 'capacity',
   },
   {
     id: '1577214269933680',
     title: 'Why Was Your Mortgage Rejected?',
-    desc: 'Mortgage approval isn\'t only about income. Learn how DSTI, DTI and each bank\'s internal methodology can completely change the outcome.',
+    desc: 'How DSTI, DTI and bank methodology change outcomes.',
+    category: 'capacity',
   },
 ]
 
-// Gradient presets cycled across cards for visual variety
-const CARD_GRADIENTS = [
-  'linear-gradient(135deg, #1E3A8A 0%, #1D4ED8 50%, #3B82F6 100%)',
-  'linear-gradient(135deg, #0F172A 0%, #1E40AF 100%)',
-  'linear-gradient(135deg, #1E293B 0%, #2563EB 100%)',
-  'linear-gradient(135deg, #1E3A8A 0%, #334155 50%, #1D4ED8 100%)',
-  'linear-gradient(135deg, #0F172A 0%, #1E3A8A 60%, #3B82F6 100%)',
-]
-
-// ── VideoThumbnailCard ────────────────────────────────────────────────────────
-const VideoThumbnailCard = React.memo(function VideoThumbnailCard({ id, title, index }) {
+const VideoCard = React.memo(function VideoCard({ id, title, desc }) {
   const reelUrl = `https://www.facebook.com/reel/${id}/`
-  const gradient = CARD_GRADIENTS[index % CARD_GRADIENTS.length]
-
-  const handleClick = () => {
-    window.open(reelUrl, '_blank', 'noopener,noreferrer')
-  }
-
-  const handleKeyDown = (e) => {
-    if (e.key === 'Enter' || e.key === ' ') {
-      e.preventDefault()
-      handleClick()
-    }
-  }
 
   return (
-    <button
-      type="button"
-      onClick={handleClick}
-      onKeyDown={handleKeyDown}
-      aria-label={`Watch: ${title} — opens Facebook in a new tab`}
-      className="group relative w-full rounded-xl overflow-hidden border border-white/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-400 focus-visible:ring-offset-2 focus-visible:ring-offset-dark-900 transition-transform duration-200 hover:scale-[1.03] active:scale-[0.98] cursor-pointer"
-      style={{ aspectRatio: '9 / 16' }}
+    <a
+      href={reelUrl}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="group block rounded-xl border border-border/60 bg-white overflow-hidden transition-all duration-200 hover:border-border-strong hover:shadow-md"
+      aria-label={`Watch: ${title}`}
     >
-      {/* Gradient background */}
-      <div
-        className="absolute inset-0"
-        style={{ background: gradient }}
-      />
-
-      {/* Subtle pattern overlay for depth */}
-      <div className="absolute inset-0 opacity-10 bg-[radial-gradient(circle_at_30%_20%,rgba(255,255,255,0.3)_0%,transparent_50%)]" />
-
-      {/* Play button */}
-      <div className="absolute inset-0 flex items-center justify-center">
-        <div className="w-16 h-16 rounded-full bg-white/15 backdrop-blur-sm border border-white/20 flex items-center justify-center transition-all duration-200 group-hover:bg-white/25 group-hover:scale-110 group-focus-visible:bg-white/25 group-focus-visible:scale-110">
-          <Play
-            size={28}
-            className="text-white ml-1 drop-shadow-lg"
-            fill="currentColor"
-          />
+      {/* Thumbnail area with play button */}
+      <div className="relative aspect-video bg-dark-900 flex items-center justify-center">
+        <div className="absolute inset-0 bg-gradient-to-br from-dark-800 to-dark-900" />
+        <div className="relative w-12 h-12 rounded-full bg-white/10 border border-white/20 flex items-center justify-center transition-all duration-200 group-hover:bg-white/20 group-hover:scale-110">
+          <Play size={18} className="text-white ml-0.5" fill="currentColor" />
         </div>
+        <span className="absolute bottom-2 right-2 text-[10px] text-white/60 bg-black/40 px-1.5 py-0.5 rounded">
+          Video
+        </span>
       </div>
-
-      {/* Title overlay at bottom */}
-      <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/70 via-black/30 to-transparent">
-        <p className="text-white text-sm font-semibold leading-snug text-left drop-shadow-md">
+      {/* Content */}
+      <div className="p-3.5">
+        <p className="text-[13px] font-semibold text-ink leading-snug mb-1 line-clamp-2 group-hover:text-dark-700">
           {title}
         </p>
-        <p className="text-white/60 text-[11px] mt-1 text-left">
-          Watch on Facebook
+        <p className="text-[11px] text-ink-muted leading-relaxed line-clamp-2">
+          {desc}
         </p>
       </div>
-    </button>
+    </a>
   )
 })
 
-// ── MortgageTipsLibrary ───────────────────────────────────────────────────────
 export default function MortgageTipsLibrary() {
   const sectionRef = useRef(null)
-
-  const [emblaRef, emblaApi] = useEmblaCarousel({
-    loop: false,
-    align: 'start',
-    dragFree: false,
-    slidesToScroll: 1,
-    breakpoints: {
-      '(min-width: 640px)': { slidesToScroll: 2 },
-      '(min-width: 1024px)': { slidesToScroll: 4 },
-    },
-  })
-
+  const scrollRef = useRef(null)
   const [canPrev, setCanPrev] = useState(false)
   const [canNext, setCanNext] = useState(true)
-  const [selectedIndex, setSelectedIndex] = useState(0)
 
   const syncState = useCallback(() => {
-    if (!emblaApi) return
-    setCanPrev(emblaApi.canScrollPrev())
-    setCanNext(emblaApi.canScrollNext())
-    setSelectedIndex(emblaApi.selectedScrollSnap())
-  }, [emblaApi])
+    const el = scrollRef.current
+    if (!el) return
+    setCanPrev(el.scrollLeft > 10)
+    setCanNext(el.scrollLeft < el.scrollWidth - el.clientWidth - 10)
+  }, [])
 
   useEffect(() => {
-    if (!emblaApi) return
+    const el = scrollRef.current
+    if (!el) return
+    el.addEventListener('scroll', syncState, { passive: true })
     syncState()
-    emblaApi.on('select', syncState)
-    emblaApi.on('reInit', syncState)
-    return () => {
-      emblaApi.off('select', syncState)
-      emblaApi.off('reInit', syncState)
-    }
-  }, [emblaApi, syncState])
+    return () => el.removeEventListener('scroll', syncState)
+  }, [syncState])
 
-  const scrollPrev = useCallback(() => emblaApi?.scrollPrev(), [emblaApi])
-  const scrollNext = useCallback(() => emblaApi?.scrollNext(), [emblaApi])
-  const scrollTo = useCallback((i) => emblaApi?.scrollTo(i), [emblaApi])
+  const scrollBy = (dir) => {
+    const el = scrollRef.current
+    if (!el) return
+    const card = el.querySelector('[data-video-card]')
+    const step = card ? card.offsetWidth + 16 : 300
+    el.scrollBy({ left: dir * step, behavior: 'smooth' })
+  }
 
-  // ── Keyboard registry ─────────────────────────────────────────────────────
   useEffect(() => {
     carouselRegistry.set('mortgage-tips', {
-      scrollPrev,
-      scrollNext,
-      canScrollPrev: () => emblaApi?.canScrollPrev() ?? false,
-      canScrollNext: () => emblaApi?.canScrollNext() ?? false,
+      scrollPrev: () => scrollBy(-1),
+      scrollNext: () => scrollBy(1),
+      canScrollPrev: () => (scrollRef.current?.scrollLeft ?? 0) > 10,
+      canScrollNext: () => {
+        const el = scrollRef.current
+        return el ? el.scrollLeft < el.scrollWidth - el.clientWidth - 10 : false
+      },
       getElement: () => sectionRef.current,
     })
     return () => carouselRegistry.delete('mortgage-tips')
-  }, [emblaApi, scrollPrev, scrollNext])
-
-  // ── Touchpad / horizontal mousewheel support ──────────────────────────────
-  useEffect(() => {
-    const viewport = sectionRef.current?.querySelector('[data-embla-viewport]')
-    if (!viewport || !emblaApi) return
-
-    let accumulated = 0
-    let rafId
-
-    const onWheel = (e) => {
-      if (Math.abs(e.deltaX) <= Math.abs(e.deltaY)) return
-      e.preventDefault()
-
-      accumulated += e.deltaX
-      cancelAnimationFrame(rafId)
-      rafId = requestAnimationFrame(() => {
-        if (accumulated > 40) {
-          emblaApi.scrollNext()
-          accumulated = 0
-        } else if (accumulated < -40) {
-          emblaApi.scrollPrev()
-          accumulated = 0
-        }
-      })
-    }
-
-    viewport.addEventListener('wheel', onWheel, { passive: false })
-    return () => {
-      viewport.removeEventListener('wheel', onWheel)
-      cancelAnimationFrame(rafId)
-    }
-  }, [emblaApi])
-
-  // ── Keyboard handler (direct focus on section) ────────────────────────────
-  const handleKeyDown = (e) => {
-    if (e.key === 'ArrowLeft') { e.preventDefault(); scrollPrev() }
-    if (e.key === 'ArrowRight') { e.preventDefault(); scrollNext() }
-  }
-
-  const snapCount = emblaApi ? emblaApi.scrollSnapList().length : VIDEOS.length
+  }, [])
 
   return (
     <section
       ref={sectionRef}
-      className="bg-dark-900 py-20 overflow-hidden"
-      tabIndex={0}
-      onKeyDown={handleKeyDown}
-      aria-label="Mortgage Tips carousel — use arrow keys to navigate"
-      style={{ outline: 'none' }}
+      className="py-16 sm:py-20"
+      style={{ background: '#FAFAF8' }}
+      aria-label="Mortgage guidance videos"
     >
       <div className="max-w-6xl mx-auto px-4 sm:px-6">
 
-        {/* Section header */}
-        <div className="text-center mb-12">
-          <p className="text-brand-400 text-[11px] font-bold tracking-[0.12em] uppercase mb-3">
-            Free Video Library
+        {/* Header */}
+        <div className="mb-8 sm:mb-10">
+          <p className="text-[11px] font-semibold tracking-widest uppercase mb-2" style={{ color: '#C9A96E' }}>
+            Selected guidance
           </p>
-          <h2 className="font-display text-3xl sm:text-4xl font-black text-white mb-4 leading-tight tracking-tight">
-            Mortgage Tips &amp; Insights
+          <h2 className="font-display text-xl sm:text-2xl font-extrabold text-ink tracking-tight">
+            Videos for your situation
           </h2>
-          <p className="text-slate-400 max-w-2xl mx-auto text-sm leading-relaxed">
-            Free expert videos to help you understand Czech mortgages, improve your borrowing
-            capacity, avoid common mistakes, and confidently navigate the entire home-buying process.
+          <p className="text-sm text-ink-muted mt-1 max-w-lg">
+            Short expert videos on Czech mortgage topics relevant to your assessment.
           </p>
         </div>
 
-        {/* Carousel wrapper */}
+        {/* Carousel */}
         <div className="relative">
+          {/* Prev */}
+          {canPrev && (
+            <button
+              onClick={() => scrollBy(-1)}
+              aria-label="Previous videos"
+              className="hidden sm:flex absolute left-0 top-1/2 -translate-y-1/2 -translate-x-3 z-10 w-9 h-9 rounded-full items-center justify-center bg-white border border-border shadow-sm text-ink-muted hover:text-ink transition-colors"
+            >
+              <ChevronLeft size={16} />
+            </button>
+          )}
 
-          {/* Prev arrow — hidden on mobile */}
-          <button
-            onClick={scrollPrev}
-            disabled={!canPrev}
-            aria-label="Previous videos"
-            className={[
-              'hidden sm:flex absolute left-0 top-1/2 -translate-y-1/2 -translate-x-4 z-10',
-              'w-9 h-9 rounded-full items-center justify-center',
-              'bg-dark-800 border border-white/10 text-white transition-all duration-150',
-              canPrev
-                ? 'opacity-100 hover:bg-dark-700 hover:border-brand-500/40 cursor-pointer'
-                : 'opacity-0 pointer-events-none',
-            ].join(' ')}
-          >
-            <ChevronLeft size={17} />
-          </button>
-
-          {/* Embla viewport */}
+          {/* Track */}
           <div
-            ref={emblaRef}
-            data-embla-viewport=""
-            className="overflow-hidden cursor-grab active:cursor-grabbing"
+            ref={scrollRef}
+            className="flex gap-4 overflow-x-auto snap-x snap-mandatory pb-2"
+            style={{ scrollbarWidth: 'none', msOverflowStyle: 'none', WebkitOverflowScrolling: 'touch' }}
           >
-            <div className="flex" style={{ marginLeft: '-12px' }}>
-              {VIDEOS.map((v, i) => (
-                <div
-                  key={v.id}
-                  className="flex-[0_0_83.333%] sm:flex-[0_0_40%] md:flex-[0_0_33.333%] lg:flex-[0_0_25%] min-w-0"
-                  style={{ paddingLeft: '12px' }}
-                >
-                  <VideoThumbnailCard
-                    id={v.id}
-                    title={v.title}
-                    index={i}
-                  />
-                </div>
-              ))}
-            </div>
+            <style>{`[data-video-track]::-webkit-scrollbar { display: none; }`}</style>
+            {VIDEOS.map((v) => (
+              <div
+                key={v.id}
+                data-video-card=""
+                className="flex-shrink-0 w-[260px] sm:w-[280px] snap-start"
+              >
+                <VideoCard {...v} />
+              </div>
+            ))}
+            <div className="flex-shrink-0 w-4" aria-hidden="true" />
           </div>
 
-          {/* Next arrow — hidden on mobile */}
-          <button
-            onClick={scrollNext}
-            disabled={!canNext}
-            aria-label="Next videos"
-            className={[
-              'hidden sm:flex absolute right-0 top-1/2 -translate-y-1/2 translate-x-4 z-10',
-              'w-9 h-9 rounded-full items-center justify-center',
-              'bg-dark-800 border border-white/10 text-white transition-all duration-150',
-              canNext
-                ? 'opacity-100 hover:bg-dark-700 hover:border-brand-500/40 cursor-pointer'
-                : 'opacity-0 pointer-events-none',
-            ].join(' ')}
-          >
-            <ChevronRight size={17} />
-          </button>
-
-        </div>
-
-        {/* Dot navigation */}
-        <div className="flex justify-center items-center gap-2 mt-6" role="tablist" aria-label="Carousel navigation">
-          {Array.from({ length: snapCount }).map((_, i) => (
+          {/* Next */}
+          {canNext && (
             <button
-              key={i}
-              onClick={() => scrollTo(i)}
-              role="tab"
-              aria-selected={i === selectedIndex}
-              aria-label={`Go to slide group ${i + 1}`}
-              className={[
-                'rounded-full transition-all duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-400',
-                i === selectedIndex
-                  ? 'w-5 h-1.5 bg-brand-400'
-                  : 'w-1.5 h-1.5 bg-slate-600 hover:bg-slate-500',
-              ].join(' ')}
-            />
-          ))}
+              onClick={() => scrollBy(1)}
+              aria-label="Next videos"
+              className="hidden sm:flex absolute right-0 top-1/2 -translate-y-1/2 translate-x-3 z-10 w-9 h-9 rounded-full items-center justify-center bg-white border border-border shadow-sm text-ink-muted hover:text-ink transition-colors"
+            >
+              <ChevronRight size={16} />
+            </button>
+          )}
         </div>
 
       </div>

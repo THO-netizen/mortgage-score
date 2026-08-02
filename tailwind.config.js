@@ -11,6 +11,7 @@ export default {
       fontFamily: {
         sans:    ['Inter', 'system-ui', 'sans-serif'],
         display: ['Manrope', 'Inter', 'sans-serif'],
+        serif:   ['Playfair Display', 'Georgia', 'serif'],
       },
 
       // ── Design-token colours ──────────────────────────────
@@ -18,8 +19,9 @@ export default {
       // component authors never hardcode hex values.
       colors: {
         // Surfaces
-        surface:  '#F8FAFC',   // page background
+        surface:  '#FAFAF8',   // warm ivory page background
         card:     '#FFFFFF',   // card surface
+        ivory:    '#FAFAF8',   // warm ivory alias
 
         // Text
         ink: {
@@ -39,6 +41,13 @@ export default {
           900: '#0F172A',      // Slate 900
           800: '#1E293B',      // Slate 800
           700: '#334155',      // Slate 700
+        },
+
+        // Bronze / warm metallic accent
+        bronze: {
+          DEFAULT: '#C9A96E',
+          light:   '#E8D5A8',
+          dark:    '#A88B4A',
         },
 
         // Brand / accent

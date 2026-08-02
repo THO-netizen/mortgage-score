@@ -1,33 +1,33 @@
-export default function LandingFooter({ onStart }) {
-  const scrollToHowItWorks = (e) => {
-    e.preventDefault()
-    document.getElementById('how-it-works')?.scrollIntoView({ behavior: 'smooth' })
-  }
+// ── Landing Footer — minimal, private-banking tone ─────────────
 
+export default function LandingFooter({ onStart }) { // eslint-disable-line no-unused-vars
   return (
-    <footer className="bg-dark-900 border-t border-white/10 py-5 sm:py-7 px-5 sm:px-6 pb-[max(1.25rem,env(safe-area-inset-bottom))]">
-      <div className="max-w-3xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
+    <footer className="bg-dark-900 py-8 sm:py-10 px-5 sm:px-6 pb-[max(2rem,env(safe-area-inset-bottom))]">
+      <div className="max-w-lg mx-auto text-center space-y-5">
 
-        <p className="text-slate-600 text-[12px] sm:text-[11px] text-center sm:text-left">
-          Czech Mortgage Eligibility Analyzer
+        {/* Privacy note */}
+        <p className="text-[13px] sm:text-sm leading-relaxed" style={{ color: '#6B7A8D' }}>
+          Your data is processed locally and never shared without your consent.
         </p>
 
-        <div className="flex items-center gap-4 sm:gap-5">
-          <a
-            href="#how-it-works"
-            onClick={scrollToHowItWorks}
-            className="text-slate-500 hover:text-slate-300 text-sm transition-colors min-h-[44px] inline-flex items-center px-2"
-          >
-            How it works
-          </a>
-          <button
-            onClick={onStart}
-            type="button"
-            className="btn-cta text-sm px-6 sm:px-7 py-2.5"
-          >
-            Start Assessment
-          </button>
-        </div>
+        {/* Calendly link */}
+        <a
+          href="https://calendly.com/andy-lkadvisor/30min"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center min-h-[44px] px-3 py-2 text-[13px] sm:text-sm transition-colors"
+          style={{ color: '#C9A96E' }}
+        >
+          Book a direct conversation with Andy Le
+        </a>
+
+        {/* Divider */}
+        <div className="h-px w-12 mx-auto" style={{ backgroundColor: 'rgba(107,122,141,0.25)' }} />
+
+        {/* Copyright */}
+        <p className="text-[11px] sm:text-xs" style={{ color: '#475569' }}>
+          Mortgage Score &mdash; Czech Republic
+        </p>
 
       </div>
     </footer>

@@ -1,8 +1,8 @@
 import { ArrowLeft, ArrowRight, Loader2 } from 'lucide-react'
 
 /**
- * Step navigation bar — mobile-first layout.
- * Mobile:  stacked vertically (Continue full-width on top, Back as text link below).
+ * Step navigation bar — premium private banking aesthetic.
+ * Mobile:  stacked (Continue full-width, Back as centered text below).
  * Desktop: horizontal (Back left, Continue right).
  * Touch targets: minimum 48px height.
  */
@@ -16,7 +16,7 @@ export default function ActionBar({
   loadingLabel = 'Calculating...',
 }) {
   return (
-    <div className="pt-6 border-t border-border safe-bottom">
+    <div className="pt-6 border-t border-[#E2E8F0] safe-bottom">
 
       {/* Mobile layout: stacked */}
       <div className="flex flex-col gap-3 sm:hidden">
@@ -24,14 +24,14 @@ export default function ActionBar({
         <button
           onClick={onContinue}
           disabled={!canContinue || loading}
-          className="btn-cta w-full min-h-[48px]"
+          className="w-full min-h-[52px] inline-flex items-center justify-center gap-2 rounded-xl bg-[#0F172A] px-7 font-display text-[15px] font-bold text-[#FFFBF5] transition-colors duration-150 select-none hover:bg-[#1E293B] disabled:opacity-40 disabled:cursor-not-allowed"
           type="button"
         >
           {loading ? (
-            <>
+            <span className="inline-flex items-center gap-2 animate-pulse">
               <Loader2 size={15} className="animate-spin" />
               {loadingLabel}
-            </>
+            </span>
           ) : (
             <>
               {isLast ? 'See My Results' : 'Continue'}
@@ -44,7 +44,7 @@ export default function ActionBar({
         {!isFirst && (
           <button
             onClick={onBack}
-            className="flex items-center justify-center gap-1.5 min-h-[44px] text-sm font-medium text-ink-muted active:text-ink transition-colors"
+            className="flex items-center justify-center gap-1.5 min-h-[48px] text-sm font-medium text-ink-muted active:text-ink transition-colors"
             type="button"
           >
             <ArrowLeft size={14} />
@@ -58,7 +58,7 @@ export default function ActionBar({
         {!isFirst ? (
           <button
             onClick={onBack}
-            className="btn-ghost min-h-[48px]"
+            className="inline-flex items-center gap-1.5 min-h-[48px] px-3 text-sm font-medium text-ink-muted hover:text-ink transition-colors"
             type="button"
           >
             <ArrowLeft size={15} />
@@ -71,14 +71,14 @@ export default function ActionBar({
         <button
           onClick={onContinue}
           disabled={!canContinue || loading}
-          className="btn-cta min-h-[48px]"
+          className="min-h-[52px] inline-flex items-center justify-center gap-2 rounded-xl bg-[#0F172A] px-8 font-display text-[15px] font-bold text-[#FFFBF5] transition-colors duration-150 select-none hover:bg-[#1E293B] disabled:opacity-40 disabled:cursor-not-allowed"
           type="button"
         >
           {loading ? (
-            <>
+            <span className="inline-flex items-center gap-2 animate-pulse">
               <Loader2 size={15} className="animate-spin" />
               {loadingLabel}
-            </>
+            </span>
           ) : (
             <>
               {isLast ? 'See My Results' : 'Continue Assessment'}

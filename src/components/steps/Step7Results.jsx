@@ -38,7 +38,7 @@ const TIMELINE_STEPS = [
 
 const STATUS_CFG = {
   strong: { label: 'Strong',       cls: 'badge-success' },
-  good:   { label: 'Good',         cls: 'badge bg-brand-50 text-brand-700 border border-brand-100' },
+  good:   { label: 'Good',         cls: 'badge bg-surface text-ink border border-border' },
   review: { label: 'Needs Review', cls: 'badge-warning' },
   risk:   { label: 'Risk',         cls: 'badge-risk'    },
 }
@@ -53,7 +53,7 @@ const RISK_MATRIX_CFG = {
 
 function scoreCfg(score) {
   if (score >= 75) return { label: 'Strong Applicant', color: '#10B981', badge: 'badge-success' }
-  if (score >= 55) return { label: 'Good Standing',    color: '#3B82F6', badge: 'bg-brand-50 text-brand-700 border border-brand-100 badge' }
+  if (score >= 55) return { label: 'Good Standing',    color: '#3B82F6', badge: 'bg-surface text-ink border border-border badge' }
   if (score >= 35) return { label: 'Needs Review',     color: '#F59E0B', badge: 'badge-warning' }
   return               { label: 'High Risk',           color: '#EF4444', badge: 'badge-risk' }
 }
@@ -532,19 +532,19 @@ function DiscoveryBudgetCard({ profile, formData }) {
   if (eX <= 0) return null
 
   return (
-    <div className="rounded-card border-2 border-brand-200 overflow-hidden">
-      <div className="px-5 sm:px-6 py-4 border-b border-brand-200 bg-brand-50/80">
-        <p className="text-[10px] font-bold tracking-widest uppercase text-brand-700">Budget Discovery</p>
-        <p className="text-sm font-semibold text-brand-900 mt-0.5">Indicative property price range based on your income capacity</p>
+    <div className="rounded-card border-2 border-bronze-light overflow-hidden">
+      <div className="px-5 sm:px-6 py-4 border-b border-bronze-light bg-surface">
+        <p className="text-[10px] font-bold tracking-widest uppercase text-bronze-dark">Budget Discovery</p>
+        <p className="text-sm font-semibold text-ink mt-0.5">Indicative property price range based on your income capacity</p>
       </div>
       <div className="bg-card p-5 sm:p-6 space-y-4">
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <div className="sm:col-span-2 rounded-xl border border-brand-200 bg-brand-50/40 p-5">
-            <p className="text-[10px] font-bold uppercase tracking-wide text-brand-600 mb-1">Estimated Property Budget</p>
-            <p className="font-display text-3xl sm:text-4xl font-black text-brand-800 tabular-nums">
+          <div className="sm:col-span-2 rounded-xl border border-bronze-light bg-surface p-5">
+            <p className="text-[10px] font-bold uppercase tracking-wide text-bronze mb-1">Estimated Property Budget</p>
+            <p className="font-display text-3xl sm:text-4xl font-black text-ink tabular-nums">
               {formatCZKShort(maxPropertyPrice)}
             </p>
-            <p className="text-xs text-brand-600 mt-2">
+            <p className="text-xs text-bronze-dark mt-2">
               Income capacity ÷ {discoveryLTVPct}% ·{' '}
               {isYoung ? 'First Home Buyer — under 36' : 'Standard ČNB limit'}
             </p>
@@ -635,8 +635,8 @@ function ApplicantProfilePanel({ formData, profile }) {
 
         {/* Business identity */}
         <div className="flex items-center gap-3 flex-wrap">
-          <div className="w-10 h-10 rounded-xl bg-brand-50 border border-brand-100 flex items-center justify-center flex-shrink-0">
-            <Building2 size={16} className="text-brand-600" />
+          <div className="w-10 h-10 rounded-xl bg-surface border border-border flex items-center justify-center flex-shrink-0">
+            <Building2 size={16} className="text-bronze" />
           </div>
           <div className="flex-1 min-w-0">
             <p className="font-semibold text-ink leading-tight">{businessName || 'Self-Employed Applicant'}</p>
@@ -661,7 +661,7 @@ function ApplicantProfilePanel({ formData, profile }) {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
 
             {/* Method A — Tax Return */}
-            <div className={`rounded-xl border p-5 ${activeMethod === 'A' ? 'border-brand-200 bg-brand-50/40' : 'border-border bg-surface'}`}>
+            <div className={`rounded-xl border p-5 ${activeMethod === 'A' ? 'border-bronze-light bg-surface' : 'border-border bg-surface'}`}>
               <div className="flex items-center justify-between mb-1">
                 <p className="section-label">Method A — Tax Return</p>
                 {activeMethod === 'A' && <span className="badge-success text-[10px]">Applied</span>}
@@ -688,7 +688,7 @@ function ApplicantProfilePanel({ formData, profile }) {
             </div>
 
             {/* Method B — Bank Turnover */}
-            <div className={`rounded-xl border p-5 ${activeMethod === 'B' ? 'border-brand-200 bg-brand-50/40' : 'border-border bg-surface'}`}>
+            <div className={`rounded-xl border p-5 ${activeMethod === 'B' ? 'border-bronze-light bg-surface' : 'border-border bg-surface'}`}>
               <div className="flex items-center justify-between mb-1">
                 <p className="section-label">Method B — Bank Turnover</p>
                 {activeMethod === 'B' && <span className="badge-success text-[10px]">Applied</span>}
@@ -783,7 +783,7 @@ function ApplicantProfilePanel({ formData, profile }) {
       if (inProbation) return { label: 'Probation — CSOB Exception', cls: 'badge-warning' }
       if (contractType === 'agency' || contractType === 'dpc') return { label: 'Needs Review', cls: 'badge-warning' }
       if (contractType === 'indefinite') return { label: 'Strong', cls: 'badge-success' }
-      return { label: 'Good', cls: 'badge bg-brand-50 text-brand-700 border border-brand-100' }
+      return { label: 'Good', cls: 'badge bg-surface text-ink border border-border' }
     })()
 
     return (
@@ -791,8 +791,8 @@ function ApplicantProfilePanel({ formData, profile }) {
 
         {/* Header */}
         <div className="flex items-center gap-3 flex-wrap">
-          <div className="w-10 h-10 rounded-xl bg-brand-50 border border-brand-100 flex items-center justify-center flex-shrink-0">
-            <Briefcase size={16} className="text-brand-600" />
+          <div className="w-10 h-10 rounded-xl bg-surface border border-border flex items-center justify-center flex-shrink-0">
+            <Briefcase size={16} className="text-bronze" />
           </div>
           <div className="flex-1 min-w-0">
             <p className="font-semibold text-ink">Salaried Employment</p>
@@ -886,7 +886,7 @@ function BankResultsTable({ profile }) {
   if (!bankResults) return null
 
   const bindingColor = {
-    DSTI: 'bg-brand-50 text-brand-700',
+    DSTI: 'bg-surface text-ink',
     DTI:  'bg-risk-light text-risk-text',
     LTV:  'bg-surface text-ink-muted border border-border',
   }
@@ -1009,7 +1009,7 @@ function ScenarioSimulator({ formData, onIncomeChange }) {
   return (
     <div className="card-surface p-4 sm:p-6">
       <div className="flex items-center gap-2 mb-5 sm:mb-6">
-        <TrendingUp size={16} className="text-brand-600" />
+        <TrendingUp size={16} className="text-bronze" />
         <h3 className="font-display text-base sm:text-lg font-extrabold text-ink">Scenario Simulator</h3>
         {simMaxYears < 30 && (
           <span className="badge-warning text-[10px] ml-auto">Age cap: max {simMaxYears} yr</span>
@@ -1114,7 +1114,7 @@ function JourneyTimeline() {
   return (
     <div className="card-surface p-4 sm:p-6">
       <div className="flex items-center gap-2 mb-5 sm:mb-6">
-        <Calendar size={16} className="text-brand-600" />
+        <Calendar size={16} className="text-bronze" />
         <h3 className="font-display text-lg font-extrabold text-ink">Czech Mortgage Journey</h3>
       </div>
       <div>
@@ -1124,7 +1124,7 @@ function JourneyTimeline() {
               <div className={[
                 'w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 text-xs font-bold z-10',
                 step.done ? 'bg-success-DEFAULT text-white'
-                  : step.current ? 'bg-brand-600 text-white'
+                  : step.current ? 'bg-dark-900 text-white'
                   : 'bg-surface border-2 border-border text-ink-subtle',
               ].join(' ')}>
                 {step.done ? <CheckCircle size={13} /> : <span>{i + 1}</span>}
@@ -1135,7 +1135,7 @@ function JourneyTimeline() {
             </div>
             <div className="pb-4 pt-0.5 min-w-0">
               <div className="flex items-center gap-2 flex-wrap mb-0.5">
-                <p className={`text-sm font-semibold leading-tight ${step.current ? 'text-brand-700' : step.done ? 'text-success-text' : 'text-ink-muted'}`}>
+                <p className={`text-sm font-semibold leading-tight ${step.current ? 'text-ink' : step.done ? 'text-success-text' : 'text-ink-muted'}`}>
                   {step.label}
                 </p>
                 {step.current && <span className="badge-success text-[10px] px-2 py-0.5">You are here</span>}
@@ -1238,8 +1238,8 @@ function HeadlineVerdict({ score, cfg, profile, formData }) {
   })()
 
   return (
-    <div className="rounded-card bg-dark-900 border border-white/10 overflow-hidden">
-      <div className="h-0.5 w-full flex-shrink-0" style={{ background: verdict.color }} />
+    <div className="rounded-2xl bg-dark-900 border border-white/10 overflow-hidden">
+      <div className="h-[2px] w-full flex-shrink-0" style={{ background: '#C9A96E' }} />
       <div className="px-4 sm:px-10 py-6 sm:py-10">
 
         {/* Mobile: vertical stack; Desktop: horizontal */}
@@ -1251,7 +1251,7 @@ function HeadlineVerdict({ score, cfg, profile, formData }) {
               <ScoreGauge score={score} color={verdict.color} />
             </div>
             <div className="min-w-0 flex-1">
-              <p className="text-[10px] font-bold tracking-widest uppercase text-slate-500 mb-1">Mortgage Readiness</p>
+              <p className="text-[10px] font-bold tracking-widest uppercase text-bronze mb-1">Mortgage Readiness</p>
               <p className="font-display text-lg sm:text-2xl font-black text-white leading-tight">{verdict.label}</p>
               <div className="flex items-center gap-2 mt-2">
                 <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: verdict.color }} />
@@ -1267,7 +1267,7 @@ function HeadlineVerdict({ score, cfg, profile, formData }) {
           {/* Loan figure + insight */}
           <div className="flex-1 min-w-0 space-y-3 sm:space-y-5 w-full">
             <div>
-              <p className="text-[10px] font-bold tracking-widest uppercase text-slate-500 mb-1">
+              <p className="text-[10px] font-bold tracking-widest uppercase text-bronze mb-1">
                 Maximum Loan Estimate
               </p>
               <p className="font-display text-xl sm:text-3xl font-black text-white tabular-nums leading-tight">
@@ -1452,8 +1452,8 @@ function CapacityBreakdown({ profile, formData }) {
         onClick={() => setOpen(v => !v)}
         className="w-full flex items-center gap-3 px-4 sm:px-6 py-3 sm:py-4 hover:bg-surface transition-colors focus:outline-none"
       >
-        <div className="w-8 h-8 rounded-lg bg-brand-50 border border-brand-100 flex items-center justify-center flex-shrink-0">
-          <BarChart2 size={15} className="text-brand-600" />
+        <div className="w-8 h-8 rounded-lg bg-surface border border-border flex items-center justify-center flex-shrink-0">
+          <BarChart2 size={15} className="text-bronze" />
         </div>
         <div className="flex-1 text-left min-w-0">
           <p className="text-[13px] sm:text-[14px] font-semibold text-ink leading-snug">How your capacity was calculated</p>
@@ -1918,7 +1918,7 @@ function SoftLockGate({ onUnlock, formData }) {
         >
           {GATE_SECTIONS.map(({ title, sub }) => (
             <div key={title} className="flex items-center gap-3 py-1.5">
-              <div className="w-8 h-8 rounded-lg bg-brand-50 border border-brand-100 flex-shrink-0" />
+              <div className="w-8 h-8 rounded-lg bg-surface border border-border flex-shrink-0" />
               <div className="flex-1 min-w-0">
                 <p className="text-[13px] font-semibold text-ink">{title}</p>
                 <p className="text-[11px] text-ink-subtle">{sub}</p>
@@ -1933,7 +1933,7 @@ function SoftLockGate({ onUnlock, formData }) {
       {/* Gate form card */}
       <div className="rounded-b-2xl border border-t-0 border-border bg-card shadow-lg px-4 sm:px-8 py-6 sm:py-10">
 
-        <p className="text-[10px] font-bold tracking-widest uppercase text-brand-600 mb-2">
+        <p className="text-[10px] font-bold tracking-widest uppercase text-bronze mb-2">
           Full Assessment
         </p>
         <h3 className="font-display text-lg sm:text-2xl font-black text-ink mb-2 leading-tight">
@@ -2033,8 +2033,8 @@ function AccordionSection({ title, subtitle, icon: Icon, defaultOpen = false, ch
         onClick={() => setOpen((v) => !v)}
         className="w-full flex items-center gap-3 sm:gap-4 px-4 sm:px-6 py-4 sm:py-5 hover:bg-surface transition-colors focus:outline-none group"
       >
-        <div className="w-9 h-9 rounded-lg bg-brand-50 border border-brand-100 flex items-center justify-center flex-shrink-0">
-          <Icon size={16} className="text-brand-600" />
+        <div className="w-9 h-9 rounded-lg bg-surface border border-border flex items-center justify-center flex-shrink-0">
+          <Icon size={16} className="text-bronze" />
         </div>
         <div className="flex-1 text-left min-w-0">
           <p className="text-[14px] font-semibold text-ink leading-snug">{title}</p>
@@ -2261,7 +2261,7 @@ export default function Step7Results({ formData, onBack, onRestart }) {
 
             {/* ── Strategy call + PDF — combined CTA ───── */}
             <div className="rounded-2xl bg-dark-900 border border-white/10 px-4 sm:px-10 py-6 sm:py-8">
-              <p className="text-[10px] font-bold tracking-widest uppercase text-brand-400 mb-2 sm:mb-3">
+              <p className="text-[10px] font-bold tracking-widest uppercase text-bronze mb-2 sm:mb-3">
                 Next Steps
               </p>
               <h3 className="font-display text-lg sm:text-2xl font-black text-white mb-2 sm:mb-3 leading-tight break-words">

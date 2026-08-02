@@ -1,8 +1,8 @@
 /**
- * Mobile-first funnel card.
- * - On mobile (<640px): full-width, no border/shadow — feels like a focused question.
- * - On tablet/desktop: white card with border, shadow, rounded corners.
- * - Supports `hint` prop for contextual insights below the title.
+ * Mobile-first funnel card with premium private banking aesthetic.
+ * - Mobile: full-width, no border/shadow — native screen feel.
+ * - Desktop: subtle card with very thin border and minimal shadow.
+ * - Supports `hint` prop with warm accent left border.
  */
 export default function FunnelCard({
   title,
@@ -12,20 +12,20 @@ export default function FunnelCard({
   footer,
 }) {
   return (
-    <div className="sm:card-surface sm:overflow-hidden">
+    <div className="sm:bg-white sm:border sm:border-[#E2E8F0] sm:rounded-2xl sm:shadow-[0_1px_3px_rgba(0,0,0,.04)]">
 
-      {/* Card header — conversational question */}
-      <div className="px-5 sm:px-8 pt-5 sm:pt-8 pb-4 sm:pb-6 sm:border-b sm:border-border">
-        <h2 className="font-display text-xl sm:text-2xl font-extrabold text-ink tracking-tight leading-snug mb-1.5">
+      {/* Card header */}
+      <div className="px-5 sm:px-8 pt-5 sm:pt-8 pb-4 sm:pb-6 sm:border-b sm:border-[#E2E8F0]">
+        <h2 className="font-display text-xl sm:text-2xl font-extrabold text-ink tracking-tight leading-snug mb-1">
           {title}
         </h2>
         {subtitle && (
-          <p className="text-sm text-ink-muted leading-relaxed max-w-xl">
+          <p className="text-sm text-ink-muted leading-relaxed max-w-xl truncate">
             {subtitle}
           </p>
         )}
         {hint && (
-          <p className="mt-2.5 text-xs text-brand-600 bg-brand-50 border border-brand-100 rounded-lg px-3 py-2 leading-relaxed">
+          <p className="mt-3 text-xs text-ink-muted leading-relaxed pl-3 border-l-2 border-[#C9A96E]">
             {hint}
           </p>
         )}
@@ -36,7 +36,7 @@ export default function FunnelCard({
         {children}
       </div>
 
-      {/* Card footer / action bar */}
+      {/* Card footer */}
       {footer && (
         <div className="px-5 sm:px-8 pb-5 sm:pb-8 pt-2">
           {footer}

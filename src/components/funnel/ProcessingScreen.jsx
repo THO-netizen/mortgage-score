@@ -1,105 +1,86 @@
-import { useEffect, useState } from 'react'
-import { Lock, Shield } from 'lucide-react'
+import { useEffect, useRef, useState } from 'react'
 
-const PHASES = [
-  { text: 'Analyzing financial profile…',                    ms: 850  },
-  { text: 'Calculating DTI and LTV risk parameters…',        ms: 950  },
-  { text: 'Validating against 2026 Czech National Bank regulatory guidelines…', ms: 900 },
+const STEPS = [
+  { text: 'Evaluating affordability',        ms: 900 },
+  { text: 'Reviewing financing structure',   ms: 800 },
+  { text: 'Identifying important factors',   ms: 800 },
+  { text: 'Preparing your assessment',       ms: 700 },
 ]
 
-const TOTAL_MS = PHASES.reduce((s, p) => s + p.ms, 0)
+const TOTAL_MS = STEPS.reduce((s, p) => s + p.ms, 0)
 
 export default function ProcessingScreen({ onComplete }) {
-  const [phaseIdx, setPhaseIdx] = useState(0)
-  const [progress, setProgress] = useState(0)
-  const [done,     setDone]     = useState(false)
+  const [stepIdx, setStepIdx] = useState(0)
+  const [done, setDone] = useState(false)
+  const barRef = useRef(null)
+  const prefersReduced = typeof window !== 'undefined' &&
+    window.matchMedia('(prefers-reduced-motion: reduce)').matches
 
   useEffect(() => {
-    const start = Date.now()
-
-    const progressId = setInterval(() => {
-      const pct = Math.min(99, Math.round(((Date.now() - start) / TOTAL_MS) * 100))
-      setProgress(pct)
-    }, 30)
+    // Start progress line animation
+    if (barRef.current) {
+      barRef.current.style.transform = 'scaleX(1)'
+    }
 
     let elapsed = 0
-    const phaseTimers = PHASES.map((p, i) => {
-      const id = setTimeout(() => setPhaseIdx(i), elapsed)
-      elapsed += p.ms
-      return id
+    const timers = STEPS.map((step, i) => {
+      if (i === 0) return null
+      elapsed += STEPS[i - 1].ms
+      return setTimeout(() => setStepIdx(i), elapsed)
     })
 
-    const doneId = setTimeout(() => {
-      clearInterval(progressId)
-      setProgress(100)
+    const doneTimer = setTimeout(() => {
       setDone(true)
-      setTimeout(onComplete, 500)
+      setTimeout(onComplete, 400)
     }, TOTAL_MS)
 
     return () => {
-      clearInterval(progressId)
-      phaseTimers.forEach(clearTimeout)
-      clearTimeout(doneId)
+      timers.forEach(t => t && clearTimeout(t))
+      clearTimeout(doneTimer)
     }
   }, [onComplete])
 
+  const label = done ? 'Assessment ready' : STEPS[stepIdx].text
+
   return (
-    <main className="min-h-screen bg-dark-900 flex items-center justify-center px-4">
-      <div className="w-full max-w-sm animate-fade-up">
-
-        {/* Score icon */}
-        <div className="flex justify-center mb-10">
-          <div className="w-16 h-16 rounded-2xl bg-brand-600/15 border border-brand-500/20 flex items-center justify-center">
-            <Shield size={28} className="text-brand-400" />
-          </div>
-        </div>
-
-        {/* Status text */}
-        <div className="text-center mb-10" style={{ minHeight: '3rem' }}>
-          {PHASES.map((phase, i) => (
-            i === phaseIdx && !done && (
-              <p
-                key={i}
-                className="text-white text-[15px] font-medium leading-relaxed animate-fade-in"
-              >
-                {phase.text}
-              </p>
-            )
-          ))}
-          {done && (
-            <p className="text-success-DEFAULT text-[15px] font-medium animate-fade-in">
-              Assessment complete.
-            </p>
-          )}
-        </div>
-
-        {/* Progress bar */}
-        <div className="mb-3">
-          <div className="h-[2px] bg-white/8 rounded-full overflow-hidden">
-            <div
-              className="h-full rounded-full transition-all duration-100 ease-linear"
-              style={{
-                width: `${progress}%`,
-                background: done
-                  ? '#10B981'
-                  : 'linear-gradient(90deg, #3B82F6, #6366F1)',
-              }}
-            />
-          </div>
-        </div>
-
-        {/* Percentage */}
-        <div className="flex justify-end mb-10">
-          <span className="text-[11px] text-slate-600 tabular-nums">{progress}%</span>
-        </div>
-
-        {/* Trust badge */}
-        <div className="flex items-center justify-center gap-2 text-slate-600 text-[11px]">
-          <Lock size={10} className="flex-shrink-0" />
-          <span>Secure analytical environment. Data processed locally.</span>
-        </div>
-
+    <main className="min-h-screen bg-dark-900 flex flex-col items-center justify-center px-4 relative">
+      {/* Progress line at top */}
+      <div className="absolute top-0 inset-x-0 h-[2px] bg-white/5">
+        <div
+          ref={barRef}
+          className="h-full origin-left bg-bronze/60"
+          style={{
+            transform: 'scaleX(0)',
+            transition: prefersReduced
+              ? 'none'
+              : `transform ${TOTAL_MS}ms cubic-bezier(0.4, 0, 0.2, 1)`,
+          }}
+        />
       </div>
+
+      {/* State text */}
+      <div className="text-center" style={{ minHeight: '2.5rem' }}>
+        <p
+          key={label}
+          className={[
+            'font-display text-xl tracking-tight',
+            done ? 'text-bronze' : 'text-white',
+            prefersReduced ? '' : 'animate-fade-in',
+          ].join(' ')}
+        >
+          {label}
+        </p>
+      </div>
+
+      {/* Pulse indicator */}
+      {!done && !prefersReduced && (
+        <span className="mt-8 block w-1 h-1 rounded-full bg-white/40 animate-ping-soft" />
+      )}
+
+      {/* Trust badge */}
+      <p className="absolute bottom-8 text-[11px] text-slate-600 tracking-wide">
+        Private &middot; Secure &middot; No data shared
+      </p>
     </main>
   )
 }
