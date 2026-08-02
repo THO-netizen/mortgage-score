@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react'
 import useEmblaCarousel from 'embla-carousel-react'
-import { ChevronLeft, ChevronRight, ExternalLink } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Play } from 'lucide-react'
 import { carouselRegistry } from '../../hooks/carouselRegistry.js'
 
 const VIDEOS = [
@@ -106,82 +106,90 @@ const VIDEOS = [
   },
 ]
 
-// ── VideoCard ─────────────────────────────────────────────────────────────────
-// Memoised so only the card whose isPlaying prop changes re-renders.
-// Cross-origin iframes cannot be controlled via JS API, so we switch the `src`
-// between a muted-autoplay URL and the static URL to start/stop playback.
-const VideoCard = React.memo(function VideoCard({ id, title, desc, isPlaying }) {
-  const reelUrl  = `https://www.facebook.com/reel/${id}/`
-  const staticSrc  = `https://www.facebook.com/plugins/video.php?href=${encodeURIComponent(reelUrl)}&show_text=false&width=500&mute=1`
-  const autoplaySrc = staticSrc + '&autoplay=1'
-  const embedSrc = isPlaying ? autoplaySrc : staticSrc
+// Gradient presets cycled across cards for visual variety
+const CARD_GRADIENTS = [
+  'linear-gradient(135deg, #1E3A8A 0%, #1D4ED8 50%, #3B82F6 100%)',
+  'linear-gradient(135deg, #0F172A 0%, #1E40AF 100%)',
+  'linear-gradient(135deg, #1E293B 0%, #2563EB 100%)',
+  'linear-gradient(135deg, #1E3A8A 0%, #334155 50%, #1D4ED8 100%)',
+  'linear-gradient(135deg, #0F172A 0%, #1E3A8A 60%, #3B82F6 100%)',
+]
+
+// ── VideoThumbnailCard ────────────────────────────────────────────────────────
+const VideoThumbnailCard = React.memo(function VideoThumbnailCard({ id, title, index }) {
+  const reelUrl = `https://www.facebook.com/reel/${id}/`
+  const gradient = CARD_GRADIENTS[index % CARD_GRADIENTS.length]
+
+  const handleClick = () => {
+    window.open(reelUrl, '_blank', 'noopener,noreferrer')
+  }
+
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault()
+      handleClick()
+    }
+  }
 
   return (
-    <div className="flex flex-col rounded-xl border border-white/10 bg-dark-800 overflow-hidden h-full">
-      {/* 9:16 portrait iframe */}
-      <div className="relative w-full flex-shrink-0" style={{ paddingBottom: '177.78%' }}>
-        <iframe
-          src={embedSrc}
-          title={title}
-          loading="lazy"
-          allow="autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share"
-          allowFullScreen
-          scrolling="no"
-          style={{
-            position: 'absolute',
-            top: 0, left: 0,
-            width: '100%', height: '100%',
-            border: 'none', overflow: 'hidden',
-          }}
-        />
+    <button
+      type="button"
+      onClick={handleClick}
+      onKeyDown={handleKeyDown}
+      aria-label={`Watch: ${title} — opens Facebook in a new tab`}
+      className="group relative w-full rounded-xl overflow-hidden border border-white/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-400 focus-visible:ring-offset-2 focus-visible:ring-offset-dark-900 transition-transform duration-200 hover:scale-[1.03] active:scale-[0.98] cursor-pointer"
+      style={{ aspectRatio: '9 / 16' }}
+    >
+      {/* Gradient background */}
+      <div
+        className="absolute inset-0"
+        style={{ background: gradient }}
+      />
+
+      {/* Subtle pattern overlay for depth */}
+      <div className="absolute inset-0 opacity-10 bg-[radial-gradient(circle_at_30%_20%,rgba(255,255,255,0.3)_0%,transparent_50%)]" />
+
+      {/* Play button */}
+      <div className="absolute inset-0 flex items-center justify-center">
+        <div className="w-16 h-16 rounded-full bg-white/15 backdrop-blur-sm border border-white/20 flex items-center justify-center transition-all duration-200 group-hover:bg-white/25 group-hover:scale-110 group-focus-visible:bg-white/25 group-focus-visible:scale-110">
+          <Play
+            size={28}
+            className="text-white ml-1 drop-shadow-lg"
+            fill="currentColor"
+          />
+        </div>
       </div>
 
-      {/* Text content */}
-      <div className="flex flex-col flex-1 p-4" style={{ minHeight: '112px' }}>
-        <h3
-          className="text-white font-semibold text-[13px] leading-snug mb-1.5"
-          style={{ wordBreak: 'break-word', overflowWrap: 'break-word' }}
-        >
+      {/* Title overlay at bottom */}
+      <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/70 via-black/30 to-transparent">
+        <p className="text-white text-sm font-semibold leading-snug text-left drop-shadow-md">
           {title}
-        </h3>
-        <p
-          className="text-slate-400 text-[11px] leading-relaxed flex-1 mb-3"
-          style={{ wordBreak: 'break-word', overflowWrap: 'break-word' }}
-        >
-          {desc}
         </p>
-        <a
-          href={reelUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-flex items-center gap-1.5 text-brand-400 text-[11px] font-semibold hover:text-brand-300 transition-colors mt-auto"
-        >
-          Watch Tip
-          <ExternalLink size={10} />
-        </a>
+        <p className="text-white/60 text-[11px] mt-1 text-left">
+          Watch on Facebook
+        </p>
       </div>
-    </div>
+    </button>
   )
 })
 
 // ── MortgageTipsLibrary ───────────────────────────────────────────────────────
 export default function MortgageTipsLibrary() {
-  const sectionRef     = useRef(null)   // the outer <section> element
-  const emblaViewportEl = useRef(null)  // the overflow:hidden Embla viewport element
-  // ratioMap stores the latest intersectionRatio for each video id (within the carousel viewport)
-  const ratioMap = useRef(new Map())
-
-  const [playingId,    setPlayingId]    = useState(null)   // id of the currently autoplaying card
-  const [sectionInView, setSectionInView] = useState(false) // section gating flag
+  const sectionRef = useRef(null)
 
   const [emblaRef, emblaApi] = useEmblaCarousel({
     loop: false,
     align: 'start',
     dragFree: false,
+    slidesToScroll: 1,
+    breakpoints: {
+      '(min-width: 640px)': { slidesToScroll: 2 },
+      '(min-width: 1024px)': { slidesToScroll: 4 },
+    },
   })
 
-  const [canPrev,       setCanPrev]       = useState(false)
-  const [canNext,       setCanNext]       = useState(true)
+  const [canPrev, setCanPrev] = useState(false)
+  const [canNext, setCanNext] = useState(true)
   const [selectedIndex, setSelectedIndex] = useState(0)
 
   const syncState = useCallback(() => {
@@ -204,103 +212,31 @@ export default function MortgageTipsLibrary() {
 
   const scrollPrev = useCallback(() => emblaApi?.scrollPrev(), [emblaApi])
   const scrollNext = useCallback(() => emblaApi?.scrollNext(), [emblaApi])
-  const scrollTo   = useCallback((i) => emblaApi?.scrollTo(i), [emblaApi])
+  const scrollTo = useCallback((i) => emblaApi?.scrollTo(i), [emblaApi])
 
-  // ── Keyboard registry ───────────────────────────────────────────────────────
+  // ── Keyboard registry ─────────────────────────────────────────────────────
   useEffect(() => {
     carouselRegistry.set('mortgage-tips', {
       scrollPrev,
       scrollNext,
       canScrollPrev: () => emblaApi?.canScrollPrev() ?? false,
       canScrollNext: () => emblaApi?.canScrollNext() ?? false,
-      getElement:    () => sectionRef.current,
+      getElement: () => sectionRef.current,
     })
     return () => carouselRegistry.delete('mortgage-tips')
   }, [emblaApi, scrollPrev, scrollNext])
 
-  // ── Section visibility gate ─────────────────────────────────────────────────
-  // Stops all playback when the section is not visible on the page.
+  // ── Touchpad / horizontal mousewheel support ──────────────────────────────
   useEffect(() => {
-    const el = sectionRef.current
-    if (!el) return
-    const obs = new IntersectionObserver(
-      ([entry]) => {
-        setSectionInView(entry.isIntersecting)
-        if (!entry.isIntersecting) setPlayingId(null)
-      },
-      { threshold: 0.1 },
-    )
-    obs.observe(el)
-    return () => obs.disconnect()
-  }, [])
-
-  // ── Card visibility observer (autoplay logic) ───────────────────────────────
-  // Uses the Embla viewport as root so intersection ratios reflect how much of
-  // each slide is visible *within the carousel*, not the page.
-  // threshold: 0.6 means a card must be ≥60% visible in the carousel to qualify.
-  // Among qualifying cards (ties common at desktop), the one whose horizontal
-  // centre is closest to the carousel's centre wins.
-  useEffect(() => {
-    const viewport = emblaViewportEl.current
-    if (!viewport || !emblaApi) return
-
-    const obs = new IntersectionObserver(
-      (entries) => {
-        // Update ratio map with latest data for changed entries
-        entries.forEach(entry => {
-          const id = entry.target.dataset.videoId
-          if (id) ratioMap.current.set(id, entry.intersectionRatio)
-        })
-
-        // Find the best candidate: highest ratio, tiebroken by proximity to carousel centre
-        const viewportRect = viewport.getBoundingClientRect()
-        const viewportCx   = viewportRect.left + viewportRect.width / 2
-
-        let bestId    = null
-        let bestScore = -Infinity
-
-        ratioMap.current.forEach((ratio, id) => {
-          if (ratio < 0.6) return
-          const el = viewport.querySelector(`[data-video-id="${id}"]`)
-          if (!el) return
-          const rect     = el.getBoundingClientRect()
-          const cardCx   = rect.left + rect.width / 2
-          // score = ratio (0-1) minus normalised distance from centre (0-1)
-          const dist     = Math.abs(cardCx - viewportCx) / (viewportRect.width || 1)
-          const score    = ratio - dist
-          if (score > bestScore) { bestScore = score; bestId = id }
-        })
-
-        setPlayingId(bestId)
-      },
-      { root: viewport, threshold: [0, 0.6, 1.0] },
-    )
-
-    // Observe every slide container (each has data-video-id)
-    viewport.querySelectorAll('[data-video-id]').forEach(el => obs.observe(el))
-
-    return () => obs.disconnect()
-  }, [emblaApi]) // re-run when emblaApi is available (viewport element is ready)
-
-  // ── Touchpad / horizontal mousewheel support ────────────────────────────────
-  // Embla handles mouse-drag and touch-swipe natively. The only missing gesture
-  // is a two-finger horizontal swipe on a touchpad (or horizontal scroll wheel),
-  // which fires `wheel` events that Embla ignores by default.
-  // We intercept those events, accumulate the delta, and navigate slides once
-  // the accumulated delta exceeds a threshold — then reset for the next gesture.
-  useEffect(() => {
-    const viewport = emblaViewportEl.current
+    const viewport = sectionRef.current?.querySelector('[data-embla-viewport]')
     if (!viewport || !emblaApi) return
 
     let accumulated = 0
     let rafId
 
     const onWheel = (e) => {
-      // Only intercept clearly horizontal scroll (|deltaX| > |deltaY|).
-      // Vertical scroll (trackpad up/down, scroll wheel) is left to the browser.
       if (Math.abs(e.deltaX) <= Math.abs(e.deltaY)) return
-
-      e.preventDefault() // stop the page from scrolling horizontally
+      e.preventDefault()
 
       accumulated += e.deltaX
       cancelAnimationFrame(rafId)
@@ -315,7 +251,6 @@ export default function MortgageTipsLibrary() {
       })
     }
 
-    // { passive: false } required so preventDefault() is honoured
     viewport.addEventListener('wheel', onWheel, { passive: false })
     return () => {
       viewport.removeEventListener('wheel', onWheel)
@@ -323,9 +258,9 @@ export default function MortgageTipsLibrary() {
     }
   }, [emblaApi])
 
-  // ── Keyboard handler (direct focus on section) ──────────────────────────────
+  // ── Keyboard handler (direct focus on section) ────────────────────────────
   const handleKeyDown = (e) => {
-    if (e.key === 'ArrowLeft')  { e.preventDefault(); scrollPrev() }
+    if (e.key === 'ArrowLeft') { e.preventDefault(); scrollPrev() }
     if (e.key === 'ArrowRight') { e.preventDefault(); scrollNext() }
   }
 
@@ -359,13 +294,13 @@ export default function MortgageTipsLibrary() {
         {/* Carousel wrapper */}
         <div className="relative">
 
-          {/* Prev arrow */}
+          {/* Prev arrow — hidden on mobile */}
           <button
             onClick={scrollPrev}
             disabled={!canPrev}
             aria-label="Previous videos"
             className={[
-              'hidden sm:flex absolute left-0 top-[46%] -translate-y-1/2 -translate-x-4 z-10',
+              'hidden sm:flex absolute left-0 top-1/2 -translate-y-1/2 -translate-x-4 z-10',
               'w-9 h-9 rounded-full items-center justify-center',
               'bg-dark-800 border border-white/10 text-white transition-all duration-150',
               canPrev
@@ -376,35 +311,36 @@ export default function MortgageTipsLibrary() {
             <ChevronLeft size={17} />
           </button>
 
-          {/* Embla viewport — dual ref: emblaRef for Embla + emblaViewportEl for IO root */}
+          {/* Embla viewport */}
           <div
-            ref={(el) => { emblaRef(el); emblaViewportEl.current = el }}
+            ref={emblaRef}
+            data-embla-viewport=""
             className="overflow-hidden cursor-grab active:cursor-grabbing"
           >
-            <div className="flex" style={{ marginLeft: '-16px' }}>
-              {VIDEOS.map((v) => (
+            <div className="flex" style={{ marginLeft: '-12px' }}>
+              {VIDEOS.map((v, i) => (
                 <div
                   key={v.id}
-                  data-video-id={v.id}
-                  className="flex-[0_0_100%] sm:flex-[0_0_50%] lg:flex-[0_0_33.333%] min-w-0"
-                  style={{ paddingLeft: '16px' }}
+                  className="flex-[0_0_83.333%] sm:flex-[0_0_40%] md:flex-[0_0_33.333%] lg:flex-[0_0_25%] min-w-0"
+                  style={{ paddingLeft: '12px' }}
                 >
-                  <VideoCard
-                    {...v}
-                    isPlaying={v.id === playingId && sectionInView}
+                  <VideoThumbnailCard
+                    id={v.id}
+                    title={v.title}
+                    index={i}
                   />
                 </div>
               ))}
             </div>
           </div>
 
-          {/* Next arrow */}
+          {/* Next arrow — hidden on mobile */}
           <button
             onClick={scrollNext}
             disabled={!canNext}
             aria-label="Next videos"
             className={[
-              'hidden sm:flex absolute right-0 top-[46%] -translate-y-1/2 translate-x-4 z-10',
+              'hidden sm:flex absolute right-0 top-1/2 -translate-y-1/2 translate-x-4 z-10',
               'w-9 h-9 rounded-full items-center justify-center',
               'bg-dark-800 border border-white/10 text-white transition-all duration-150',
               canNext
@@ -418,14 +354,16 @@ export default function MortgageTipsLibrary() {
         </div>
 
         {/* Dot navigation */}
-        <div className="flex justify-center items-center gap-2 mt-6">
+        <div className="flex justify-center items-center gap-2 mt-6" role="tablist" aria-label="Carousel navigation">
           {Array.from({ length: snapCount }).map((_, i) => (
             <button
               key={i}
               onClick={() => scrollTo(i)}
-              aria-label={`Go to slide ${i + 1}`}
+              role="tab"
+              aria-selected={i === selectedIndex}
+              aria-label={`Go to slide group ${i + 1}`}
               className={[
-                'rounded-full transition-all duration-300 focus:outline-none',
+                'rounded-full transition-all duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-400',
                 i === selectedIndex
                   ? 'w-5 h-1.5 bg-brand-400'
                   : 'w-1.5 h-1.5 bg-slate-600 hover:bg-slate-500',

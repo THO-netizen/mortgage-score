@@ -354,7 +354,7 @@ function ScoreGauge({ score, color }) {
   const offset = GAUGE_CIRC * (1 - animated / 100)
 
   return (
-    <svg viewBox="0 0 160 160" className="w-36 h-36 flex-shrink-0">
+    <svg viewBox="0 0 160 160" className="w-24 h-24 sm:w-36 sm:h-36 flex-shrink-0">
       <circle cx="80" cy="80" r={GAUGE_R} fill="none" stroke="#E2E8F0" strokeWidth="11" />
       <circle
         cx="80" cy="80" r={GAUGE_R} fill="none"
@@ -1229,16 +1229,20 @@ function HeadlineVerdict({ score, cfg, profile, formData }) {
   return (
     <div className="rounded-card bg-dark-900 border border-white/10 overflow-hidden">
       <div className="h-0.5 w-full flex-shrink-0" style={{ background: verdict.color }} />
-      <div className="px-5 sm:px-10 py-8 sm:py-10">
-        <div className="flex flex-col lg:flex-row items-start gap-6 lg:gap-10">
+      <div className="px-4 sm:px-10 py-6 sm:py-10">
 
-          {/* Left: Gauge + unified verdict */}
-          <div className="flex items-center gap-4 sm:gap-6 flex-shrink-0">
-            <ScoreGauge score={score} color={verdict.color} />
-            <div className="min-w-0">
-              <p className="text-[10px] font-bold tracking-widest uppercase text-slate-500 mb-1.5">Mortgage Readiness</p>
-              <p className="font-display text-xl sm:text-2xl font-black text-white leading-tight">{verdict.label}</p>
-              <div className="flex items-center gap-2 mt-2.5">
+        {/* Mobile: vertical stack; Desktop: horizontal */}
+        <div className="flex flex-col lg:flex-row items-start gap-5 lg:gap-10">
+
+          {/* Score gauge + verdict */}
+          <div className="flex items-center gap-4 flex-shrink-0 w-full lg:w-auto">
+            <div className="flex-shrink-0">
+              <ScoreGauge score={score} color={verdict.color} />
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-[10px] font-bold tracking-widest uppercase text-slate-500 mb-1">Mortgage Readiness</p>
+              <p className="font-display text-lg sm:text-2xl font-black text-white leading-tight">{verdict.label}</p>
+              <div className="flex items-center gap-2 mt-2">
                 <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: verdict.color }} />
                 <span className="text-xs text-slate-400 font-medium">Score: {score}/100</span>
               </div>
@@ -1247,18 +1251,19 @@ function HeadlineVerdict({ score, cfg, profile, formData }) {
 
           {/* Divider */}
           <div className="hidden lg:block w-px self-stretch bg-white/10 flex-shrink-0" />
+          <div className="lg:hidden w-full h-px bg-white/10" />
 
-          {/* Right: Loan figure + insight */}
-          <div className="flex-1 min-w-0 space-y-5">
+          {/* Loan figure + insight */}
+          <div className="flex-1 min-w-0 space-y-3 sm:space-y-5 w-full">
             <div>
               <p className="text-[10px] font-bold tracking-widest uppercase text-slate-500 mb-1">
                 Maximum Loan Estimate
               </p>
-              <p className="font-display text-2xl sm:text-3xl font-black text-white tabular-nums leading-tight">
+              <p className="font-display text-xl sm:text-3xl font-black text-white tabular-nums leading-tight">
                 {eX > 0 ? formatCZKShort(eX) : '—'}
               </p>
             </div>
-            <p className="text-sm text-slate-400 leading-relaxed max-w-xl">{insightSentence}</p>
+            <p className="text-[13px] sm:text-sm text-slate-400 leading-relaxed max-w-xl">{insightSentence}</p>
           </div>
 
         </div>
@@ -1340,26 +1345,26 @@ function BindingConstraintBars({ profile, isDiscovering = false }) {
 
   return (
     <div className="rounded-card border border-border bg-card overflow-hidden">
-      <div className="px-5 sm:px-6 py-4 border-b border-border">
+      <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-border">
         <p className="text-[10px] font-bold tracking-widest uppercase text-ink-subtle">
           {isDiscovering ? 'Capacity Assessment' : 'Binding Constraint'}
         </p>
-        <p className="text-sm font-semibold text-ink mt-0.5">
+        <p className="text-[13px] sm:text-sm font-semibold text-ink mt-0.5">
           {isDiscovering
             ? 'How your financial profile scores against key qualification limits'
             : 'How your profile scores against each key regulatory limit'}
         </p>
       </div>
-      <div className="p-5 sm:p-6 grid grid-cols-1 sm:grid-cols-3 gap-6">
+      <div className="p-4 sm:p-6 grid grid-cols-1 sm:grid-cols-3 gap-5 sm:gap-6">
         {bars.map(({ label, sub, value, limit, isActive, displayValue, displayLimit }) => {
           const pct      = Math.min(100, limit > 0 ? (value / limit) * 100 : 0)
           const breached = value > limit
           const color    = breached ? '#EF4444' : isActive ? '#F59E0B' : '#10B981'
           return (
-            <div key={label} className="space-y-2.5">
+            <div key={label} className="space-y-2">
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0">
-                  <p className="text-xs font-semibold text-ink leading-tight">{label}</p>
+                  <p className="text-[13px] sm:text-xs font-semibold text-ink leading-tight">{label}</p>
                   <p className="text-[10px] text-ink-subtle mt-0.5 leading-tight">{sub}</p>
                 </div>
                 {breached && <span className="badge-risk text-[9px] flex-shrink-0">Exceeded</span>}
@@ -1478,21 +1483,21 @@ function ProfileBreakdownGrid({ formData, profile }) {
   const dotColor = { strong: '#10B981', good: '#3B82F6', review: '#F59E0B', risk: '#EF4444' }
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+    <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
       {cards.map(({ title, CardIcon, primary, secondary, status }) => (
-        <div key={title} className="rounded-card border border-border bg-card p-5 flex flex-col gap-3 min-w-0">
-          <div className="flex items-center justify-between gap-2">
-            <div className="flex items-center gap-2.5 min-w-0">
-              <div className="w-8 h-8 rounded-lg bg-surface border border-border flex items-center justify-center flex-shrink-0">
-                <CardIcon size={14} className="text-ink-muted" />
+        <div key={title} className="rounded-card border border-border bg-card p-3 sm:p-5 flex flex-col gap-2 sm:gap-3 min-w-0">
+          <div className="flex items-center justify-between gap-1.5">
+            <div className="flex items-center gap-2 min-w-0">
+              <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-surface border border-border flex items-center justify-center flex-shrink-0">
+                <CardIcon size={13} className="text-ink-muted" />
               </div>
-              <p className="text-[10px] font-bold uppercase tracking-wide text-ink-subtle truncate">{title}</p>
+              <p className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wide text-ink-subtle truncate">{title}</p>
             </div>
             <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: dotColor[status] ?? '#94A3B8' }} />
           </div>
           <div className="min-w-0">
-            <p className="text-sm font-bold text-ink leading-snug break-words">{primary}</p>
-            <p className="text-[11px] text-ink-subtle mt-1 leading-relaxed break-words">{secondary}</p>
+            <p className="text-[13px] sm:text-sm font-bold text-ink leading-snug break-words">{primary}</p>
+            <p className="text-[10px] sm:text-[11px] text-ink-subtle mt-0.5 sm:mt-1 leading-relaxed break-words line-clamp-3">{secondary}</p>
           </div>
         </div>
       ))}
@@ -1570,18 +1575,18 @@ function RecommendedStrategy({ score, profile, formData }) {
         <p className="text-[10px] font-bold tracking-widest uppercase text-ink-subtle">Recommended Strategy</p>
         <p className="text-sm font-semibold text-ink mt-0.5">Priority actions based on your profile</p>
       </div>
-      <div className="p-5 sm:p-6 space-y-5">
+      <div className="p-4 sm:p-6 space-y-4 sm:space-y-5">
         {actions.slice(0, 4).map(({ priority, color, title, text }, i) => (
-          <div key={i} className="flex gap-4 min-w-0">
+          <div key={i} className="flex gap-3 sm:gap-4 min-w-0">
             <div
-              className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 text-white text-[11px] font-bold mt-0.5"
+              className="w-6 h-6 sm:w-7 sm:h-7 rounded-full flex items-center justify-center flex-shrink-0 text-white text-[10px] sm:text-[11px] font-bold mt-0.5"
               style={{ background: color }}
             >
               {i + 1}
             </div>
             <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 mb-1 flex-wrap">
-                <p className="text-sm font-semibold text-ink leading-tight break-words">{title}</p>
+              <div className="flex items-start gap-2 mb-1 flex-wrap">
+                <p className="text-[13px] sm:text-sm font-semibold text-ink leading-tight break-words">{title}</p>
                 <span
                   className="text-[9px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-full flex-shrink-0"
                   style={{ color, background: `${color}18`, border: `1px solid ${color}40` }}
@@ -1589,7 +1594,7 @@ function RecommendedStrategy({ score, profile, formData }) {
                   {priority}
                 </span>
               </div>
-              <p className="text-xs text-ink-muted leading-relaxed break-words">{text}</p>
+              <p className="text-[11px] sm:text-xs text-ink-muted leading-relaxed break-words">{text}</p>
             </div>
           </div>
         ))}
@@ -1647,36 +1652,37 @@ function HeroVerdictPost({ score, cfg, profile, formData }) {
   return (
     <div className="rounded-2xl border border-border bg-card overflow-hidden">
       <div className="h-0.5 w-full" style={{ background: verdict.color }} />
-      <div className="px-5 sm:px-8 py-6">
-        <p className="text-[10px] font-bold tracking-widest uppercase text-ink-subtle mb-5">Your Assessment Result</p>
-        <div className="flex flex-col sm:flex-row items-start gap-6 sm:gap-8">
+      <div className="px-4 sm:px-8 py-5 sm:py-6">
+        <p className="text-[10px] font-bold tracking-widest uppercase text-ink-subtle mb-4 sm:mb-5">Your Assessment Result</p>
+        <div className="flex flex-col sm:flex-row items-start gap-5 sm:gap-8">
 
           {/* Score number */}
-          <div className="flex items-center gap-4 flex-shrink-0">
-            <p className="font-display text-[72px] font-black text-blue-900 leading-none tabular-nums w-36 text-center flex-shrink-0">{score}</p>
+          <div className="flex items-center gap-3 sm:gap-4 flex-shrink-0">
+            <p className="font-display text-[48px] sm:text-[72px] font-black text-blue-900 leading-none tabular-nums w-20 sm:w-36 text-center flex-shrink-0">{score}</p>
             <div className="min-w-0">
               <p className="text-[10px] text-ink-subtle uppercase tracking-wide mb-0.5">Mortgage Readiness Score</p>
-              <p className="font-display text-xl font-black text-ink leading-tight">{verdict.label}</p>
+              <p className="font-display text-base sm:text-xl font-black text-ink leading-tight">{verdict.label}</p>
               <div className="flex items-center gap-1.5 mt-1.5">
                 <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: verdict.color }} />
-                <span className="text-xs text-ink-muted">{verdict.summary}</span>
+                <span className="text-[11px] sm:text-xs text-ink-muted">{verdict.summary}</span>
               </div>
             </div>
           </div>
 
           <div className="hidden sm:block w-px bg-border self-stretch flex-shrink-0" />
+          <div className="sm:hidden w-full h-px bg-border" />
 
           {/* Loan figure + summary */}
-          <div className="flex-1 min-w-0">
-            <div className="mb-4">
+          <div className="flex-1 min-w-0 w-full">
+            <div className="mb-3 sm:mb-4">
               <p className="text-[10px] text-ink-subtle uppercase tracking-wide mb-1">
                 Maximum Loan Estimate
               </p>
-              <p className="font-display text-2xl font-black text-ink tabular-nums leading-tight">
+              <p className="font-display text-xl sm:text-2xl font-black text-ink tabular-nums leading-tight">
                 {eX > 0 ? formatCZKShort(eX) : '—'}
               </p>
             </div>
-            <p className="text-sm text-ink-muted leading-relaxed">{summary}</p>
+            <p className="text-[13px] sm:text-sm text-ink-muted leading-relaxed">{summary}</p>
           </div>
 
         </div>
@@ -1721,46 +1727,83 @@ function SoftLockGate({ onUnlock, formData }) {
 
   const canSubmit = !submitting && form.name.trim() && form.email.trim()
 
+  // Compute partial value preview for the user
+  const resolvedIncome = formData.netMonthlySalary > 0 ? formData.netMonthlySalary : formData.netIncome
+  let previewProfile = null
+  let previewScore = 0
+  try {
+    previewScore = computeScore(formData)
+    previewProfile = computeMortgageProfile({ ...formData, netIncome: resolvedIncome || 0 })
+  } catch (_) { /* graceful fallback */ }
+
+  const previewVerdict = getUnifiedVerdict(previewScore, previewProfile?.riskStatus ?? 'oranzova')
+
   return (
     <div>
+      {/* Partial value preview — show what they already have */}
+      {previewProfile && previewScore > 0 && (
+        <div className="rounded-t-2xl border border-b-0 border-border bg-card px-4 sm:px-6 py-5">
+          <p className="text-[10px] font-bold tracking-widest uppercase text-ink-subtle mb-3">Your Result Summary</p>
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
+            <div className="bg-surface rounded-xl p-3 border border-border">
+              <p className="text-[10px] text-ink-subtle uppercase tracking-wide">Score</p>
+              <p className="font-display text-lg font-black text-ink tabular-nums">{previewScore}/100</p>
+              <p className="text-[11px] font-medium mt-0.5" style={{ color: previewVerdict.color }}>{previewVerdict.label}</p>
+            </div>
+            {previewProfile.eX > 0 && (
+              <div className="bg-surface rounded-xl p-3 border border-border">
+                <p className="text-[10px] text-ink-subtle uppercase tracking-wide">Max Loan</p>
+                <p className="font-display text-lg font-black text-ink tabular-nums">{formatCZKShort(previewProfile.eX)}</p>
+                <p className="text-[11px] text-ink-muted mt-0.5">Conservative estimate</p>
+              </div>
+            )}
+            <div className="bg-surface rounded-xl p-3 border border-border col-span-2 sm:col-span-1">
+              <p className="text-[10px] text-ink-subtle uppercase tracking-wide">Key Constraint</p>
+              <p className="text-sm font-bold text-ink mt-0.5">
+                {{ DSTI: 'Income capacity', DI: 'Disposable income', DTI: 'Debt load', LTV: 'Down payment', AGE: 'Loan term' }[previewProfile.bottleneck] ?? 'Profile limits'}
+              </p>
+              <p className="text-[11px] text-ink-muted mt-0.5">Unlock for full breakdown</p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Blurred peek of locked sections */}
-      <div className="rounded-t-2xl border border-b-0 border-border overflow-hidden">
+      <div className={`border border-border overflow-hidden ${previewProfile && previewScore > 0 ? 'border-t-0' : 'rounded-t-2xl'}`}>
         <div
-          className="pointer-events-none select-none bg-card px-6 py-4 space-y-3"
+          className="pointer-events-none select-none bg-card px-4 sm:px-6 py-3 space-y-2"
           style={{ filter: 'blur(3px)', opacity: 0.22 }}
           aria-hidden="true"
         >
           {GATE_SECTIONS.map(({ title, sub }) => (
-            <div key={title} className="flex items-center gap-4 py-2">
-              <div className="w-9 h-9 rounded-lg bg-brand-50 border border-brand-100 flex-shrink-0" />
+            <div key={title} className="flex items-center gap-3 py-1.5">
+              <div className="w-8 h-8 rounded-lg bg-brand-50 border border-brand-100 flex-shrink-0" />
               <div className="flex-1 min-w-0">
-                <p className="text-[14px] font-semibold text-ink">{title}</p>
-                <p className="text-[11px] text-ink-subtle mt-0.5">{sub}</p>
+                <p className="text-[13px] font-semibold text-ink">{title}</p>
+                <p className="text-[11px] text-ink-subtle">{sub}</p>
               </div>
-              <ChevronDown size={16} className="text-ink-subtle flex-shrink-0" />
+              <ChevronDown size={14} className="text-ink-subtle flex-shrink-0" />
             </div>
           ))}
         </div>
-        {/* Fade out the peek */}
-        <div className="h-14 bg-gradient-to-b from-card to-surface" />
+        <div className="h-10 bg-gradient-to-b from-card to-surface" />
       </div>
 
-      {/* Gate form card — visually connected below */}
+      {/* Gate form card */}
       <div className="rounded-b-2xl border border-t-0 border-border bg-card shadow-lg px-4 sm:px-8 py-6 sm:py-10">
 
-        <p className="text-[10px] font-bold tracking-widest uppercase text-brand-600 mb-3">
+        <p className="text-[10px] font-bold tracking-widest uppercase text-brand-600 mb-2">
           Full Assessment
         </p>
-        <h3 className="font-display text-xl sm:text-2xl font-black text-ink mb-3 leading-tight">
-          Access your full mortgage assessment
+        <h3 className="font-display text-lg sm:text-2xl font-black text-ink mb-2 leading-tight">
+          See your complete mortgage breakdown
         </h3>
-        <p className="text-sm text-ink-muted leading-relaxed mb-7 max-w-lg">
-          We generate a preliminary mortgage assessment based on standard Czech mortgage
-          evaluation criteria. Save your result to access the full breakdown — DTI, DSTI,
-          income structure, and risk factors.
+        <p className="text-[13px] sm:text-sm text-ink-muted leading-relaxed mb-5 sm:mb-7 max-w-lg">
+          Enter your details to unlock the full report — constraint analysis, bank-by-bank
+          comparison, income recognition breakdown, and personalised strategy.
         </p>
 
-        <form onSubmit={handleSubmit} className="max-w-sm space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-3.5 sm:space-y-4 max-w-sm">
 
           <div>
             <label htmlFor="gate-name" className="section-label mb-1.5 block">
@@ -1770,6 +1813,7 @@ function SoftLockGate({ onUnlock, formData }) {
               id="gate-name"
               type="text"
               required
+              autoComplete="name"
               value={form.name}
               onChange={set('name')}
               placeholder="Your full name"
@@ -1785,6 +1829,7 @@ function SoftLockGate({ onUnlock, formData }) {
               id="gate-email"
               type="email"
               required
+              autoComplete="email"
               value={form.email}
               onChange={set('email')}
               placeholder="your@email.com"
@@ -1800,6 +1845,7 @@ function SoftLockGate({ onUnlock, formData }) {
             <input
               id="gate-phone"
               type="tel"
+              autoComplete="tel"
               value={form.phone}
               onChange={set('phone')}
               placeholder="+420 …"
@@ -1812,12 +1858,22 @@ function SoftLockGate({ onUnlock, formData }) {
             disabled={!canSubmit}
             className="btn-cta w-full justify-center disabled:opacity-50 disabled:cursor-not-allowed mt-2"
           >
-            {submitting ? 'Sending…' : 'Send me my full assessment'}
+            {submitting ? 'Sending…' : 'See my full assessment'}
           </button>
 
-          <p className="text-[11px] text-ink-subtle text-center pt-1">
-            No spam. Your data is used only to deliver your report.
-          </p>
+          {/* What happens next */}
+          <div className="pt-2 space-y-1.5">
+            <p className="text-[11px] text-ink-muted leading-relaxed">
+              <strong className="text-ink-subtle">What happens next:</strong> Your full assessment unlocks immediately
+              on this page. We'll also email you a copy you can reference later.
+            </p>
+            <p className="text-[11px] text-ink-subtle leading-relaxed">
+              No spam. No calls unless you book one.{' '}
+              <a href="https://www.mortgagescore.cz/privacy" target="_blank" rel="noopener noreferrer" className="underline underline-offset-2 hover:text-ink-muted">
+                Privacy policy
+              </a>
+            </p>
+          </div>
 
         </form>
       </div>
@@ -1916,12 +1972,12 @@ export default function Step7Results({ formData, onBack, onRestart }) {
     <main className="animate-fade-up">
 
       {/* ── Sticky result header ─────────────────────── */}
-      <div className="sticky top-0 z-40 bg-dark-900/95 backdrop-blur border-b border-white/10">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-3 flex items-center gap-3 sm:gap-6 min-w-0">
+      <div className="sticky top-0 z-40 bg-dark-900/95 backdrop-blur border-b border-white/10 safe-top">
+        <div className="max-w-6xl mx-auto px-3 sm:px-6 py-2.5 sm:py-3 flex items-center gap-2.5 sm:gap-6 min-w-0">
 
           {/* Mini gauge + unified verdict */}
-          <div className="flex items-center gap-3 flex-shrink-0">
-            <svg viewBox="0 0 44 44" className="w-9 h-9" aria-hidden="true">
+          <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
+            <svg viewBox="0 0 44 44" className="w-8 h-8 sm:w-9 sm:h-9" aria-hidden="true">
               <circle cx="22" cy="22" r="16" fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth="3.5" />
               <circle cx="22" cy="22" r="16" fill="none"
                 stroke={getUnifiedVerdict(score, headerProfile.riskStatus).color} strokeWidth="3.5"
@@ -1932,7 +1988,7 @@ export default function Step7Results({ formData, onBack, onRestart }) {
               <text x="22" y="26" textAnchor="middle" fill="white" fontSize="9"
                 fontWeight="800" fontFamily="Manrope, Inter, sans-serif">{score}</text>
             </svg>
-            <div>
+            <div className="hidden sm:block">
               <p className="text-[10px] text-slate-500 leading-tight">Readiness</p>
               <p className="text-white text-[13px] font-semibold leading-tight">{getUnifiedVerdict(score, headerProfile.riskStatus).label}</p>
             </div>
@@ -1940,24 +1996,25 @@ export default function Step7Results({ formData, onBack, onRestart }) {
 
           <div className="w-px h-8 bg-white/10 flex-shrink-0 hidden sm:block" />
 
-          {/* Max loan */}
+          {/* Max loan — always visible on mobile as primary info */}
           {incomeForHeader > 0 && maxLoanForHeader > 0 && (
-            <div className="flex-shrink-0">
-              <p className="text-[10px] text-slate-500 leading-tight">Max loan estimate</p>
-              <p className="text-white font-display font-black text-base tabular-nums leading-tight">
+            <div className="flex-shrink-0 min-w-0">
+              <p className="text-[10px] text-slate-500 leading-tight hidden sm:block">Max loan estimate</p>
+              <p className="text-white font-display font-black text-sm sm:text-base tabular-nums leading-tight truncate">
                 {formatCZKShort(maxLoanForHeader)}
               </p>
             </div>
           )}
 
           {/* Spacer + restart */}
-          <div className="ml-auto flex items-center gap-3">
+          <div className="ml-auto flex items-center gap-2 sm:gap-3">
             <button
               onClick={onRestart}
-              className="flex items-center gap-1.5 text-slate-500 hover:text-slate-300 text-[11px] transition-colors"
+              className="flex items-center gap-1.5 text-slate-500 hover:text-slate-300 text-[11px] transition-colors min-h-[44px] min-w-[44px] justify-center sm:justify-start"
+              aria-label="Restart analysis"
             >
-              <RotateCcw size={11} />
-              <span className="hidden sm:inline">Restart analysis</span>
+              <RotateCcw size={13} />
+              <span className="hidden sm:inline">Restart</span>
             </button>
           </div>
 
@@ -1965,7 +2022,7 @@ export default function Step7Results({ formData, onBack, onRestart }) {
       </div>
 
       {/* ── Page content ─────────────────────────────── */}
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8 sm:py-12 space-y-6">
+      <div className="max-w-6xl mx-auto px-3 sm:px-6 py-6 sm:py-12 space-y-5 sm:space-y-6">
 
         {/* ── Headline Verdict ─────────────────────────── */}
         <HeadlineVerdict score={score} cfg={cfg} profile={headerProfile} formData={formData} />
@@ -2057,14 +2114,14 @@ export default function Step7Results({ formData, onBack, onRestart }) {
             <RecommendedStrategy score={score} profile={headerProfile} formData={formData} />
 
             {/* ── Strategy call + PDF — combined CTA ───── */}
-            <div className="rounded-2xl bg-dark-900 border border-white/10 px-5 sm:px-10 py-8">
-              <p className="text-[10px] font-bold tracking-widest uppercase text-brand-400 mb-3">
+            <div className="rounded-2xl bg-dark-900 border border-white/10 px-4 sm:px-10 py-6 sm:py-8">
+              <p className="text-[10px] font-bold tracking-widest uppercase text-brand-400 mb-2 sm:mb-3">
                 Next Steps
               </p>
-              <h3 className="font-display text-xl sm:text-2xl font-black text-white mb-3 leading-tight break-words">
+              <h3 className="font-display text-lg sm:text-2xl font-black text-white mb-2 sm:mb-3 leading-tight break-words">
                 Turn your assessment into an approved mortgage
               </h3>
-              <p className="text-slate-400 text-sm leading-relaxed mb-7 max-w-lg break-words">
+              <p className="text-slate-400 text-[13px] sm:text-sm leading-relaxed mb-5 sm:mb-7 max-w-lg break-words">
                 Book a 30-minute strategy call to discuss these results and get matched with the right lender.
                 Or download your personalised Mortgage Intelligence Report as PDF.
               </p>
@@ -2073,10 +2130,10 @@ export default function Step7Results({ formData, onBack, onRestart }) {
                   href="https://calendly.com/andy-lkadvisor/30min"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="btn-cta justify-center"
+                  className="btn-cta justify-center text-center"
                 >
                   <Calendar size={15} className="flex-shrink-0" />
-                  Book a 30-minute strategy call
+                  <span>Book strategy call</span>
                 </a>
                 <button
                   type="button"
@@ -2101,10 +2158,10 @@ export default function Step7Results({ formData, onBack, onRestart }) {
                       setPdfLoading(false)
                     }
                   }}
-                  className="inline-flex items-center justify-center gap-2 rounded-xl bg-white/10 hover:bg-white/15 text-white text-sm font-semibold px-6 py-3 transition-colors disabled:opacity-50 disabled:cursor-not-allowed break-words"
+                  className="inline-flex items-center justify-center gap-2 rounded-xl bg-white/10 hover:bg-white/15 text-white text-[13px] sm:text-sm font-semibold px-5 sm:px-6 min-h-[48px] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <FileText size={15} className="flex-shrink-0" />
-                  {pdfLoading ? 'Generating…' : 'Download Intelligence Report (PDF)'}
+                  <span>{pdfLoading ? 'Generating…' : 'Download Report (PDF)'}</span>
                 </button>
               </div>
             </div>

@@ -25,9 +25,9 @@ export default function Step3Liabilities({ data, onChange, onBack, onContinue })
 
   return (
     <FunnelCard
-      stepLabel="Step 3 of 4 · Existing Debt"
-      title="Existing monthly debt obligations"
-      subtitle="Existing obligations are factored into DSTI calculation. Enter 0 for categories that do not apply."
+      title="What are your existing monthly debt payments?"
+      subtitle="Enter 0 for categories that don't apply. These are factored into your borrowing capacity."
+      hint={creditCardLimits > 0 ? `Banks count 5% of your credit card limits (${formatCZK(creditCard5pct)}/mo) as a fixed cost — even if unused.` : undefined}
       footer={
         <ActionBar
           canContinue
@@ -37,13 +37,13 @@ export default function Step3Liabilities({ data, onChange, onBack, onContinue })
       }
     >
 
-      {/* ── Input grid ────────────────────────────────── */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 mb-6">
+      {/* Input grid — single column on mobile */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5 mb-6">
 
         <CurrencyInput
           id="monthlyLoans"
           label="Monthly Loan Repayments"
-          sublabel="consumer · car · other"
+          sublabel="consumer, car, other"
           value={monthlyLoanPayments}
           onChange={(v) => onChange('monthlyLoanPayments', v)}
           max={500_000}
@@ -52,7 +52,7 @@ export default function Step3Liabilities({ data, onChange, onBack, onContinue })
         <CurrencyInput
           id="monthlyLeasing"
           label="Monthly Leasing Payments"
-          sublabel="car · equipment · operational"
+          sublabel="car, equipment, operational"
           value={monthlyLeasing}
           onChange={(v) => onChange('monthlyLeasing', v)}
           max={100_000}
@@ -60,8 +60,8 @@ export default function Step3Liabilities({ data, onChange, onBack, onContinue })
 
         <CurrencyInput
           id="creditCardLimits"
-          label="Total Credit Card Limits (KK)"
-          sublabel="combined credit card limits (KK) — not the current balance"
+          label="Total Credit Card Limits"
+          sublabel="combined limits (not balance)"
           value={creditCardLimits}
           onChange={(v) => onChange('creditCardLimits', v)}
           max={2_000_000}
@@ -75,7 +75,7 @@ export default function Step3Liabilities({ data, onChange, onBack, onContinue })
         <CurrencyInput
           id="otherObligations"
           label="Other Monthly Obligations"
-          sublabel="alimony · co-signed liabilities · maintenance"
+          sublabel="alimony, co-signed, maintenance"
           value={otherObligations}
           onChange={(v) => onChange('otherObligations', v)}
           max={200_000}
@@ -83,25 +83,22 @@ export default function Step3Liabilities({ data, onChange, onBack, onContinue })
 
       </div>
 
-      {/* ── Czech 5% credit-card rule callout ─────────── */}
-      <div className="flex items-start gap-3 rounded-xl bg-warning-light border border-warning-border p-4 mb-5">
+      {/* Credit card rule callout */}
+      <div className="flex items-start gap-3 rounded-xl bg-warning-light border border-warning-border p-3.5 sm:p-4 mb-5">
         <Info size={15} className="text-warning-DEFAULT flex-shrink-0 mt-0.5" />
         <div>
           <p className="text-xs font-semibold text-warning-text mb-0.5">
-            Czech Bank Rule — Credit Card Limit Haircut
+            Czech 5% Credit Card Rule
           </p>
           <p className="text-xs text-warning-text leading-relaxed">
-            Regardless of actual usage or current balance, Czech banks count{' '}
-            <strong>5% of your total credit card limits</strong> as a fixed monthly
-            cost. Closing unused cards before submitting your application directly
-            reduces your DSTI ratio and increases your borrowing capacity.
+            Banks count <strong>5% of total credit card limits</strong> as a fixed monthly cost regardless of usage. Closing unused cards directly increases your borrowing capacity.
           </p>
         </div>
       </div>
 
-      {/* ── Live obligation summary ────────────────────── */}
-      <div className="rounded-xl border border-border bg-surface p-5">
-        <p className="section-label mb-4">Monthly Obligation Summary</p>
+      {/* Live obligation summary */}
+      <div className="rounded-xl border border-border bg-surface p-4 sm:p-5">
+        <p className="section-label mb-3 sm:mb-4">Monthly Obligation Summary</p>
         <div className="space-y-2.5">
           {summaryRows.map(({ label, value, amber }) => (
             <div key={label} className="flex items-center justify-between">
@@ -114,7 +111,7 @@ export default function Step3Liabilities({ data, onChange, onBack, onContinue })
             </div>
           ))}
           <div className="pt-3 mt-0.5 border-t border-border flex items-center justify-between gap-3">
-            <span className="text-sm font-bold text-ink leading-tight">Total Monthly Obligations</span>
+            <span className="text-sm font-bold text-ink leading-tight">Total</span>
             <span className="font-display text-lg sm:text-xl font-extrabold text-ink tabular-nums flex-shrink-0">
               {formatCZK(totalMonthly)}
             </span>

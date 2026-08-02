@@ -46,7 +46,7 @@ function HowItWorksModal({ onClose, onStart }) {
           <button
             type="button"
             onClick={onClose}
-            className="text-ink-subtle hover:text-ink transition-colors p-1 rounded-lg hover:bg-surface"
+            className="text-ink-subtle hover:text-ink transition-colors p-2 -mr-2 rounded-lg hover:bg-surface min-w-[44px] min-h-[44px] flex items-center justify-center"
           >
             <X size={17} />
           </button>
@@ -104,84 +104,82 @@ export default function HeroAnalysis({ onStart }) {
         />
       )}
 
-      <main className="min-h-screen bg-hero flex flex-col items-center justify-center px-4 py-16">
+      <main className="min-h-[100svh] bg-hero flex flex-col items-center justify-center px-5 sm:px-6 py-12 sm:py-16 pb-[env(safe-area-inset-bottom)]">
         <div className="max-w-xl w-full text-center animate-fade-up">
 
-          {/* Overline */}
-          <p className="text-[10px] font-bold tracking-widest uppercase text-brand-400 mb-6">
-            Czech Mortgage Eligibility Analyzer
-          </p>
-
-          {/* Headline */}
-          <h1 className="font-display text-4xl sm:text-5xl font-black text-white leading-tight tracking-tight mb-5">
-            Understand your<br />
-            <span className="text-brand-400">mortgage eligibility</span><br />
-            before speaking to a bank.
+          {/* Headline — concise, scannable on mobile */}
+          <h1 className="font-display text-[1.75rem] sm:text-4xl md:text-5xl font-black text-white leading-[1.15] tracking-tight mb-3 sm:mb-5">
+            See how much you<br className="sm:hidden" /> may borrow{' '}
+            <span className="text-brand-400">in Czechia</span>
           </h1>
 
-          {/* Sub */}
-          <p className="text-slate-400 text-sm sm:text-[15px] max-w-md mx-auto mb-10 leading-relaxed">
-            Built for expats, freelancers, and business owners navigating Czech mortgage approval.
+          {/* Subheadline — one sentence */}
+          <p className="text-slate-400 text-[15px] sm:text-base max-w-sm sm:max-w-md mx-auto mb-6 sm:mb-8 leading-relaxed">
+            Get an instant estimate of your mortgage range, approval risks and next best step.
           </p>
 
-          {/* Primary CTA */}
-          <div className="mb-6">
+          {/* Trust badges — compact horizontal row */}
+          <div className="flex items-center justify-center gap-3 sm:gap-4 flex-wrap mb-6 sm:mb-8">
+            {[
+              { label: '2 min', icon: true },
+              { label: 'No documents', icon: true },
+              { label: 'No credit check', icon: true },
+            ].map(({ label }) => (
+              <span key={label} className="flex items-center gap-1.5 text-slate-400 text-[13px] sm:text-sm">
+                <svg width="12" height="12" viewBox="0 0 10 10" fill="none" className="flex-shrink-0">
+                  <path d="M2 5L4 7L8 3" stroke="#10B981" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+                {label}
+              </span>
+            ))}
+          </div>
+
+          {/* Primary CTA — large touch target */}
+          <div className="mb-6 sm:mb-8">
             <button
               onClick={onStart}
               type="button"
-              className="btn-cta mx-auto text-base px-14"
+              className="btn-cta w-full sm:w-auto mx-auto text-base px-10 sm:px-14"
             >
-              Start Assessment
+              Check My Mortgage Options
             </button>
           </div>
 
-          {/* Human trust block */}
-          <div className="mb-5">
+          {/* Andy Le trust block — compact single row on mobile */}
+          <div className="mb-5 sm:mb-6">
             <a
               href="https://www.facebook.com/p/Andy-Le-100079180972737/"
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center justify-center gap-3.5 group"
+              className="inline-flex items-center gap-3 group py-2"
             >
               <img
                 src="/andy-le.png"
                 alt="Andy Le"
-                className="w-16 h-16 rounded-full object-cover object-top flex-shrink-0 ring-2 ring-white/10 transition-opacity duration-150 group-hover:opacity-80"
+                className="w-10 h-10 sm:w-12 sm:h-12 rounded-full object-cover object-top flex-shrink-0 ring-2 ring-white/10 transition-opacity duration-150 group-hover:opacity-80"
               />
               <div className="text-left">
-                <p className="text-white text-[13px] font-semibold leading-tight group-hover:text-brand-400 transition-colors duration-150">
+                <p className="text-white text-[13px] sm:text-sm font-semibold leading-tight group-hover:text-brand-400 transition-colors duration-150">
                   Andy Le
+                  <span className="text-slate-500 font-normal text-[11px] sm:text-xs ml-1.5">
+                    Mortgage Specialist
+                  </span>
                 </p>
-                <p className="text-slate-400 text-[11px] leading-snug mt-0.5">
-                  Mortgage &amp; Property Financing Specialist
-                </p>
-                <p className="text-brand-400 text-[11px] italic mt-1 leading-snug">
-                  "Understand your mortgage readiness<br />before speaking to the bank."
+                <p className="text-brand-400/80 text-[12px] sm:text-[13px] italic mt-0.5 leading-snug">
+                  &ldquo;Understand your readiness before speaking to the bank.&rdquo;
                 </p>
               </div>
             </a>
           </div>
 
-          {/* Trust badges */}
-          <div className="flex items-center justify-center gap-4 flex-wrap mb-10">
-            {['No credit impact', 'No documents required', 'Based on Czech lender criteria'].map((badge) => (
-              <span key={badge} className="flex items-center gap-1 text-slate-500 text-[11px]">
-                <svg width="10" height="10" viewBox="0 0 10 10" fill="none" className="flex-shrink-0">
-                  <path d="M2 5L4 7L8 3" stroke="#10B981" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
-                {badge}
-              </span>
-            ))}
-          </div>
-
           {/* Secondary CTA */}
-          <div className="mb-4">
+          <div className="mb-3 sm:mb-4">
             <button
               type="button"
               onClick={() => setShowModal(true)}
-              className="text-slate-400 hover:text-slate-200 text-sm underline underline-offset-4 decoration-slate-600 hover:decoration-slate-400 transition-colors"
+              className="text-slate-400 hover:text-slate-200 text-sm underline underline-offset-4 decoration-slate-600 hover:decoration-slate-400 transition-colors py-2 px-3 min-h-[44px] inline-flex items-center"
             >
-              I'm not sure how it works?
+              I&apos;m not sure how it works?
             </button>
           </div>
 
@@ -191,7 +189,7 @@ export default function HeroAnalysis({ onStart }) {
               href="https://calendly.com/andy-lkadvisor/30min"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-slate-600 hover:text-slate-500 text-[12px] transition-colors"
+              className="text-slate-500 hover:text-slate-400 text-[13px] transition-colors py-2 px-3 min-h-[44px] inline-flex items-center"
             >
               Need help understanding your situation?
             </a>

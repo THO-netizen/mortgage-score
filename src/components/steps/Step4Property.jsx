@@ -5,30 +5,30 @@ import ActionBar  from '../funnel/ActionBar.jsx'
 import { formatCZK, formatCZKShort } from '../../utils/formatters.js'
 
 const PROPERTY_PURPOSES = [
-  { value: '',           label: 'Select purpose…'       },
+  { value: '',           label: 'Select purpose...'       },
   { value: 'primary',    label: 'Primary Residence'     },
   { value: 'investment', label: 'Investment / Rental'   },
   { value: 'holiday',    label: 'Holiday / Second Home' },
 ]
 
 const PURCHASE_TIMELINES = [
-  { value: '',          label: 'Select timeline…'  },
+  { value: '',          label: 'Select timeline...'  },
   { value: '3months',   label: 'Within 3 months'   },
   { value: '6months',   label: 'Within 6 months'   },
-  { value: '12months',  label: '6 – 12 months'     },
+  { value: '12months',  label: '6 - 12 months'     },
   { value: 'exploring', label: 'Exploring options' },
 ]
 
-const FIRST_HOME_AGE_LIMIT = 36  // ČNB — strictly under 36 → up to 90% LTV eligible
+const FIRST_HOME_AGE_LIMIT = 36
 
-// ── LTV progress bar ───────────────────────────────────
+// LTV progress bar
 function LTVBar({ ltv }) {
   const pct      = Math.min(100, Math.max(0, ltv))
   const barColor = ltv >= 80 ? '#EF4444' : ltv >= 70 ? '#F59E0B' : '#10B981'
 
   return (
     <div>
-      <div className="relative h-2.5 rounded-full overflow-hidden bg-border">
+      <div className="relative h-2 sm:h-2.5 rounded-full overflow-hidden bg-border">
         <div className="absolute inset-0 flex">
           <div style={{ width: '70%' }} className="bg-success-DEFAULT/20" />
           <div style={{ width: '10%' }} className="bg-warning-DEFAULT/20" />
@@ -51,7 +51,7 @@ function LTVBar({ ltv }) {
   )
 }
 
-// ── Main component ─────────────────────────────────────
+// Main component
 export default function Step4Property({ data, onChange, onBack, onContinue }) {
   const {
     propertyMode     = 'defined',
@@ -64,7 +64,7 @@ export default function Step4Property({ data, onChange, onBack, onContinue }) {
 
   const isDiscovering = propertyMode === 'discovering'
 
-  // Local raw strings for numeric inputs (allow free typing)
+  // Local raw strings for numeric inputs
   const [purchasePriceRaw, setPurchasePriceRaw] = useState(purchasePrice > 0 ? purchasePrice.toLocaleString('cs-CZ') : '')
   const [ownFundsRaw,      setOwnFundsRaw]      = useState(ownFunds > 0 ? ownFunds.toLocaleString('cs-CZ') : '')
 
@@ -85,23 +85,19 @@ export default function Step4Property({ data, onChange, onBack, onContinue }) {
     ? Math.ceil(parsedPurchasePrice * ((100 - maxLTVPct) / 100)) - parsedOwnFunds
     : 0
 
-  // canContinue: discovery → always true (mode switch auto-navigates); defined → price + own funds + purpose + timeline
   const canContinue = isDiscovering ? true : parsedPurchasePrice > 0 && parsedOwnFunds >= 0 && !!propertyPurpose && !!purchaseTimeline
 
-  // ── Switch mode ────────────────────────────────────────
+  // Switch mode
   function switchMode(mode) {
     try {
       onChange('propertyMode', mode)
       if (mode === 'discovering') {
-        // Clear property specifics — engine will skip krok_6 (LTV cap = Infinity)
         onChange('purchasePrice', 0)
         onChange('ownFunds',      0)
         setPurchasePriceRaw('')
         setOwnFundsRaw('')
-        // Navigate immediately — no property fields required in discovery mode
         onContinue()
       } else {
-        // Clear fields — user enters their own values (no pre-filled defaults)
         onChange('purchasePrice', 0)
         onChange('ownFunds',      0)
         setPurchasePriceRaw('')
@@ -114,28 +110,27 @@ export default function Step4Property({ data, onChange, onBack, onContinue }) {
 
   return (
     <FunnelCard
-      stepLabel="Step 4 of 4 · Property & Financing"
-      title="Property parameters and financing structure"
-      subtitle="Tell us whether you have a specific property in mind or are still exploring your budget."
+      title="Do you have a specific property in mind?"
+      subtitle="We can calculate your LTV or help you discover your budget range."
       footer={<ActionBar canContinue={canContinue} onBack={onBack} onContinue={onContinue} />}
     >
 
-      {/* ── Mode toggle ─────────────────────────────── */}
-      <div className="grid grid-cols-2 gap-3 mb-7">
+      {/* Mode toggle */}
+      <div className="grid grid-cols-2 gap-3 mb-6">
         <button
           type="button"
           onClick={() => switchMode('defined')}
           className={[
-            'flex flex-col items-center gap-2 rounded-xl border-2 p-4 text-left transition-all duration-200',
+            'flex flex-col items-center gap-1.5 sm:gap-2 rounded-xl border-2 p-3.5 sm:p-4 text-center transition-all duration-200',
             !isDiscovering
               ? 'border-brand-500 bg-brand-50 text-brand-700'
-              : 'border-border bg-card text-ink-muted hover:border-brand-300',
+              : 'border-border bg-card text-ink-muted hover:border-brand-300 active:border-brand-300',
           ].join(' ')}
         >
           <Home size={20} className={!isDiscovering ? 'text-brand-600' : 'text-ink-subtle'} />
           <div>
             <p className="text-xs font-bold leading-tight">I have a property</p>
-            <p className="text-[10px] mt-0.5 leading-snug opacity-75">Enter price &amp; own funds</p>
+            <p className="text-[10px] mt-0.5 leading-snug opacity-75">Enter price &amp; funds</p>
           </div>
         </button>
 
@@ -143,44 +138,42 @@ export default function Step4Property({ data, onChange, onBack, onContinue }) {
           type="button"
           onClick={() => switchMode('discovering')}
           className={[
-            'flex flex-col items-center gap-2 rounded-xl border-2 p-4 text-left transition-all duration-200',
+            'flex flex-col items-center gap-1.5 sm:gap-2 rounded-xl border-2 p-3.5 sm:p-4 text-center transition-all duration-200',
             isDiscovering
               ? 'border-brand-500 bg-brand-50 text-brand-700'
-              : 'border-border bg-card text-ink-muted hover:border-brand-300',
+              : 'border-border bg-card text-ink-muted hover:border-brand-300 active:border-brand-300',
           ].join(' ')}
         >
           <Search size={20} className={isDiscovering ? 'text-brand-600' : 'text-ink-subtle'} />
           <div>
             <p className="text-xs font-bold leading-tight">I&apos;m exploring</p>
-            <p className="text-[10px] mt-0.5 leading-snug opacity-75">Show me my budget range</p>
+            <p className="text-[10px] mt-0.5 leading-snug opacity-75">Show my budget</p>
           </div>
         </button>
       </div>
 
-      {/* ── DISCOVERY MODE ──────────────────────────── */}
+      {/* DISCOVERY MODE */}
       {isDiscovering && (
-        <div className="space-y-6">
+        <div className="space-y-5">
 
-          <div className="rounded-xl border border-brand-200 bg-brand-50/60 p-4">
+          <div className="rounded-xl border border-brand-200 bg-brand-50/60 p-3.5 sm:p-4">
             <p className="text-xs font-semibold text-brand-700 mb-1">Budget Discovery Mode</p>
             <p className="text-[11px] text-brand-600 leading-relaxed">
-              Based on your income and obligations we&apos;ll calculate your maximum borrowing capacity
-              and reverse-derive the property price range you can target — including the minimum
-              own funds you&apos;ll need to bring.
+              We&apos;ll calculate your maximum borrowing capacity and the property price range you can target.
             </p>
           </div>
 
-          {/* Dropdowns (optional — improve score accuracy) */}
+          {/* Dropdowns */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label htmlFor="propertyPurposeD" className="section-label mb-2 block">
-                Intended Property Use <span className="text-ink-subtle font-normal">(optional)</span>
+                Intended Use <span className="text-ink-subtle font-normal">(optional)</span>
               </label>
               <select
                 id="propertyPurposeD"
                 value={propertyPurpose}
                 onChange={(e) => onChange('propertyPurpose', e.target.value)}
-                className="select-field"
+                className="select-field text-base"
               >
                 {PROPERTY_PURPOSES.map(({ value, label }) => (
                   <option key={value} value={value}>{label}</option>
@@ -196,7 +189,7 @@ export default function Step4Property({ data, onChange, onBack, onContinue }) {
                 id="purchaseTimelineD"
                 value={purchaseTimeline}
                 onChange={(e) => onChange('purchaseTimeline', e.target.value)}
-                className="select-field"
+                className="select-field text-base"
               >
                 {PURCHASE_TIMELINES.map(({ value, label }) => (
                   <option key={value} value={value}>{label}</option>
@@ -206,18 +199,17 @@ export default function Step4Property({ data, onChange, onBack, onContinue }) {
           </div>
 
           <p className="text-[11px] text-ink-subtle leading-relaxed">
-            Your results will show the estimated maximum property price and minimum own funds based
-            on ČNB regulations ({Number(applicantAge) < FIRST_HOME_AGE_LIMIT ? '90% LTV — First Home Buyer eligible' : '80% LTV — standard cap'}).
+            Results will show estimated max property price based on CNB regulations ({Number(applicantAge) < FIRST_HOME_AGE_LIMIT ? '90% LTV — First Home eligible' : '80% LTV standard'}).
           </p>
 
         </div>
       )}
 
-      {/* ── DEFINED MODE ────────────────────────────── */}
+      {/* DEFINED MODE */}
       {!isDiscovering && (
         <>
           {/* Purchase price */}
-          <div className="mb-7">
+          <div className="mb-6">
             <label htmlFor="purchasePrice" className="section-label mb-1 block">
               Purchase Price
             </label>
@@ -227,7 +219,7 @@ export default function Step4Property({ data, onChange, onBack, onContinue }) {
                 type="text"
                 inputMode="numeric"
                 value={purchasePriceRaw}
-                placeholder="např. 5 500 000"
+                placeholder="e.g. 5 500 000"
                 onChange={(e) => {
                   const raw    = e.target.value.replace(/[^\d\s]/g, '')
                   setPurchasePriceRaw(raw)
@@ -237,7 +229,7 @@ export default function Step4Property({ data, onChange, onBack, onContinue }) {
                 onBlur={() => {
                   if (parsedPurchasePrice > 0) setPurchasePriceRaw(parsedPurchasePrice.toLocaleString('cs-CZ'))
                 }}
-                className="input-field pr-16"
+                className="input-field pr-16 text-base"
               />
               <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[12px] font-semibold text-ink-subtle pointer-events-none">CZK</span>
             </div>
@@ -247,18 +239,18 @@ export default function Step4Property({ data, onChange, onBack, onContinue }) {
           </div>
 
           {/* Own funds */}
-          <div className="mb-7">
+          <div className="mb-6">
             <label htmlFor="ownFunds" className="section-label mb-1 block">
               Available Own Funds
             </label>
-            <p className="text-[11px] text-ink-subtle mb-2">cash · savings · confirmed gift equity</p>
+            <p className="text-[11px] text-ink-subtle mb-2">cash, savings, confirmed gift equity</p>
             <div className="relative">
               <input
                 id="ownFunds"
                 type="text"
                 inputMode="numeric"
                 value={ownFundsRaw}
-                placeholder="např. 1 200 000"
+                placeholder="e.g. 1 200 000"
                 onChange={(e) => {
                   const raw    = e.target.value.replace(/[^\d\s]/g, '')
                   setOwnFundsRaw(raw)
@@ -268,36 +260,33 @@ export default function Step4Property({ data, onChange, onBack, onContinue }) {
                 onBlur={() => {
                   if (parsedOwnFunds > 0) setOwnFundsRaw(parsedOwnFunds.toLocaleString('cs-CZ'))
                 }}
-                className="input-field pr-16"
+                className="input-field pr-16 text-base"
               />
               <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[12px] font-semibold text-ink-subtle pointer-events-none">CZK</span>
             </div>
             <p className="text-[11px] text-ink-subtle mt-2 leading-relaxed">
-              Include only confirmed liquid funds — not expected income, unsold assets, or pending loans
+              Only confirmed liquid funds — not expected income or unsold assets.
             </p>
-            {parsedOwnFunds > 0 && (
-              <p className="text-[12px] font-semibold text-ink mt-1.5 tabular-nums">= {formatCZK(parsedOwnFunds)}</p>
-            )}
           </div>
 
           {/* Live LTV card */}
-          <div className={`rounded-xl border p-5 mb-4 transition-colors duration-300 ${metricBorder}`}>
-            <div className="grid grid-cols-3 gap-2 mb-5">
+          <div className={`rounded-xl border p-4 sm:p-5 mb-4 transition-colors duration-300 ${metricBorder}`}>
+            <div className="grid grid-cols-3 gap-2 mb-4 sm:mb-5">
               <div>
-                <p className="section-label mb-1.5">Loan</p>
-                <p className="font-display text-base sm:text-lg font-extrabold text-ink tabular-nums leading-tight">
+                <p className="section-label mb-1">Loan</p>
+                <p className="font-display text-sm sm:text-lg font-extrabold text-ink tabular-nums leading-tight">
                   {formatCZKShort(loanAmount)}
                 </p>
               </div>
-              <div className="text-center border-x border-black/10 px-2">
-                <p className="section-label mb-1.5">LTV</p>
-                <p className={`font-display text-2xl sm:text-3xl font-black tabular-nums leading-tight ${ltvColor}`}>
+              <div className="text-center border-x border-black/10 px-1 sm:px-2">
+                <p className="section-label mb-1">LTV</p>
+                <p className={`font-display text-xl sm:text-3xl font-black tabular-nums leading-tight ${ltvColor}`}>
                   {ltv.toFixed(0)}%
                 </p>
               </div>
               <div className="text-right">
-                <p className="section-label mb-1.5">Own Funds</p>
-                <p className="font-display text-base sm:text-lg font-extrabold text-ink tabular-nums leading-tight">
+                <p className="section-label mb-1">Own Funds</p>
+                <p className="font-display text-sm sm:text-lg font-extrabold text-ink tabular-nums leading-tight">
                   {ownFundsPct.toFixed(0)}%
                 </p>
               </div>
@@ -307,49 +296,33 @@ export default function Step4Property({ data, onChange, onBack, onContinue }) {
 
           {/* LTV messages */}
           {ltv > maxLTVPct && (
-            <div className="flex items-start gap-3 rounded-xl bg-risk-light border border-risk-border p-4 mb-6">
+            <div className="flex items-start gap-3 rounded-xl bg-risk-light border border-risk-border p-3.5 sm:p-4 mb-5">
               <AlertTriangle size={15} className="text-risk-DEFAULT flex-shrink-0 mt-0.5" />
               <div>
                 <p className="text-xs font-semibold text-risk-text mb-0.5">
-                  {isInvestment ? 'LTV Exceeds Investment Property Cap (70%)' : `LTV Exceeds ČNB Limit (${maxLTVPct}%)`}
+                  {isInvestment ? 'LTV Exceeds 70% Investment Cap' : `LTV Exceeds ${maxLTVPct}% Limit`}
                 </p>
                 <p className="text-xs text-risk-text leading-relaxed">
-                  {isInvestment
-                    ? <>Czech banks cap investment / rental property LTV at <strong>70%</strong>. You need at least <strong>{formatCZK(minOwnFundsNeeded)}</strong> more in confirmed own funds to meet this limit.</>
-                    : firstHomeEligible
-                      ? <>The maximum LTV under the First Home Buyer scheme (applicants under 36) is <strong>90%</strong>. You need at least <strong>{formatCZK(minOwnFundsNeeded)}</strong> more in confirmed own funds to reach this threshold.</>
-                      : <>The Czech National Bank caps mortgage LTV at <strong>80%</strong> for standard applicants. You need at least <strong>{formatCZK(minOwnFundsNeeded)}</strong> more in confirmed own funds to qualify.</>
-                  }
+                  You need at least <strong>{formatCZK(minOwnFundsNeeded)}</strong> more in own funds to qualify.
                 </p>
               </div>
             </div>
           )}
 
           {ltv > amberLTVPct && ltv <= maxLTVPct && (
-            <div className="flex items-start gap-3 rounded-xl bg-warning-light border border-warning-border p-4 mb-6">
+            <div className="flex items-start gap-3 rounded-xl bg-warning-light border border-warning-border p-3.5 sm:p-4 mb-5">
               <AlertTriangle size={15} className="text-warning-DEFAULT flex-shrink-0 mt-0.5" />
               <p className="text-xs text-warning-text leading-relaxed">
-                {isInvestment
-                  ? <><strong>{ltv.toFixed(0)}% LTV</strong> is approaching the 70% investment property cap. Increasing own funds provides headroom and may improve available rate options.</>
-                  : firstHomeEligible && ltv > 80
-                    ? <><strong>{ltv.toFixed(0)}% LTV</strong> — as an applicant under 36, you may be eligible for up to 90% LTV under the First Home Buyer scheme. Approval depends on individual lender assessment and income qualification.</>
-                    : <><strong>70–80% LTV</strong> is accepted by most banks but limits your rate options. Some lenders apply a risk premium above 75% LTV — bringing this below 70% typically unlocks the best fixed rates.</>
-                }
+                <strong>{ltv.toFixed(0)}% LTV</strong> — accepted by most banks but may limit rate options. Below 70% typically unlocks the best fixed rates.
               </p>
             </div>
           )}
 
           {ltv > 0 && ltv <= amberLTVPct && (
-            <div className="flex items-start gap-3 rounded-xl bg-success-light border border-success-border p-4 mb-6">
+            <div className="flex items-start gap-3 rounded-xl bg-success-light border border-success-border p-3.5 sm:p-4 mb-5">
               <CheckCircle size={15} className="text-success-DEFAULT flex-shrink-0 mt-0.5" />
               <p className="text-xs text-success-text leading-relaxed">
-                <strong>Strong LTV position.</strong>{' '}
-                {isInvestment
-                  ? 'Below 65% LTV on an investment property signals low collateral risk and gives you the strongest negotiating position for rate and terms.'
-                  : firstHomeEligible
-                    ? 'Below 70% LTV is well within limits for all Czech banks. As an applicant under 36, you also retain the option to apply up to 90% LTV under the First Home Buyer scheme if needed.'
-                    : 'Below 70% LTV unlocks competitive fixed rates across covered Czech banks and signals low collateral risk to underwriters.'
-                }
+                <strong>Strong LTV position.</strong> Below 70% unlocks competitive rates across all covered Czech banks.
               </p>
             </div>
           )}
@@ -364,7 +337,7 @@ export default function Step4Property({ data, onChange, onBack, onContinue }) {
                 id="propertyPurpose"
                 value={propertyPurpose}
                 onChange={(e) => onChange('propertyPurpose', e.target.value)}
-                className="select-field"
+                className="select-field text-base"
               >
                 {PROPERTY_PURPOSES.map(({ value, label }) => (
                   <option key={value} value={value}>{label}</option>
@@ -372,7 +345,7 @@ export default function Step4Property({ data, onChange, onBack, onContinue }) {
               </select>
               {isInvestment && parsedPurchasePrice > 0 && (
                 <p className="mt-2 text-[11px] text-warning-text leading-relaxed">
-                  <span className="font-semibold">Required own funds (min. 30%):</span>{' '}
+                  <span className="font-semibold">Min. own funds (30%):</span>{' '}
                   {formatCZK(Math.ceil(parsedPurchasePrice * 0.30))}
                 </p>
               )}
@@ -386,7 +359,7 @@ export default function Step4Property({ data, onChange, onBack, onContinue }) {
                 id="purchaseTimeline"
                 value={purchaseTimeline}
                 onChange={(e) => onChange('purchaseTimeline', e.target.value)}
-                className="select-field"
+                className="select-field text-base"
               >
                 {PURCHASE_TIMELINES.map(({ value, label }) => (
                   <option key={value} value={value}>{label}</option>

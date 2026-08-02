@@ -6,48 +6,42 @@ const RESIDENCE_OPTIONS = [
   {
     value:   'eu',
     label:   'EU / EEA Citizen',
-    desc:    'Passport from any EU or EEA member state — same mortgage rights as Czech citizens',
-    risk:    'low',
+    desc:    'Same mortgage rights as Czech citizens',
   },
   {
     value:   'permanent',
     label:   'Permanent Residence',
-    desc:    'Approved permanent residency granted by Czech authorities (TP)',
-    risk:    'low',
+    desc:    'Approved permanent residency (TP)',
   },
   {
     value:   'longterm5plus',
-    label:   'Long-term Residence — 5 or more years',
-    desc:    'Long-term residence permit held continuously for 5+ years',
-    risk:    'med',
+    label:   'Long-term — 5+ years',
+    desc:    'Continuously held for 5+ years',
   },
   {
     value:   'longterm',
-    label:   'Long-term Residence — under 5 years',
-    desc:    'Long-term residence permit held for fewer than 5 years',
-    risk:    'med',
+    label:   'Long-term — under 5 years',
+    desc:    'Held for fewer than 5 years',
   },
   {
     value:   'employment',
-    label:   'Long-term Residence (Work/Business Permit)',
-    desc:    'Work or business visa with long-term stay entitlement',
-    risk:    'med',
+    label:   'Work/Business Permit',
+    desc:    'Long-term stay for work or business',
   },
   {
     value:   'other',
     label:   'Other / Student / Digital Nomad',
-    desc:    'Short-stay Schengen visa, student permit, or non-standard arrangement',
-    risk:    'high',
+    desc:    'Short-stay, student, or non-standard',
   },
 ]
 
 
 const YEARS_OPTIONS = [
-  { value: '',        label: 'Select years in Czechia…' },
+  { value: '',        label: 'Select years in Czechia...' },
   { value: 'less1',   label: 'Less than 1 year'          },
-  { value: '1-2',     label: '1 – 2 years'               },
-  { value: '2-5',     label: '2 – 5 years'               },
-  { value: '5-10',    label: '5 – 10 years'              },
+  { value: '1-2',     label: '1 - 2 years'               },
+  { value: '2-5',     label: '2 - 5 years'               },
+  { value: '5-10',    label: '5 - 10 years'              },
   { value: '10plus',  label: '10 or more years'           },
 ]
 
@@ -59,11 +53,11 @@ function ResidenceOption({ option, selected, onSelect }) {
       type="button"
       onClick={onSelect}
       className={[
-        'w-full flex items-center gap-4 rounded-xl border px-5 py-4 text-left',
+        'w-full flex items-center gap-3 sm:gap-4 rounded-xl border px-4 sm:px-5 py-3.5 sm:py-4 text-left',
         'transition-all duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-600/40',
         selected
           ? 'border-brand-600 bg-brand-50'
-          : 'border-border bg-card hover:border-border-strong hover:bg-surface',
+          : 'border-border bg-card hover:border-border-strong active:border-brand-300',
       ].join(' ')}
     >
       {/* Custom radio indicator */}
@@ -99,7 +93,7 @@ function ResidenceOption({ option, selected, onSelect }) {
 
 /**
  * Step 2 — Residence Status
- * The most critical eligibility factor for Czech mortgage applications.
+ * Mobile-first: compact radio list, proper touch targets, no horizontal overflow.
  */
 export default function Step2Residence({
   value,
@@ -115,9 +109,9 @@ export default function Step2Residence({
 
   return (
     <FunnelCard
-      stepLabel="Step 2 of 4 · Residence & Background"
       title="What is your residence status in Czechia?"
-      subtitle="This is the single most important eligibility factor. Czech banks apply fundamentally different underwriting criteria based on your residence title."
+      subtitle="This is the single most important eligibility factor for Czech mortgage applications."
+      hint={value === 'other' ? 'Short-stay and student permits are declined by most Czech banks. We can help find specialist options.' : undefined}
       footer={
         <ActionBar
           canContinue={canContinue}
@@ -127,8 +121,8 @@ export default function Step2Residence({
       }
     >
 
-      {/* ── Residence options ──────────────────────────── */}
-      <div className="space-y-2 mb-7">
+      {/* Residence options */}
+      <div className="space-y-2 mb-6">
         {RESIDENCE_OPTIONS.map((opt) => (
           <ResidenceOption
             key={opt.value}
@@ -139,19 +133,19 @@ export default function Step2Residence({
         ))}
       </div>
 
-      {/* ── Years in Czechia dropdown ─────────────────── */}
-      <div className="mb-7">
+      {/* Years in Czechia dropdown */}
+      <div className="mb-6">
         <label
           htmlFor="yearsInCZ"
           className="section-label mb-2 block"
         >
-          How long have you lived in the Czech Republic?
+          How long have you lived in Czechia?
         </label>
         <select
           id="yearsInCZ"
           value={yearsValue}
           onChange={(e) => onYearsChange(e.target.value)}
-          className="select-field"
+          className="select-field text-base"
         >
           {YEARS_OPTIONS.map(({ value: v, label }) => (
             <option key={v} value={v}>{label}</option>
@@ -159,8 +153,8 @@ export default function Step2Residence({
         </select>
       </div>
 
-      {/* ── Applicant age ─────────────────────────────── */}
-      <div className="mb-7">
+      {/* Applicant age */}
+      <div className="mb-6">
         <label htmlFor="applicantAge" className="section-label mb-2 block">
           Your current age
           <span className="text-risk-DEFAULT ml-1">*</span>
@@ -168,37 +162,33 @@ export default function Step2Residence({
         <div className="relative">
           <input
             id="applicantAge"
-            type="number"
+            type="text"
             inputMode="numeric"
             min={18}
             max={80}
             value={ageValue || ''}
-            onChange={(e) => onAgeChange(Number(e.target.value))}
+            onChange={(e) => onAgeChange(Number(e.target.value.replace(/[^\d]/g, '')))}
             placeholder="e.g. 35"
-            className="input-field pr-14 tabular-nums"
+            className="input-field pr-14 tabular-nums text-base"
           />
           <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs text-ink-subtle pointer-events-none font-medium">
             yrs
           </span>
         </div>
         <p className="text-[11px] text-ink-subtle mt-1.5 leading-relaxed">
-          Determines maximum loan maturity. Banks typically require full repayment by age 75. Under 36 — eligible for 90% mortgage, 10% required.
+          Banks typically require full repayment by age 75. Under 36 — eligible for 90% LTV.
           {ageValue >= 60 && (
-            <span className="text-warning-DEFAULT font-medium"> Age 60+ — UCB &amp; mBank reduce maximum payoff age to 65.</span>
+            <span className="text-warning-DEFAULT font-medium"> Age 60+ — maximum payoff age reduced to 65.</span>
           )}
         </p>
       </div>
 
-      {/* ── Context callout ───────────────────────────── */}
-      <div className="flex items-start gap-3 rounded-xl bg-brand-50 border border-brand-100 p-4">
-        <Info size={16} className="text-brand-600 flex-shrink-0 mt-0.5" />
+      {/* Context callout */}
+      <div className="flex items-start gap-3 rounded-xl bg-brand-50 border border-brand-100 p-3.5 sm:p-4">
+        <Info size={15} className="text-brand-600 flex-shrink-0 mt-0.5" />
         <p className="text-xs text-brand-700 leading-relaxed">
           <span className="font-semibold">Why this matters: </span>
-          EU citizens and permanent residents have access to all 6 major Czech
-          banks with no additional conditions. Non-EU long-term permit holders are
-          eligible at approximately 60% of lenders. Employment and student permits
-          are declined by the majority of Czech banks — specialist pre-filtering is
-          required before any application is submitted.
+          EU citizens and permanent residents access all 6 major Czech banks. Non-EU long-term permit holders are eligible at ~60% of lenders.
         </p>
       </div>
 

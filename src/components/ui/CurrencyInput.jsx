@@ -1,10 +1,6 @@
 import { useState } from 'react'
 import { formatCZK } from '../../utils/formatters.js'
 
-/**
- * Text input with live CZK formatting.
- * Shows formatted value when blurred, raw digits when focused.
- */
 export default function CurrencyInput({
   id,
   label,
@@ -33,6 +29,13 @@ export default function CurrencyInput({
     setRaw('')
   }
 
+  const handleChange = (e) => {
+    const digits = e.target.value.replace(/[^0-9]/g, '')
+    setRaw(digits)
+    const n = parseInt(digits, 10) || 0
+    if (n > 0) onChange(n)
+  }
+
   return (
     <div>
       {(label || sublabel) && (
@@ -41,17 +44,24 @@ export default function CurrencyInput({
           {sublabel && <span className="text-[11px] text-ink-subtle">{sublabel}</span>}
         </div>
       )}
-      <input
-        id={id}
-        type="text"
-        inputMode="numeric"
-        value={focused ? raw : (value > 0 ? formatCZK(value) : '')}
-        placeholder={placeholder}
-        onFocus={handleFocus}
-        onBlur={handleBlur}
-        onChange={(e) => setRaw(e.target.value.replace(/[^0-9]/g, ''))}
-        className="input-field"
-      />
+      <div className="relative">
+        <input
+          id={id}
+          type="text"
+          inputMode="numeric"
+          value={focused ? raw : (value > 0 ? formatCZK(value) : '')}
+          placeholder={placeholder}
+          onFocus={handleFocus}
+          onBlur={handleBlur}
+          onChange={handleChange}
+          className="input-field pr-14"
+        />
+        {(focused ? raw.length > 0 : value > 0) && (
+          <span className="absolute right-4 top-1/2 -translate-y-1/2 text-sm text-ink-subtle pointer-events-none font-medium">
+            CZK
+          </span>
+        )}
+      </div>
       {hint && <p className="text-xs text-ink-muted mt-1.5">{hint}</p>}
     </div>
   )

@@ -5,7 +5,7 @@ import Header                  from './components/layout/Header.jsx'
 import HeroAnalysis            from './components/landing/HeroAnalysis.jsx'
 import HowItWorksSection       from './components/landing/HowItWorksSection.jsx'
 import LandingFooter           from './components/landing/LandingFooter.jsx'
-import Step1EntityType         from './components/steps/Step1EntityType.jsx'
+import Step1EntityType         from './components/steps/step1/index.jsx'
 import Step2Residence          from './components/steps/Step2Residence.jsx'
 import Step3Liabilities        from './components/steps/Step3Liabilities.jsx'
 import Step4Property           from './components/steps/Step4Property.jsx'
@@ -127,6 +127,7 @@ const TOTAL_DATA_STEPS = 4
 export default function App() {
   const [currentStep, setCurrentStep] = useState(0)
   const [formData,    setFormData]    = useState(INITIAL_FORM)
+  const [step1SubStep, setStep1SubStep] = useState(0)
 
   useEffect(() => {
     analytics.track('landing_page_viewed', { referrer: document.referrer || 'direct' })
@@ -259,10 +260,23 @@ export default function App() {
   return (
     <div className="min-h-screen bg-surface">
 
-      {/* Header — only during data-collection steps (progress 1-4 of 4) */}
-      {isFunnel && (
-        <Header currentStep={currentStep} totalSteps={TOTAL_DATA_STEPS} />
-      )}
+      {/* Header — only during data-collection steps */}
+      {isFunnel && (() => {
+        // Compute progress as 0-1 float based on total screens
+        // Step 1 has 3-4 sub-screens depending on path; steps 2-4 are 1 screen each
+        const isBusinessPath = formData.entityType === 'osvc' || formData.entityType === 'sro'
+        const step1Total = isBusinessPath ? 4 : 3  // entity + applicant + (ico + income) or (employee)
+        const totalScreens = step1Total + 3  // + step2 + step3 + step4
+        let completed = 0
+        if (currentStep === 1) {
+          completed = step1SubStep
+        } else if (currentStep >= 2) {
+          completed = step1Total + (currentStep - 2)
+        }
+        const progress = Math.min(1, completed / totalScreens)
+        const label = `${completed + 1} of ${totalScreens}`
+        return <Header progress={progress} label={label} />
+      })()}
 
       {/* ── Landing ──────────────────────────────────── */}
       {isLanding && (
@@ -344,6 +358,7 @@ export default function App() {
                       }}
                       onBusinessChange={setField}
                       onContinue={handleStep1Continue}
+                      onSubStepChange={setStep1SubStep}
                     />
                   )}
 
