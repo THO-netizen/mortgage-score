@@ -7,6 +7,7 @@ const VIDEOS = VIDEO_LIBRARY.filter(v => v.available)
 
 const VideoCard = React.memo(function VideoCard({ video }) {
   const [playing, setPlaying] = useState(false)
+  const [imgFailed, setImgFailed] = useState(false)
   const topicLabel = video.topics?.[0]
     ? TOPIC_LABELS[video.topics[0]] || video.topics[0]
     : null
@@ -31,26 +32,35 @@ const VideoCard = React.memo(function VideoCard({ video }) {
           />
         ) : (
           <>
-            {/* Branded poster */}
-            <div className="absolute inset-0 bg-gradient-to-br from-[#1a2332] to-[#0F172A] flex flex-col items-center justify-center px-4">
-              <div
-                className="absolute inset-0 pointer-events-none"
-                style={{
-                  opacity: 0.05,
-                  backgroundImage:
-                    'linear-gradient(rgba(255,255,255,.4) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.4) 1px, transparent 1px)',
-                  backgroundSize: '24px 24px',
-                }}
+            {video.posterImage && !imgFailed ? (
+              <img
+                src={video.posterImage}
+                alt={video.posterAlt || video.title}
+                loading="lazy"
+                className="absolute inset-0 w-full h-full object-cover"
+                onError={() => setImgFailed(true)}
               />
-              {topicLabel && (
-                <span className="relative z-10 mb-2 px-2.5 py-0.5 rounded-full text-[10px] font-medium bg-white/10" style={{ color: '#C9A96E' }}>
-                  {topicLabel}
-                </span>
-              )}
-              <p className="relative z-10 font-display text-[13px] font-bold text-white text-center leading-snug max-w-[180px]">
-                {video.title}
-              </p>
-            </div>
+            ) : (
+              <div className="absolute inset-0 bg-gradient-to-br from-[#1a2332] to-[#0F172A] flex flex-col items-center justify-center px-4">
+                <div
+                  className="absolute inset-0 pointer-events-none"
+                  style={{
+                    opacity: 0.05,
+                    backgroundImage:
+                      'linear-gradient(rgba(255,255,255,.4) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.4) 1px, transparent 1px)',
+                    backgroundSize: '24px 24px',
+                  }}
+                />
+                {topicLabel && (
+                  <span className="relative z-10 mb-2 px-2.5 py-0.5 rounded-full text-[10px] font-medium bg-white/10" style={{ color: '#C9A96E' }}>
+                    {topicLabel}
+                  </span>
+                )}
+                <p className="relative z-10 font-display text-[13px] font-bold text-white text-center leading-snug max-w-[180px]">
+                  {video.title}
+                </p>
+              </div>
+            )}
             {/* Play button */}
             <div className="absolute inset-0 z-20 flex items-center justify-center pointer-events-none">
               <div className="w-11 h-11 rounded-full bg-white/90 flex items-center justify-center shadow-lg transition-transform duration-200 group-hover:scale-110">

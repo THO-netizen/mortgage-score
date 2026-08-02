@@ -438,6 +438,78 @@ test('Test 12: Structure verification across varied inputs', () => {
 });
 
 // =============================================================================
+// Test 13: Poster image metadata completeness
+// =============================================================================
+test('T13: Every video has posterImage, posterAlt, posterVerified', () => {
+  for (const video of VIDEO_LIBRARY) {
+    assert(
+      typeof video.posterImage === 'string' && video.posterImage.length > 0,
+      `${video.id} has posterImage path`
+    );
+    assert(
+      video.posterImage.startsWith('/video-posters/') && video.posterImage.endsWith('.webp'),
+      `${video.id} posterImage is a /video-posters/*.webp path`
+    );
+    assert(
+      typeof video.posterAlt === 'string' && video.posterAlt.length > 10,
+      `${video.id} has meaningful posterAlt text`
+    );
+    assert(
+      video.posterVerified === true,
+      `${video.id} posterVerified is true`
+    );
+  }
+});
+
+// =============================================================================
+// Test 14: Poster files exist and are non-empty
+// =============================================================================
+import { existsSync, statSync } from 'fs';
+import { join } from 'path';
+
+test('T14: Poster WebP files exist on disk and are non-empty', () => {
+  const publicDir = join(process.cwd(), 'public');
+  for (const video of VIDEO_LIBRARY) {
+    const filePath = join(publicDir, video.posterImage);
+    const exists = existsSync(filePath);
+    assert(exists, `${video.posterImage} exists on disk`);
+    if (exists) {
+      const stat = statSync(filePath);
+      assert(stat.size > 1000, `${video.posterImage} is ${stat.size} bytes (>1KB)`);
+    }
+  }
+});
+
+// =============================================================================
+// Test 15: Poster files have valid WebP magic bytes
+// =============================================================================
+import { readFileSync } from 'fs';
+
+test('T15: Poster files are valid WebP format', () => {
+  const publicDir = join(process.cwd(), 'public');
+  for (const video of VIDEO_LIBRARY) {
+    const filePath = join(publicDir, video.posterImage);
+    if (!existsSync(filePath)) continue;
+    const buf = readFileSync(filePath);
+    const riff = buf.slice(0, 4).toString('ascii');
+    const webp = buf.slice(8, 12).toString('ascii');
+    assert(
+      riff === 'RIFF' && webp === 'WEBP',
+      `${video.posterImage} has valid RIFF/WEBP header`
+    );
+  }
+});
+
+// =============================================================================
+// Test 16: No duplicate poster paths
+// =============================================================================
+test('T16: All poster paths are unique', () => {
+  const paths = VIDEO_LIBRARY.map(v => v.posterImage);
+  const unique = new Set(paths);
+  assert(paths.length === unique.size, `All ${paths.length} poster paths are unique`);
+});
+
+// =============================================================================
 // Summary
 // =============================================================================
 console.log(`\n${'='.repeat(50)}`);

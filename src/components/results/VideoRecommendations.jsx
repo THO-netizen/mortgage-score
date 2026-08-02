@@ -3,11 +3,6 @@ import { Play, ExternalLink } from 'lucide-react'
 import { recommendVideos } from '../../utils/videoRecommender.js'
 import { VIDEO_LIBRARY, TOPIC_LABELS } from '../../data/videoLibrary.js'
 
-/**
- * Branded poster fallback for videos without a poster image.
- * Renders a dark gradient card with the video title, topic badge,
- * and a subtle grid pattern.
- */
 function BrandedPoster({ video }) {
   const topicLabel = video.topics?.[0]
     ? TOPIC_LABELS[video.topics[0]] || video.topics[0]
@@ -15,7 +10,6 @@ function BrandedPoster({ video }) {
 
   return (
     <div className="absolute inset-0 bg-gradient-to-br from-[#1a2332] to-[#0F172A] flex flex-col items-center justify-center px-6">
-      {/* Subtle grid overlay */}
       <div
         className="absolute inset-0 pointer-events-none"
         style={{
@@ -25,17 +19,33 @@ function BrandedPoster({ video }) {
           backgroundSize: '24px 24px',
         }}
       />
-      {/* Topic badge */}
       {topicLabel && (
         <span className="relative z-10 mb-3 px-3 py-1 rounded-full text-[11px] font-medium text-bronze bg-white/10">
           {topicLabel}
         </span>
       )}
-      {/* Title */}
       <p className="relative z-10 font-display text-[14px] font-bold text-white text-center leading-snug max-w-[200px]">
         {video.title}
       </p>
     </div>
+  )
+}
+
+function VideoPoster({ video, loading = 'lazy' }) {
+  const [imgFailed, setImgFailed] = useState(false)
+
+  if (!video.posterImage || imgFailed) {
+    return <BrandedPoster video={video} />
+  }
+
+  return (
+    <img
+      src={video.posterImage}
+      alt={video.posterAlt || video.title}
+      loading={loading}
+      className="absolute inset-0 w-full h-full object-cover"
+      onError={() => setImgFailed(true)}
+    />
   )
 }
 
@@ -106,15 +116,7 @@ function PrimaryVideoCard({ video, playingId, onPlay }) {
           <FacebookEmbed video={video} />
         ) : (
           <>
-            {video.posterUrl ? (
-              <img
-                src={video.posterUrl}
-                alt={video.title}
-                className="absolute inset-0 w-full h-full object-cover"
-              />
-            ) : (
-              <BrandedPoster video={video} />
-            )}
+            <VideoPoster video={video} loading="eager" />
             <PlayOverlay size={56} />
             <DurationBadge duration={video.duration} />
           </>
@@ -164,15 +166,7 @@ function SecondaryVideoCard({ video, playingId, onPlay }) {
           <FacebookEmbed video={video} />
         ) : (
           <>
-            {video.posterUrl ? (
-              <img
-                src={video.posterUrl}
-                alt={video.title}
-                className="absolute inset-0 w-full h-full object-cover"
-              />
-            ) : (
-              <BrandedPoster video={video} />
-            )}
+            <VideoPoster video={video} />
             <PlayOverlay size={32} />
           </>
         )}
@@ -220,15 +214,7 @@ function GridVideoCard({ video, playingId, onPlay }) {
           <FacebookEmbed video={video} />
         ) : (
           <>
-            {video.posterUrl ? (
-              <img
-                src={video.posterUrl}
-                alt={video.title}
-                className="absolute inset-0 w-full h-full object-cover"
-              />
-            ) : (
-              <BrandedPoster video={video} />
-            )}
+            <VideoPoster video={video} />
             <PlayOverlay size={36} />
             <DurationBadge duration={video.duration} />
           </>
