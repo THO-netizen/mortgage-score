@@ -8,57 +8,75 @@ const TESTIMONIALS = [
     headline: 'From Nepal to homeownership',
     summary: 'After weeks of delays and pressure from the agency, our clients stayed patient. Today they hold the keys to their own home.',
     url: 'https://www.facebook.com/photo?fbid=876677978314893&set=a.188236427159055',
+    image: '/testimonials/from-nepal-to-homeownership.png',
   },
   {
     id: 't3',
     headline: 'Dream home secured',
     summary: 'After countless viewings and unexpected obstacles, we found the perfect solution together.',
     url: 'https://www.facebook.com/photo?fbid=763146343001391&set=a.188236427159055',
+    image: '/testimonials/dream-home-secured.png',
   },
   {
     id: 't4',
     headline: 'Persistence wins',
     summary: 'When others said financing was impossible, we took matters into our own hands. Mortgage approved.',
     url: 'https://www.facebook.com/photo?fbid=733631289286230&set=a.188236427159055',
+    image: '/testimonials/persistence-wins.png',
   },
   {
     id: 't5',
     headline: 'Overcoming hurdles',
     summary: 'From daily calls to the mayor to navigating a dozen obstacles, our clients from Turkey secured their dream home.',
     url: 'https://www.facebook.com/photo/?fbid=719423324040360&set=a.188236427159055',
+    image: '/testimonials/overcoming-hurdles.png',
   },
   {
     id: 't6',
     headline: 'Investment success',
     summary: 'Congratulations on securing a beautiful investment apartment. Another happy client moved forward.',
     url: 'https://www.facebook.com/photo/?fbid=711247738191252&set=a.188236427159055',
+    image: '/testimonials/investment-success.png',
   },
   {
     id: 't7',
     headline: 'Resilience in property',
     summary: "We navigated the seller's bankruptcy and other unexpected hurdles. Finally crossed the finish line.",
     url: 'https://www.facebook.com/photo/?fbid=693770526605640&set=a.188236427159055',
+    image: '/testimonials/resilience-in-property.png',
   },
 ]
 
-function StoryCard({ headline, summary, url }) {
+function StoryCard({ headline, summary, url, image }) {
   return (
     <a
       href={url}
       target="_blank"
       rel="noopener noreferrer"
-      className="group block rounded-xl border border-border/60 bg-white p-5 sm:p-6 transition-all duration-200 hover:border-border-strong hover:shadow-sm"
+      className="group block rounded-xl border border-border/60 bg-white overflow-hidden transition-all duration-200 hover:border-border-strong hover:shadow-sm"
     >
-      <p className="font-display text-[15px] font-bold text-ink leading-snug mb-2 group-hover:text-dark-700">
-        {headline}
-      </p>
-      <p className="text-[13px] text-ink-muted leading-relaxed mb-4 line-clamp-3">
-        {summary}
-      </p>
-      <span className="inline-flex items-center gap-1 text-[12px] font-medium transition-colors" style={{ color: '#C9A96E' }}>
-        Read story
-        <ArrowUpRight size={12} />
-      </span>
+      {image && (
+        <div className="aspect-[4/3] overflow-hidden bg-surface">
+          <img
+            src={image}
+            alt={headline}
+            className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
+            loading="lazy"
+          />
+        </div>
+      )}
+      <div className="p-4 sm:p-5">
+        <p className="font-display text-[14px] font-bold text-ink leading-snug mb-1.5 group-hover:text-dark-700">
+          {headline}
+        </p>
+        <p className="text-[12px] text-ink-muted leading-relaxed mb-3 line-clamp-2">
+          {summary}
+        </p>
+        <span className="inline-flex items-center gap-1 text-[11px] font-medium transition-colors" style={{ color: '#C9A96E' }}>
+          Read story
+          <ArrowUpRight size={11} />
+        </span>
+      </div>
     </a>
   )
 }

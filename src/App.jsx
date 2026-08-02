@@ -423,6 +423,7 @@ export default function App() {
             onBack={() => goToStep(STEP_LANDING)}
             onRestart={() => { setFormData(INITIAL_FORM); goToStep(STEP_LANDING) }}
           />
+          <ClientStories />
           <TestimonialsCarousel />
         </>
       )}
