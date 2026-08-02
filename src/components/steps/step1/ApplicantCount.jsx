@@ -31,20 +31,21 @@ export default function ApplicantCount({ value, onChange, onBack, onContinue }) 
               type="button"
               onClick={() => handleSelect(n)}
               className={[
-                'relative rounded-xl border-2 h-14 sm:py-4 text-center transition-all duration-150',
-                'focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-600/40',
-                active ? 'border-brand-600 bg-brand-50' : 'border-border bg-card hover:border-border-strong active:border-brand-300',
+                'relative rounded-xl border-2 px-3 py-3.5 sm:py-4 text-center transition-all duration-150',
+                'flex flex-col items-center justify-center gap-0.5',
+                'focus:outline-none focus-visible:ring-2 focus-visible:ring-bronze/40',
+                active ? 'border-ink bg-surface' : 'border-border bg-card hover:border-border-strong active:border-ink/30',
               ].join(' ')}
             >
               {active && (
-                <span className="absolute top-2 right-2 w-4 h-4 rounded-full bg-brand-600 flex items-center justify-center">
+                <span className="absolute top-2 right-2 w-4 h-4 rounded-full bg-ink flex items-center justify-center">
                   <Check size={9} className="text-white" strokeWidth={3} />
                 </span>
               )}
-              <span className={`font-display text-sm sm:text-base font-extrabold block ${active ? 'text-brand-700' : 'text-ink'}`}>
+              <span className={`font-display text-sm sm:text-base font-extrabold ${active ? 'text-ink' : 'text-ink'}`}>
                 {label}
               </span>
-              <span className={`text-[11px] block ${active ? 'text-brand-600' : 'text-ink-subtle'}`}>
+              <span className={`text-[11px] ${active ? 'text-ink-muted' : 'text-ink-subtle'}`}>
                 {sublabel}
               </span>
             </button>

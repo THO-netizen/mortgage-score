@@ -217,7 +217,7 @@ function IcoLookup({ onResult, entityType }) {
             disabled={!canVerify}
             className={[
               'flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all duration-150 whitespace-nowrap',
-              'focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-600/40',
+              'focus:outline-none focus-visible:ring-2 focus-visible:ring-bronze/40',
               canVerify
                 ? 'bg-brand-600 text-white hover:bg-brand-700 shadow-sm'
                 : 'bg-surface text-ink-subtle border border-border cursor-not-allowed',
@@ -374,20 +374,20 @@ function EntityCard({ option, selected, onSelect }) {
       onClick={onSelect}
       className={[
         'relative w-full text-left rounded-2xl border-2 p-4 sm:p-6',
-        'transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-600/40',
+        'transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-bronze/40',
         selected
-          ? 'border-brand-600 bg-brand-50 shadow-card-md'
+          ? 'border-ink bg-surface shadow-card-md'
           : 'border-border bg-card hover:border-border-strong hover:shadow-card-md',
       ].join(' ')}
     >
       {selected && (
-        <span className="absolute top-4 right-4 w-6 h-6 rounded-full bg-brand-600 flex items-center justify-center">
+        <span className="absolute top-4 right-4 w-6 h-6 rounded-full bg-ink flex items-center justify-center">
           <Check size={13} className="text-white" strokeWidth={3} />
         </span>
       )}
       <div className={[
         'w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center mb-4 sm:mb-5 transition-colors duration-200',
-        selected ? 'bg-brand-600' : 'bg-surface',
+        selected ? 'bg-ink' : 'bg-surface',
       ].join(' ')}>
         <Icon size={20} className={selected ? 'text-white' : 'text-ink-muted'} />
       </div>
@@ -397,12 +397,12 @@ function EntityCard({ option, selected, onSelect }) {
       <ul className="space-y-2 mb-5">
         {docs.map((d) => (
           <li key={d} className="flex items-start gap-2.5 text-xs text-ink-muted">
-            <span className={['mt-1 w-1.5 h-1.5 rounded-full flex-shrink-0', selected ? 'bg-brand-600' : 'bg-ink-subtle'].join(' ')} />
+            <span className={['mt-1 w-1.5 h-1.5 rounded-full flex-shrink-0', selected ? 'bg-ink' : 'bg-ink-subtle'].join(' ')} />
             {d}
           </li>
         ))}
       </ul>
-      <div className={['pt-4 border-t text-xs font-medium', selected ? 'border-brand-200 text-brand-600' : 'border-border text-ink-subtle'].join(' ')}>
+      <div className={['pt-4 border-t text-xs font-medium', selected ? 'border-border text-ink-muted' : 'border-border text-ink-subtle'].join(' ')}>
         {note}
       </div>
     </button>
@@ -537,9 +537,9 @@ function BusinessIncomeSection({ data, onChange }) {
               onClick={() => handleRegimeChange(value)}
               className={[
                 'relative text-left rounded-xl border-2 px-4 py-3.5 transition-all duration-150',
-                'focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-600/40',
+                'focus:outline-none focus-visible:ring-2 focus-visible:ring-bronze/40',
                 taxRegime === value
-                  ? 'border-brand-600 bg-brand-50'
+                  ? 'border-ink bg-surface'
                   : 'border-border bg-card hover:border-border-strong',
               ].join(' ')}
             >
@@ -1050,8 +1050,8 @@ function SroIncomeSection({ data, onChange }) {
                 onClick={() => toggleStream(s)}
                 className={[
                   'relative text-left rounded-xl border-2 px-4 py-3.5 transition-all duration-150',
-                  'focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-600/40',
-                  active ? 'border-brand-600 bg-brand-50' : 'border-border bg-card hover:border-border-strong',
+                  'focus:outline-none focus-visible:ring-2 focus-visible:ring-bronze/40',
+                  active ? 'border-ink bg-surface' : 'border-border bg-card hover:border-border-strong',
                 ].join(' ')}
               >
                 {active && (
@@ -1246,8 +1246,8 @@ function SroIncomeSection({ data, onChange }) {
                   onClick={() => onChange('taxRegime', v)}
                   className={[
                     'relative text-left rounded-xl border-2 px-4 py-3 transition-all duration-150',
-                    'focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-600/40',
-                    taxRegime === v ? 'border-brand-600 bg-brand-50' : 'border-border bg-card hover:border-border-strong',
+                    'focus:outline-none focus-visible:ring-2 focus-visible:ring-bronze/40',
+                    taxRegime === v ? 'border-ink bg-surface' : 'border-border bg-card hover:border-border-strong',
                   ].join(' ')}
                 >
                   {taxRegime === v && (
@@ -1276,8 +1276,8 @@ function SroIncomeSection({ data, onChange }) {
                     onClick={() => onChange('expenseLumpSumPct', v)}
                     className={[
                       'relative text-left rounded-xl border-2 px-3 py-3 transition-all duration-150',
-                      'focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-600/40',
-                      expenseLumpSumPct === v ? 'border-brand-600 bg-brand-50' : 'border-border bg-card hover:border-border-strong',
+                      'focus:outline-none focus-visible:ring-2 focus-visible:ring-bronze/40',
+                      expenseLumpSumPct === v ? 'border-ink bg-surface' : 'border-border bg-card hover:border-border-strong',
                     ].join(' ')}
                   >
                     {expenseLumpSumPct === v && (
@@ -1393,9 +1393,9 @@ function EmployeeDetails({ data, onChange }) {
               onClick={() => onChange('contractType', value)}
               className={[
                 'relative text-left rounded-xl border-2 px-4 py-3.5 transition-all duration-150',
-                'focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-600/40',
+                'focus:outline-none focus-visible:ring-2 focus-visible:ring-bronze/40',
                 contractType === value
-                  ? 'border-brand-600 bg-brand-50'
+                  ? 'border-ink bg-surface'
                   : 'border-border bg-card hover:border-border-strong',
               ].join(' ')}
             >
@@ -1696,17 +1696,18 @@ export default function Step1EntityType({ value, onChange, onIcoResult, numberOf
                 onClick={() => onApplicantCountChange(n)}
                 className={[
                   'relative rounded-xl border-2 py-3.5 text-center transition-all duration-150',
-                  'focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-600/40',
-                  active ? 'border-brand-600 bg-brand-50' : 'border-border bg-card hover:border-border-strong',
+                  'flex flex-col items-center justify-center gap-0.5',
+                  'focus:outline-none focus-visible:ring-2 focus-visible:ring-bronze/40',
+                  active ? 'border-ink bg-surface' : 'border-border bg-card hover:border-border-strong',
                 ].join(' ')}
               >
                 {active && (
-                  <span className="absolute top-2 right-2 w-3.5 h-3.5 rounded-full bg-brand-600 flex items-center justify-center">
+                  <span className="absolute top-2 right-2 w-3.5 h-3.5 rounded-full bg-ink flex items-center justify-center">
                     <Check size={8} className="text-white" strokeWidth={3} />
                   </span>
                 )}
-                <span className={`font-display text-xl font-extrabold block ${active ? 'text-brand-700' : 'text-ink'}`}>{n}</span>
-                <span className={`text-[10px] mt-0.5 block ${active ? 'text-brand-600' : 'text-ink-subtle'}`}>{sub}</span>
+                <span className={`font-display text-xl font-extrabold ${active ? 'text-ink' : 'text-ink'}`}>{n}</span>
+                <span className={`text-[10px] ${active ? 'text-ink-muted' : 'text-ink-subtle'}`}>{sub}</span>
               </button>
             )
           })}
