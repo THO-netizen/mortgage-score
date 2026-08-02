@@ -48,7 +48,7 @@ const BENEFITS = [
 ]
 
 const SRO_DOCS = [
-  'Corporate Tax Returns (DPPO)',
+  'Corporate Tax Returns',
   'Tax Clearance Certificate',
   'Bank Statements (3–6 months)',
   "Director's Service Agreement",
@@ -132,7 +132,7 @@ export default function Step6LeadCapture({ data, formData, onChange, onBack, onC
         <div className="rounded-xl border border-border bg-surface p-4 mb-6">
           <div className="flex items-center gap-2 mb-2.5">
             <FileText size={13} className="text-ink-subtle flex-shrink-0" />
-            <p className="text-xs font-semibold text-ink">Required Documentation — Company Director (s.r.o.)</p>
+            <p className="text-xs font-semibold text-ink">Required Documentation — Company Director</p>
           </div>
           <p className="text-[11px] text-ink-muted mb-3 leading-relaxed">
             Have these ready for your strategy session:

@@ -18,7 +18,8 @@ const VideoCard = React.memo(function VideoCard({ video }) {
       <button
         type="button"
         onClick={() => setPlaying(true)}
-        className="relative w-full aspect-video bg-dark-900 focus:outline-none focus:ring-2 focus:ring-bronze/40"
+        className="relative w-full bg-dark-900 focus:outline-none focus:ring-2 focus:ring-bronze/40"
+        style={{ aspectRatio: '9 / 16' }}
         aria-label={`Play video: ${video.title}`}
       >
         {playing ? (
@@ -189,7 +190,7 @@ export default function MortgageTipsLibrary() {
               <div
                 key={v.id}
                 data-video-card=""
-                className="flex-shrink-0 w-[260px] sm:w-[280px] snap-start"
+                className="flex-shrink-0 w-[200px] sm:w-[220px] snap-start"
               >
                 <VideoCard video={v} />
               </div>

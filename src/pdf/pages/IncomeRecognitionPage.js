@@ -61,7 +61,7 @@ export function drawIncomeRecognitionPage(doc, ctx) {
     y += 22
 
     // Two-column method comparison
-    drawMethodCard(doc, 'A', 'Tax Return (DAP)', M, y, HALF, {
+    drawMethodCard(doc, 'A', 'Personal Tax Return', M, y, HALF, {
       active: activeMethod === 'A',
       desc: `Annual Turnover ÷ 12 × ${coeffPct} recognition rate. Based on declared gross revenues in the annual tax return, Appendix 1.`,
       rows: annNum > 0 ? [
@@ -156,7 +156,7 @@ export function drawIncomeRecognitionPage(doc, ctx) {
       )
     } else if (contractType === 'dpc') {
       y = calloutBox(doc,
-        `Supplemental agreement (DPC): 30% haircut applied. This income stream is treated as secondary by most Czech banks. An indefinite contract is the highest-recognition path.`,
+        `Supplemental agreement: 30% haircut applied. This income stream is treated as secondary by most Czech banks. An indefinite contract is the highest-recognition path.`,
         y, { bg: C.warningBg, tx: C.warningTx, icon: '!' },
       )
     } else {

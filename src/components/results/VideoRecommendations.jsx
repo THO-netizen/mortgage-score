@@ -43,20 +43,15 @@ function VideoPoster({ video, loading = 'lazy' }) {
       src={video.posterImage}
       alt={video.posterAlt || video.title}
       loading={loading}
-      className="absolute inset-0 w-full h-full object-cover"
+      className="absolute inset-0 w-full h-full object-cover object-center"
       onError={() => setImgFailed(true)}
     />
   )
 }
 
-/**
- * Play button overlay centered in the poster area.
- */
 function PlayOverlay({ size = 48 }) {
   return (
-    <div
-      className="absolute inset-0 z-20 flex items-center justify-center pointer-events-none"
-    >
+    <div className="absolute inset-0 z-20 flex items-center justify-center pointer-events-none">
       <div
         className="flex items-center justify-center rounded-full bg-white/90 shadow-lg"
         style={{ width: size, height: size }}
@@ -67,9 +62,6 @@ function PlayOverlay({ size = 48 }) {
   )
 }
 
-/**
- * Duration badge in the bottom-right of the poster area.
- */
 function DurationBadge({ duration }) {
   if (!duration) return null
   return (
@@ -79,9 +71,6 @@ function DurationBadge({ duration }) {
   )
 }
 
-/**
- * Facebook video embed iframe.
- */
 function FacebookEmbed({ video }) {
   const src = `https://www.facebook.com/plugins/video.php?href=${encodeURIComponent(video.facebookUrl)}&show_text=false`
 
@@ -97,19 +86,16 @@ function FacebookEmbed({ video }) {
   )
 }
 
-/**
- * Primary (large) video card.
- */
 function PrimaryVideoCard({ video, playingId, onPlay }) {
   const isPlaying = playingId === video.id
 
   return (
-    <div className="mb-5">
-      {/* Poster / Player area */}
+    <div className="flex flex-col lg:flex-row lg:items-start gap-5 lg:gap-6 mb-5">
       <button
         type="button"
         onClick={() => onPlay(video.id)}
-        className="relative w-full aspect-video rounded-xl overflow-hidden bg-dark-900 focus:outline-none focus:ring-2 focus:ring-bronze/40 min-h-[44px]"
+        className="relative w-full lg:w-[320px] flex-shrink-0 rounded-xl overflow-hidden bg-dark-900 focus:outline-none focus:ring-2 focus:ring-bronze/40 min-h-[44px]"
+        style={{ aspectRatio: '9 / 16' }}
         aria-label={`Play video: ${video.title}`}
       >
         {isPlaying ? (
@@ -123,13 +109,12 @@ function PrimaryVideoCard({ video, playingId, onPlay }) {
         )}
       </button>
 
-      {/* Meta below poster */}
-      <div className="mt-3 px-1">
-        <h4 className="font-display text-[15px] font-bold text-ink leading-snug">
+      <div className="flex-1 min-w-0 lg:py-4">
+        <h4 className="font-display text-[15px] sm:text-base font-bold text-ink leading-snug">
           {video.title}
         </h4>
         {video.reason && (
-          <p className="text-[12px] text-ink-muted italic leading-relaxed mt-1">
+          <p className="text-[12px] sm:text-[13px] text-ink-muted italic leading-relaxed mt-2">
             {video.reason}
           </p>
         )}
@@ -137,7 +122,7 @@ function PrimaryVideoCard({ video, playingId, onPlay }) {
           href={video.facebookUrl}
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-flex items-center gap-1.5 mt-2 text-[12px] text-bronze font-medium hover:underline focus:outline-none focus:ring-2 focus:ring-bronze/40 rounded min-h-[44px]"
+          className="inline-flex items-center gap-1.5 mt-3 text-[12px] text-bronze font-medium hover:underline focus:outline-none focus:ring-2 focus:ring-bronze/40 rounded min-h-[44px]"
         >
           <ExternalLink size={12} />
           Watch on Facebook
@@ -147,19 +132,16 @@ function PrimaryVideoCard({ video, playingId, onPlay }) {
   )
 }
 
-/**
- * Secondary (compact) video card — horizontal layout on mobile.
- */
 function SecondaryVideoCard({ video, playingId, onPlay }) {
   const isPlaying = playingId === video.id
 
   return (
-    <div className="flex gap-3 items-start">
-      {/* Thumbnail area */}
+    <div className="flex flex-col rounded-xl border border-border/60 bg-white overflow-hidden">
       <button
         type="button"
         onClick={() => onPlay(video.id)}
-        className="relative flex-shrink-0 w-[120px] h-[80px] rounded-lg overflow-hidden bg-dark-900 focus:outline-none focus:ring-2 focus:ring-bronze/40 min-h-[44px]"
+        className="relative w-full rounded-t-xl overflow-hidden bg-dark-900 focus:outline-none focus:ring-2 focus:ring-bronze/40 min-h-[44px]"
+        style={{ aspectRatio: '9 / 16' }}
         aria-label={`Play video: ${video.title}`}
       >
         {isPlaying ? (
@@ -167,14 +149,14 @@ function SecondaryVideoCard({ video, playingId, onPlay }) {
         ) : (
           <>
             <VideoPoster video={video} />
-            <PlayOverlay size={32} />
+            <PlayOverlay size={40} />
+            <DurationBadge duration={video.duration} />
           </>
         )}
       </button>
 
-      {/* Text */}
-      <div className="flex-1 min-w-0 py-0.5">
-        <h4 className="font-display text-[13px] font-bold text-ink leading-snug line-clamp-2">
+      <div className="p-3">
+        <h4 className="font-display text-[12px] font-bold text-ink leading-snug line-clamp-2">
           {video.title}
         </h4>
         {video.reason && (
@@ -182,6 +164,46 @@ function SecondaryVideoCard({ video, playingId, onPlay }) {
             {video.reason}
           </p>
         )}
+        <a
+          href={video.facebookUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-1 mt-1.5 text-[11px] text-bronze font-medium hover:underline focus:outline-none focus:ring-2 focus:ring-bronze/40 rounded min-h-[44px]"
+        >
+          <ExternalLink size={10} />
+          Watch on Facebook
+        </a>
+      </div>
+    </div>
+  )
+}
+
+function GridVideoCard({ video, playingId, onPlay }) {
+  const isPlaying = playingId === video.id
+
+  return (
+    <div className="flex flex-col rounded-xl border border-border/60 bg-white overflow-hidden">
+      <button
+        type="button"
+        onClick={() => onPlay(video.id)}
+        className="relative w-full overflow-hidden bg-dark-900 focus:outline-none focus:ring-2 focus:ring-bronze/40 min-h-[44px]"
+        style={{ aspectRatio: '9 / 16' }}
+        aria-label={`Play video: ${video.title}`}
+      >
+        {isPlaying ? (
+          <FacebookEmbed video={video} />
+        ) : (
+          <>
+            <VideoPoster video={video} />
+            <PlayOverlay size={36} />
+            <DurationBadge duration={video.duration} />
+          </>
+        )}
+      </button>
+      <div className="p-3">
+        <h4 className="font-display text-[12px] font-bold text-ink leading-snug mt-0 line-clamp-2">
+          {video.title}
+        </h4>
         <a
           href={video.facebookUrl}
           target="_blank"
@@ -196,51 +218,6 @@ function SecondaryVideoCard({ video, playingId, onPlay }) {
   )
 }
 
-/**
- * Grid card used in the "Explore all" expanded view.
- */
-function GridVideoCard({ video, playingId, onPlay }) {
-  const isPlaying = playingId === video.id
-
-  return (
-    <div className="flex flex-col">
-      <button
-        type="button"
-        onClick={() => onPlay(video.id)}
-        className="relative w-full aspect-video rounded-lg overflow-hidden bg-dark-900 focus:outline-none focus:ring-2 focus:ring-bronze/40 min-h-[44px]"
-        aria-label={`Play video: ${video.title}`}
-      >
-        {isPlaying ? (
-          <FacebookEmbed video={video} />
-        ) : (
-          <>
-            <VideoPoster video={video} />
-            <PlayOverlay size={36} />
-            <DurationBadge duration={video.duration} />
-          </>
-        )}
-      </button>
-      <h4 className="font-display text-[12px] font-bold text-ink leading-snug mt-2 line-clamp-2">
-        {video.title}
-      </h4>
-      <a
-        href={video.facebookUrl}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="inline-flex items-center gap-1 mt-1 text-[11px] text-bronze font-medium hover:underline focus:outline-none focus:ring-2 focus:ring-bronze/40 rounded min-h-[44px]"
-      >
-        <ExternalLink size={10} />
-        Watch on Facebook
-      </a>
-    </div>
-  )
-}
-
-/**
- * VideoRecommendations — personalized video section for the results page.
- *
- * @param {{ formData: object, profile: object, score: number }} props
- */
 export default function VideoRecommendations({ formData, profile, score }) {
   const [playingId, setPlayingId] = useState(null)
   const [showAll, setShowAll] = useState(false)
@@ -283,8 +260,8 @@ export default function VideoRecommendations({ formData, profile, score }) {
           <p className="text-[11px] font-medium text-ink-subtle uppercase tracking-wide mb-3">
             You may also find useful
           </p>
-          <div className="space-y-4">
-            {secondaryVideos.slice(0, 2).map((video) => (
+          <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
+            {secondaryVideos.slice(0, 3).map((video) => (
               <SecondaryVideoCard
                 key={video.id}
                 video={video}
@@ -311,7 +288,7 @@ export default function VideoRecommendations({ formData, profile, score }) {
           <p className="text-[11px] font-medium text-ink-subtle uppercase tracking-wide mb-4">
             All mortgage insights
           </p>
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
             {allVideos
               .filter((v) => !recommendedIds.has(v.id))
               .map((video) => (

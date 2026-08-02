@@ -316,7 +316,7 @@ export function pct(n, dec = 1) {
 }
 
 export function entityLabel(t) {
-  return { zamestnanec: 'Salaried Employee', osvc: 'Self-Employed (Sole Trader)', sro: 'Company Director (s.r.o.)', other: 'Other / Complex' }[t] ?? '—'
+  return { zamestnanec: 'Salaried Employee', osvc: 'Self-Employed (Sole Trader)', sro: 'Company Director', other: 'Other / Complex' }[t] ?? '—'
 }
 
 export function residenceLabel(r) {
@@ -354,8 +354,8 @@ export function scoreLabel(s) {
 }
 
 export const BANK_DISPLAY = {
-  mbank: 'mBank', kb: 'Komercni banka', csob: 'CSOB',
-  cs: 'Ceska sporitelna', rb: 'Raiffeisenbank', ucb: 'UniCredit',
+  mbank: 'mBank', kb: 'Komercni Banka', csob: 'CSOB',
+  cs: 'Ceska Sporitelna', rb: 'Raiffeisenbank', ucb: 'UniCredit',
 }
 
 export const BANK_KEYS = ['mbank', 'kb', 'csob', 'cs', 'rb', 'ucb']

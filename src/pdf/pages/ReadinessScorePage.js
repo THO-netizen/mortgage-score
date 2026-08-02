@@ -170,7 +170,7 @@ function buildFactors(formData, profile, score) {
   })
   f.push({
     title:  'Employment / Business',
-    detail: entityType === 'osvc' ? (businessAgeMonths != null ? `Self-Employed ${businessAgeMonths}mo` : 'Self-Employed') : entityType === 'zamestnanec' ? (contractType ?? 'Employee') : 'Director s.r.o.',
+    detail: entityType === 'osvc' ? (businessAgeMonths != null ? `Self-Employed ${businessAgeMonths}mo` : 'Self-Employed') : entityType === 'zamestnanec' ? (contractType ?? 'Employee') : 'Company Director',
     status: redFlags.some(r => ['notice_period', 'probation', 'sick_leave', 'employer_distressed', 'osvc_inactive_licence', 'business_too_new', 'sro_negative_financials', 'sro_insufficient_history'].includes(r)) ? 'risk'
           : entityType === 'osvc' && businessAgeMonths != null && businessAgeMonths < 24 ? 'review'
           : inProbation ? 'review'

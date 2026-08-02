@@ -21,31 +21,31 @@ export function Toggle({ on, onToggle, danger = false }) {
 }
 
 export const CONTRACT_TYPES = [
-  { value: 'indefinite', label: 'Indefinite (HPP)' },
-  { value: 'definite',   label: 'Fixed-term'       },
-  { value: 'agency',     label: 'Agency / Temp'    },
-  { value: 'dpc',        label: 'Supplemental'     },
+  { value: 'indefinite', label: 'Indefinite contract' },
+  { value: 'definite',   label: 'Fixed-term contract' },
+  { value: 'agency',     label: 'Agency / Temp'       },
+  { value: 'dpc',        label: 'Supplemental agreement' },
 ]
 
 export const STREAM_OPTIONS = [
   {
     value: 'A',
     title: 'Stream A',
-    subtitle: 'Odmena jednatele',
+    subtitle: 'Director salary',
     desc: 'Regular monthly salary paid through the company payroll as director compensation.',
     varNote: 'CSOB / UCB / mBank / CS',
   },
   {
     value: 'B',
     title: 'Stream B',
-    subtitle: 'Podil na zisku',
+    subtitle: 'Profit share',
     desc: 'Profit share or dividends — based on actual distributed dividends over last 3 fiscal years.',
     varNote: 'UCB / mBank / CSOB / CS',
   },
   {
     value: 'C',
     title: 'Stream C',
-    subtitle: 'Smlouva o vykonu funkce',
+    subtitle: 'Service agreement fees',
     desc: "Director's Service Agreement fees — requires a signed contract.",
     varNote: 'CSOB / UCB (contract req.)',
   },

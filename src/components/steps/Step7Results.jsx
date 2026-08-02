@@ -156,11 +156,11 @@ function buildFactors(f, simNetIncome) {
       if (entityType === 'osvc') return 'Self-employed'
       if (entityType === 'sro') {
         const essoBlock = redFlags.includes('sro_negative_financials') || redFlags.includes('sro_insufficient_history')
-        if (essoBlock) return 's.r.o. Director — ESSO Hard Block'
-        if (flags.includes('sro_medium_risk_50pct_cap')) return 's.r.o. Director — Medium Risk (50% cap)'
-        if (flags.includes('sro_full_audit_required'))   return 's.r.o. Director — Full Audit Mode'
+        if (essoBlock) return 'Company Director — ESSO Hard Block'
+        if (flags.includes('sro_medium_risk_50pct_cap')) return 'Company Director — Medium Risk (50% cap)'
+        if (flags.includes('sro_full_audit_required'))   return 'Company Director — Full Audit Mode'
         const streams = companyIncomeStream || '—'
-        return `s.r.o. Director — ESSO Low Risk (Stream ${streams})`
+        return `Company Director — ESSO Low Risk (Stream ${streams})`
       }
       return '—'
     })(),
@@ -281,8 +281,8 @@ function buildFactors(f, simNetIncome) {
       title: 'Cash Reserve Adequacy', icon: DollarSign,
       detail: purchasePrice > 0 ? `${own.toFixed(0)}% own funds` : '—',
       desc: own >= 30 ? 'Excellent — above 30% signals financial strength to underwriters.'
-        : own >= 20 ? 'Adequate — meets CNB minimum. Allow buffer for transaction fees & transfer tax.'
-        : own > 0   ? 'Insufficient — CNB requires at least 20% own funds (10% for First Housing under 36).'
+        : own >= 20 ? 'Adequate — meets regulatory minimum. Allow buffer for transaction fees & transfer tax.'
+        : own > 0   ? 'Insufficient — regulations require at least 20% own funds (10% for First Housing under 36).'
         : 'Not specified.',
       status: !purchasePrice ? 'review' : own >= 30 ? 'strong' : own >= 20 ? 'good' : 'risk',
     },
@@ -394,7 +394,7 @@ function RiskMatrix({ formData, simNetIncome }) {
   const bottleneckDesc = {
     LTV:  `LTV ${ltvPct.toFixed(0)}% exceeds ${maxLTVPct}% cap`,
     DTI:  `DTI ${dtiRatio.toFixed(1)}× exceeds ${maxDTIVal}× limit`,
-    DSTI: `Debt service ratio ${dstiAtEX.toFixed(0)}% at or near 45% ČNB ceiling`,
+    DSTI: `Debt service ratio ${dstiAtEX.toFixed(0)}% at or near 45% CNB ceiling`,
     DI:   `Disposable income (after living costs & reserve) is the binding constraint`,
     AGE:  `Age constraint limits maturity to ${maturity.maxYears} years`,
   }[bottleneck] ?? 'Profile within all limits'
@@ -547,7 +547,7 @@ function DiscoveryBudgetCard({ profile, formData }) {
             </p>
             <p className="text-xs text-bronze-dark mt-2">
               Income capacity ÷ {discoveryLTVPct}% ·{' '}
-              {isYoung ? 'First Home Buyer — under 36' : 'Standard ČNB limit'}
+              {isYoung ? 'First Home Buyer — under 36' : 'Standard CNB limit'}
             </p>
           </div>
           <div className="rounded-xl border border-border bg-surface p-5">
@@ -770,7 +770,7 @@ function ApplicantProfilePanel({ formData, profile }) {
       indefinite: 'Indefinite contract',
       definite:   'Fixed-term contract',
       agency:     'Agency / temporary',
-      dpc:        'Supplemental agreement (DPC)',
+      dpc:        'Supplemental agreement',
     }
     const sectorLabels = {
       health:    'Healthcare',
@@ -837,7 +837,7 @@ function ApplicantProfilePanel({ formData, profile }) {
           <div className="flex items-start gap-3 rounded-xl bg-warning-light border border-warning-border p-4">
             <Info size={14} className="text-warning-DEFAULT flex-shrink-0 mt-0.5" />
             <p className="text-xs text-warning-text leading-relaxed">
-              <strong>Supplemental agreement (DPC) — 30% income haircut applied.</strong> DPC income is treated as
+              <strong>Supplemental agreement — 30% income haircut applied.</strong> Supplemental-agreement income is treated as
               secondary by most Czech lenders. Recognised income:{' '}
               <span className="font-semibold tabular-nums">{formatCZK(effectiveIncome)}/mo</span>.
             </p>
@@ -1081,7 +1081,7 @@ function ScenarioSimulator({ formData, onIncomeChange }) {
         <div className="flex items-start gap-3 mt-4 rounded-xl bg-risk-light border border-risk-border p-4">
           <AlertTriangle size={14} className="text-risk-DEFAULT flex-shrink-0 mt-0.5" />
           <p className="text-xs text-risk-text leading-relaxed">
-            <strong>DSTI {simDSTI.toFixed(0)}% exceeds the CNB 45% ceiling.</strong>{' '}
+            <strong>DSTI {simDSTI.toFixed(0)}% exceeds the regulatory 45% ceiling.</strong>{' '}
             Increase the down-payment, extend maturity, or raise income to bring DSTI below 45%.
           </p>
         </div>
@@ -1091,7 +1091,7 @@ function ScenarioSimulator({ formData, onIncomeChange }) {
           <AlertTriangle size={14} className="text-risk-DEFAULT flex-shrink-0 mt-0.5" />
           <p className="text-xs text-risk-text leading-relaxed">
             <strong>DTI {simDTI.toFixed(1)}× exceeds the {maxDTIForPurpose}× limit</strong>
-            {propertyPurpose === 'investment' ? ' (investment property hard cap — no exceptions).' : ' (CNB standard limit).'}
+            {propertyPurpose === 'investment' ? ' (investment property hard cap — no exceptions).' : ' (regulatory standard limit).'}
             {' '}Reduce the loan amount or increase annual income to resolve.
           </p>
         </div>
@@ -1164,7 +1164,7 @@ function SummaryCard({ profile, formData }) {
   const entityLabel = {
     zamestnanec: 'Salaried employment',
     osvc:        'Self-employed',
-    sro:         'Company director (s.r.o.)',
+    sro:         'Company director',
   }[formData.entityType] ?? 'Income assessed'
 
   return (
@@ -1554,7 +1554,7 @@ function ProfileBreakdownGrid({ formData, profile }) {
     employment: 'Long-term (Work/Business)', other: 'Other / Student',
   }
   const purposeLabels   = { primary: 'Primary Residence', investment: 'Investment / Rental', holiday: 'Holiday Home' }
-  const contractLabels  = { indefinite: 'Indefinite', definite: 'Fixed-term', agency: 'Agency', dpc: 'DPC (Supplemental)' }
+  const contractLabels  = { indefinite: 'Indefinite', definite: 'Fixed-term', agency: 'Agency', dpc: 'Supplemental' }
   const yrsLabels       = { less1: '<1 yr', '1-2': '1–2 yrs', '2-5': '2–5 yrs', '5-10': '5–10 yrs', '10plus': '10+ yrs' }
   const sectorLabels    = { health: 'Healthcare', education: 'Education', other: 'Private sector' }
 
@@ -1585,7 +1585,7 @@ function ProfileBreakdownGrid({ formData, profile }) {
       primary: entityType === 'zamestnanec'
         ? (contractLabels[contractType] ?? 'Contract not specified')
         : entityType === 'osvc' ? (businessName || 'Self-Employed')
-        : entityType === 'sro' ? 's.r.o. Director' : '—',
+        : entityType === 'sro' ? 'Company Director' : '—',
       secondary: entityType === 'zamestnanec'
         ? (inProbation
             ? `Probation active · ${sectorLabels[employmentSector] ?? 'Sector not specified'}`

@@ -28,8 +28,8 @@ const LEGAL_FORM_LABELS = {
   '107': 'Sole Trader',
   '108': 'Sole Trader',
   '109': 'Sole Trader',
-  '112': 'Limited Liability Company (s.r.o.)',
-  '121': 'Joint-Stock Company (a.s.)',
+  '112': 'Limited Liability Company',
+  '121': 'Joint-Stock Company',
   '141': 'Cooperative',
   '205': 'State Enterprise',
   '301': 'Branch of Foreign Entity',
@@ -190,7 +190,7 @@ function IcoLookup({ onResult, entityType }) {
       {/* ── IČO input + Verify button ─────────────────── */}
       <div>
         <label htmlFor="ico" className="section-label mb-2 block">
-          {entityType === 'osvc' ? 'Trade License Number (IČO)' : 'Company Registration Number (IČO)'}
+          {entityType === 'osvc' ? 'Trade License Number' : 'Company Registration Number'}
         </label>
         <div className="flex gap-2">
           <div className="relative flex-1">
@@ -345,7 +345,7 @@ const ENTITY_OPTIONS = [
     Icon:     Briefcase,
     title:    'Self-employed',
     subtitle: 'Freelancer · Sole trader · Trade licence holder',
-    desc:     'You operate under a Czech trade licence as an individual. Income declared via personal tax return (Tax Return / DAP).',
+    desc:     'You operate under a Czech trade licence as an individual. Income declared via annual personal tax return.',
     docs: [
       'Trade licence',
       'Tax returns — last 2 years',
@@ -415,8 +415,8 @@ const TAX_REGIME_OPTIONS = [
   {
     value:    'tax_return',
     label:    'Standard Tax Return',
-    sublabel: 'Tax Return (DAP) — §7 / §16',
-    desc:     'Income declared via annual personal or corporate tax return (DAP)',
+    sublabel: 'Annual tax return — §7 / §16',
+    desc:     'Income declared via annual personal or corporate tax return',
   },
   {
     value:    'flat_tax',
@@ -564,11 +564,11 @@ function BusinessIncomeSection({ data, onChange }) {
       {taxRegime === 'tax_return' && (
         <div className="animate-fade-up">
           <label htmlFor="annualTurnover" className="section-label mb-1.5 block">
-            Gross Annual Turnover (Obrat)
+            Gross Annual Turnover
             <span className="text-risk-DEFAULT ml-1">*</span>
           </label>
           <p className="text-[10px] font-medium text-ink-muted uppercase tracking-wide mb-2">
-            Enter your gross annual business turnover as declared in your Tax Return (DAP)
+            Enter your gross annual business turnover as declared in your tax return
           </p>
           <div className="relative">
             <input
@@ -594,8 +594,8 @@ function BusinessIncomeSection({ data, onChange }) {
             </p>
           ) : (
             <p className="text-[11px] text-ink-subtle mt-1.5 leading-relaxed">
-              Enter your total declared revenues from your last Tax Return (DAP), Appendix 1,
-              line 101–102. For Company Directors (s.r.o.), use the company's total annual
+              Enter your total declared revenues from your last tax return, Appendix 1,
+              line 101–102. For company directors, use the company's total annual
               revenues from the Profit &amp; Loss statement.
             </p>
           )}
@@ -607,7 +607,7 @@ function BusinessIncomeSection({ data, onChange }) {
       {taxRegime === 'flat_tax' && (
         <div className="animate-fade-up">
           <label htmlFor="annualTurnoverFlat" className="section-label mb-1.5 block">
-            Gross Annual Turnover (Obrat)
+            Gross Annual Turnover
             <span className="text-risk-DEFAULT ml-1">*</span>
           </label>
           <p className="text-[10px] font-medium text-ink-muted uppercase tracking-wide mb-2">
@@ -673,7 +673,7 @@ function BusinessIncomeSection({ data, onChange }) {
 // ── Employee detail fields ─────────────────────────────
 
 const CONTRACT_TYPES = [
-  { value: 'indefinite', label: 'Indefinite period (HPP)' },
+  { value: 'indefinite', label: 'Indefinite contract' },
   { value: 'definite',   label: 'Fixed-term contract'      },
   { value: 'agency',     label: 'Agency / temp worker'     },
   { value: 'dpc',        label: 'Supplemental agreement'  },
@@ -862,7 +862,7 @@ function SroIncomeSection({ data, onChange }) {
             </div>
             {negPnL
               ? <p className="text-xs text-risk-text mt-1">Hard Block — net loss prevents ESSO income recognition.</p>
-              : <p className="text-[11px] text-ink-subtle mt-1">Net profit after DPPO. Used directly in Stream B (ČSOB formula).</p>
+              : <p className="text-[11px] text-ink-subtle mt-1">Net profit after corporate income tax. Used directly in Stream B (CSOB formula).</p>
             }
           </div>
 
@@ -1028,7 +1028,7 @@ function SroIncomeSection({ data, onChange }) {
           <div className="flex flex-wrap gap-1.5">
             {totalPct >= 20  && <span className="badge-warning text-[10px]">ESSO Classification ({totalPct}% combined)</span>}
             {fullAudit       && <span className="badge-risk text-[10px]">Full Audit &gt;50%</span>}
-            {ownPct > 25 && ownPct <= 33 && <span className="badge-warning text-[10px]">ČSOB: 15% salary haircut (&gt;25%)</span>}
+            {ownPct > 25 && ownPct <= 33 && <span className="badge-warning text-[10px]">CSOB: 15% salary haircut (&gt;25%)</span>}
             {ownPct > 33     && <span className="badge-risk text-[10px]">UCB: 45 000 CZK salary cap (&gt;33%)</span>}
           </div>
         )}
@@ -1103,7 +1103,7 @@ function SroIncomeSection({ data, onChange }) {
                 {ownPct > 33
                   ? <p className="text-[11px] text-risk-text mt-1.5">UCB caps owner salary at <strong>45 000 CZK / mo</strong> for &gt;33% shareholders — income above this threshold is excluded.</p>
                   : ownPct > 25
-                  ? <p className="text-[11px] text-ink-subtle mt-1.5">ČSOB applies a 15% haircut to director salary for &gt;25% ownership.</p>
+                  ? <p className="text-[11px] text-ink-subtle mt-1.5">CSOB applies a 15% haircut to director salary for &gt;25% ownership.</p>
                   : <p className="text-[11px] text-ink-subtle mt-1.5">Net take-home after personal income tax and social contributions.</p>
                 }
               </div>
@@ -1137,10 +1137,10 @@ function SroIncomeSection({ data, onChange }) {
               <div className="rounded-lg bg-white border border-border px-3 py-2.5">
                 <p className="text-[10px] font-semibold text-ink-muted uppercase tracking-wide mb-1.5">Per-bank Stream B methodology</p>
                 <div className="space-y-1">
-                  <p className="text-[11px] text-ink-muted"><span className="font-semibold text-ink">ČSOB:</span> (After-tax result × ownership%) ÷ 12 × 0.85</p>
+                  <p className="text-[11px] text-ink-muted"><span className="font-semibold text-ink">CSOB:</span> (After-tax result × ownership%) ÷ 12 × 0.85</p>
                   <p className="text-[11px] text-ink-muted"><span className="font-semibold text-ink">mBank:</span> Dividends paid × 0.85 ÷ 36 mo (15% withholding deducted)</p>
                   <p className="text-[11px] text-ink-muted"><span className="font-semibold text-ink">UCB:</span> Dividends paid ÷ 36 mo (gross)</p>
-                  <p className="text-[11px] text-ink-muted"><span className="font-semibold text-ink">ČS:</span> (After-tax result × ownership%) ÷ 12 × 0.80 (conservative)</p>
+                  <p className="text-[11px] text-ink-muted"><span className="font-semibold text-ink">CS:</span> (After-tax result × ownership%) ÷ 12 × 0.80 (conservative)</p>
                 </div>
               </div>
             </div>
@@ -1180,7 +1180,7 @@ function SroIncomeSection({ data, onChange }) {
                     />
                     <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs text-ink-subtle pointer-events-none font-medium whitespace-nowrap">CZK / mo</span>
                   </div>
-                  <p className="text-[11px] text-ink-subtle mt-1.5">Same bank haircuts apply as Stream A (ČSOB 15% for &gt;25%, UCB 45k cap for &gt;33%).</p>
+                  <p className="text-[11px] text-ink-subtle mt-1.5">Same bank haircuts apply as Stream A (CSOB 15% for &gt;25%, UCB 45k cap for &gt;33%).</p>
                 </div>
               )}
             </div>
@@ -1195,7 +1195,7 @@ function SroIncomeSection({ data, onChange }) {
 
           <div>
             <label htmlFor="annualGrossRevenues" className="text-[11px] font-semibold text-ink-muted uppercase tracking-wide mb-1.5 block">
-              Annual Gross Revenues — Obrat (CZK)
+              Annual Gross Revenues (CZK)
             </label>
             <div className="relative">
               <input

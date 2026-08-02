@@ -16,13 +16,13 @@ const TAX_REGIME_OPTIONS = [
   {
     value:    'tax_return',
     label:    'Standard Tax Return',
-    sublabel: 'DAP',
+    sublabel: 'Annual filing',
     desc:     'Annual personal tax return',
   },
   {
     value:    'flat_tax',
-    label:    'Flat Tax Regime',
-    sublabel: 'Pausalni dan',
+    label:    'Flat-Tax Regime',
+    sublabel: 'Flat-rate method',
     desc:     'Income from bank turnover',
   },
 ]
@@ -76,7 +76,7 @@ export default function BusinessIncome({ data, onChange, onBack, onContinue }) {
                 <div>
                   <p className="text-xs font-bold text-risk-text mb-0.5">{businessName}</p>
                   <p className="text-[11px] text-risk-text leading-relaxed">
-                    Registration not currently active ({icoActiveStatus}).
+                    Registration not currently active (suspended or dissolved).
                   </p>
                 </div>
               </div>
@@ -158,7 +158,7 @@ export default function BusinessIncome({ data, onChange, onBack, onContinue }) {
         {taxRegime === 'tax_return' && (
           <div className="animate-fade-up">
             <label htmlFor="annualTurnover" className="section-label mb-1.5 block">
-              Gross Annual Turnover (Obrat)
+              Gross Annual Turnover
               <span className="text-risk-DEFAULT ml-1">*</span>
             </label>
             <div className="relative">
@@ -185,7 +185,7 @@ export default function BusinessIncome({ data, onChange, onBack, onContinue }) {
               </p>
             ) : (
               <p className="text-[11px] text-ink-subtle mt-1.5 leading-relaxed">
-                Total declared revenues from your last Tax Return (DAP).
+                Total declared revenues from your last annual tax return.
               </p>
             )}
           </div>
@@ -195,7 +195,7 @@ export default function BusinessIncome({ data, onChange, onBack, onContinue }) {
         {taxRegime === 'flat_tax' && (
           <div className="animate-fade-up">
             <label htmlFor="annualTurnoverFlat" className="section-label mb-1.5 block">
-              Gross Annual Turnover (Obrat)
+              Gross Annual Turnover
               <span className="text-risk-DEFAULT ml-1">*</span>
             </label>
             <div className="relative">

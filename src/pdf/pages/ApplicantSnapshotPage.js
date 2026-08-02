@@ -58,7 +58,7 @@ export function drawApplicantSnapshotPage(doc, ctx) {
     const incRows = [
       ['Recognition Method',  method,             'Sector / NACE',    naceSector || 'Not resolved'],
       [rawLbl,                raw,                'Income Coefficient', coeff],
-      ['Business History',    businessAgeMonths != null ? `Active for ${fmtAge(businessAgeMonths)}` : 'Not verified', 'ARES Status', icoActiveStatus === 'AKTIVNÍ' ? 'Verified — Active' : icoActiveStatus || 'Not verified'],
+      ['Business History',    businessAgeMonths != null ? `Active for ${fmtAge(businessAgeMonths)}` : 'Not verified', 'Registry Status', icoActiveStatus === 'AKTIVNÍ' ? 'Verified — Active' : icoActiveStatus ? 'Suspended / Inactive' : 'Not verified'],
       ['Recognised Income',   czk(effectiveIncome) + '/mo', 'Income Cap', '150,000 CZK / mo'],
     ]
     incRows.forEach(([l1, v1, l2, v2]) => {

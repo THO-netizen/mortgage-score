@@ -10,6 +10,7 @@ import Step2Residence          from './components/steps/Step2Residence.jsx'
 import Step3Liabilities        from './components/steps/Step3Liabilities.jsx'
 import Step4Property           from './components/steps/Step4Property.jsx'
 import ProcessingScreen        from './components/funnel/ProcessingScreen.jsx'
+import LeadGate                from './components/funnel/LeadGate.jsx'
 import Step7Results            from './components/steps/Step7Results.jsx'
 import TestimonialsCarousel    from './components/testimonials/TestimonialsCarousel.jsx'
 import ClientStories           from './components/testimonials/ClientStories.jsx'
@@ -117,10 +118,11 @@ const INITIAL_FORM = {
 }
 
 // ─── Step routing constants ────────────────────────────
-// 0: landing  1-4: data collection  5: processing  6: results
+// 0: landing  1-4: data collection  5: processing  6: lead gate  7: results
 const STEP_LANDING    = 0
-const STEP_RESULTS    = 6
+const STEP_RESULTS    = 7
 const STEP_PROCESSING = 5
+const STEP_LEAD_GATE  = 6
 const TOTAL_DATA_STEPS = 4
 
 // ─── Main App ─────────────────────────────────────────
@@ -246,7 +248,15 @@ export default function App() {
 
   // Called by ProcessingScreen when animation completes
   const handleProcessingComplete = useCallback(() => {
+    analytics.track('assessment_completed')
     analytics.track('step_completed', { stepIndex: 5, stepName: 'Processing' })
+    goToStep(STEP_LEAD_GATE)
+  }, [])
+
+  // Called by LeadGate on successful submission
+  const handleLeadUnlock = useCallback((capturedName) => {
+    setField('leadName', capturedName)
+    analytics.track('result_viewed')
     goToStep(STEP_RESULTS)
   }, [])
 
@@ -254,6 +264,7 @@ export default function App() {
   const isLanding    = currentStep === STEP_LANDING
   const isFunnel     = currentStep >= 1 && currentStep <= TOTAL_DATA_STEPS
   const isProcessing = currentStep === STEP_PROCESSING
+  const isLeadGate   = currentStep === STEP_LEAD_GATE
   const isResults    = currentStep === STEP_RESULTS
 
   // ── Render ───────────────────────────────────────────
@@ -417,7 +428,12 @@ export default function App() {
         <ProcessingScreen onComplete={handleProcessingComplete} />
       )}
 
-      {/* ── Results Dashboard (step 6) — full-width ── */}
+      {/* ── Lead gate (step 6) — collect name/email before revealing result ── */}
+      {isLeadGate && (
+        <LeadGate onUnlock={handleLeadUnlock} />
+      )}
+
+      {/* ── Results Dashboard (step 7) — full-width ── */}
       {isResults && (
         <>
           <Step7Results

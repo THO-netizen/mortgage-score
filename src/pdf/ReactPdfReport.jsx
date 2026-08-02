@@ -413,7 +413,7 @@ function OsvCModule({ formData, profile }) {
   const ageLbl    = ageYrs > 0 ? (ageYrs + 'yr ' + ageMo + 'mo') : (ageMo + 'mo')
   const hasGap    = !!formData.businessActivityGap
   const taxLbl    = {
-    dpfo_real: 'Real Expenses', dpfo_flat: 'Flat Rate (Pausalni)', flat_tax: 'Flat-Tax Band',
+    dpfo_real: 'Real Expenses', dpfo_flat: 'Flat Rate', flat_tax: 'Flat-Tax Band',
   }[formData.taxRegime] || (formData.taxRegime || '—')
 
   function Badge({ label, bgColor, textColor }) {
@@ -458,7 +458,7 @@ function OsvCModule({ formData, profile }) {
         <View style={{ backgroundColor: RK + '15', borderWidth: 1, borderColor: RK + '55', borderRadius: 4, padding: 7, marginBottom: 6, flexDirection: 'row', alignItems: 'flex-start' }}>
           <Text style={{ fontSize: 6.5, fontFamily: 'Helvetica-Bold', color: RK, marginRight: 6 }}>ALERT</Text>
           <Text style={{ fontSize: 6.5, color: RK, flex: 1, lineHeight: 1.35 }}>
-            Business activity gap detected. Most Czech banks require uninterrupted OSVC registration for 24+ months. Gaps exceeding 3 months may reset the trading duration clock and trigger automatic decline.
+            Business activity gap detected. Most Czech banks require uninterrupted self-employed registration for 24+ months. Gaps exceeding 3 months may reset the trading duration clock and trigger automatic decline.
           </Text>
         </View>
       )}
@@ -475,7 +475,7 @@ function OsvCModule({ formData, profile }) {
         {/* Method A row */}
         <View style={[S.tRow, { backgroundColor: active === 'A' ? GLA : WH }]}>
           <Text style={[S.tCel, { flex: 2.5, fontFamily: active === 'A' ? 'Helvetica-Bold' : 'Helvetica' }]}>
-            A — Tax Return (DPFO)
+            A — Personal Tax Return
           </Text>
           <Text style={[S.tCel, { flex: 2, textAlign: 'center', color: MU }]}>
             {annNum > 0 ? (czkS(annNum) + '/yr x' + cLabel) : 'No data entered'}
@@ -671,20 +671,20 @@ function UnderwriterPerspective({ profile, formData }) {
 function PreApprovalChecklist({ formData }) {
   const { entityType, contractType } = formData
   const docs = entityType === 'osvc' ? [
-    'Last 2 completed DPFO tax returns with tax office stamp',
+    'Last 2 completed personal tax returns with tax office stamp',
     'Last 3 months business and personal bank statements',
-    'Business registration extract (Zivnostnik, max 3 months)',
+    'Business registration extract (max 3 months old)',
     'VAT returns last 4 quarters (if VAT-registered)',
     'Preliminary purchase agreement or letter of intent',
   ] : entityType === 'sro' ? [
-    'Last 2 years company financials (rozvaha and VZZ)',
-    'Last 2 years personal tax returns (DPFO)',
+    'Last 2 years company financials (balance sheet and P&L)',
+    'Last 2 years personal tax returns',
     'Company extract from Commercial Register (max 3 months)',
-    'Employer confirmation letter from s.r.o. to director',
+    'Employer confirmation letter from company to director',
     'Preliminary purchase agreement or letter of intent',
   ] : [
     'Last 3 months payslips from all employers',
-    'Employer salary confirmation (potvrzeni zamestnavatele)',
+    'Employer salary confirmation letter',
     contractType === 'indefinite' ? 'Indefinite employment contract — full copy' : 'Employment contract with confirmed end date',
     'Last 3 months bank statements (salary account)',
     'Preliminary purchase agreement or letter of intent',
@@ -902,7 +902,7 @@ function Page1({ ctx }) {
     employment: 'Work Permit', other: 'Other',
   }[formData.residenceStatus] || '—'
 
-  const entityLbl = { zamestnanec: 'Salaried', osvc: 'Self-Employed', sro: 's.r.o. Director' }[formData.entityType] || '—'
+  const entityLbl = { zamestnanec: 'Salaried', osvc: 'Self-Employed', sro: 'Company Director' }[formData.entityType] || '—'
   const own       = formData.purchasePrice > 0 ? ((formData.ownFunds / formData.purchasePrice) * 100).toFixed(0) + '%' : '—'
   const yrsLbl    = { less1: '<1yr', '1-2': '1-2yr', '2-5': '2-5yr', '5-10': '5-10yr', '10plus': '10+yr' }[formData.yearsInCZ] || ''
   const dname     = tr(formData.leadName || '', 22)
@@ -1227,7 +1227,7 @@ function DiscoveryPage({ ctx }) {
     longterm5plus: 'Long-term 5+ yr', longterm: 'Long-term Res.',
     employment: 'Work Permit', other: 'Other',
   }[formData.residenceStatus] || '—'
-  const entityLbl = { zamestnanec: 'Salaried', osvc: 'Self-Employed', sro: 's.r.o. Director' }[formData.entityType] || '—'
+  const entityLbl = { zamestnanec: 'Salaried', osvc: 'Self-Employed', sro: 'Company Director' }[formData.entityType] || '—'
 
   const bars = [
     { label: 'Income Capacity', sub: `debt service at contract rate · limit ${dstiLim.toFixed(0)}%`,        value: dstiAtEX,  limit: dstiLim, binding: bottleneck === 'DSTI' },
@@ -1294,7 +1294,7 @@ function DiscoveryPage({ ctx }) {
               <Text style={{ fontSize: 6, fontFamily: 'Helvetica-Bold', textTransform: 'uppercase', letterSpacing: 0.5, color: GL, marginBottom: 4 }}>Estimated Property Budget</Text>
               <Text style={{ fontSize: 22, fontFamily: 'Helvetica-Bold', color: IN }}>{maxPropertyPrice > 0 ? czkS(maxPropertyPrice) : '—'}</Text>
               <Text style={{ fontSize: 6.5, color: MU, marginTop: 3 }}>
-                {isYoung ? 'First Home Buyer (under 36) — ' + ltvCap + '% LTV' : 'Standard ČNB limit — ' + ltvCap + '% LTV'}
+                {isYoung ? 'First Home Buyer (under 36) — ' + ltvCap + '% LTV' : 'Standard CNB limit — ' + ltvCap + '% LTV'}
               </Text>
             </View>
             <View style={{ flex: 1, backgroundColor: WH, borderRadius: 4, borderWidth: 1, borderColor: BD, padding: 10 }}>

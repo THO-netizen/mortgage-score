@@ -67,7 +67,7 @@ export default function SroIncome({ data, onChange, onBack, onContinue }) {
     <FunnelCard
       title="Tell us about your company income"
       subtitle="Enter ownership, financials, and income streams for ESSO methodology."
-      hint="Czech banks assess s.r.o. directors via ESSO — a stricter audit requiring financials and ownership verification."
+      hint="Czech banks assess company directors via ESSO — a stricter audit requiring financials and ownership verification."
       footer={<ActionBar canContinue={canContinue} onBack={onBack} onContinue={onContinue} />}
     >
       <div className="space-y-6">
