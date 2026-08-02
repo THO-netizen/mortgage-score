@@ -55,8 +55,8 @@ function LTVBar({ ltv }) {
 export default function Step4Property({ data, onChange, onBack, onContinue }) {
   const {
     propertyMode     = 'defined',
-    purchasePrice    = 5_500_000,
-    ownFunds         = 1_200_000,
+    purchasePrice    = 0,
+    ownFunds         = 0,
     propertyPurpose  = '',
     purchaseTimeline = '',
     applicantAge     = 35,
@@ -65,8 +65,8 @@ export default function Step4Property({ data, onChange, onBack, onContinue }) {
   const isDiscovering = propertyMode === 'discovering'
 
   // Local raw strings for numeric inputs (allow free typing)
-  const [purchasePriceRaw, setPurchasePriceRaw] = useState(String(purchasePrice ?? ''))
-  const [ownFundsRaw,      setOwnFundsRaw]      = useState(String(ownFunds ?? ''))
+  const [purchasePriceRaw, setPurchasePriceRaw] = useState(purchasePrice > 0 ? purchasePrice.toLocaleString('cs-CZ') : '')
+  const [ownFundsRaw,      setOwnFundsRaw]      = useState(ownFunds > 0 ? ownFunds.toLocaleString('cs-CZ') : '')
 
   const parsedPurchasePrice = Math.max(0, Number(purchasePriceRaw.replace(/\s/g, '')) || 0)
   const parsedOwnFunds      = Math.max(0, Number(ownFundsRaw.replace(/\s/g, '')) || 0)
@@ -85,8 +85,8 @@ export default function Step4Property({ data, onChange, onBack, onContinue }) {
     ? Math.ceil(parsedPurchasePrice * ((100 - maxLTVPct) / 100)) - parsedOwnFunds
     : 0
 
-  // canContinue: discovery → always true (mode switch auto-navigates); defined → purpose + timeline
-  const canContinue = isDiscovering ? true : !!propertyPurpose && !!purchaseTimeline
+  // canContinue: discovery → always true (mode switch auto-navigates); defined → price + own funds + purpose + timeline
+  const canContinue = isDiscovering ? true : parsedPurchasePrice > 0 && parsedOwnFunds >= 0 && !!propertyPurpose && !!purchaseTimeline
 
   // ── Switch mode ────────────────────────────────────────
   function switchMode(mode) {
@@ -101,11 +101,11 @@ export default function Step4Property({ data, onChange, onBack, onContinue }) {
         // Navigate immediately — no property fields required in discovery mode
         onContinue()
       } else {
-        // Restore sensible defaults so the LTV bar has something to show
-        onChange('purchasePrice', 5_500_000)
-        onChange('ownFunds',      1_200_000)
-        setPurchasePriceRaw('5 500 000')
-        setOwnFundsRaw('1 200 000')
+        // Clear fields — user enters their own values (no pre-filled defaults)
+        onChange('purchasePrice', 0)
+        onChange('ownFunds',      0)
+        setPurchasePriceRaw('')
+        setOwnFundsRaw('')
       }
     } catch (err) {
       console.error('[Step4Property] switchMode failed:', err, { mode })
@@ -227,7 +227,7 @@ export default function Step4Property({ data, onChange, onBack, onContinue }) {
                 type="text"
                 inputMode="numeric"
                 value={purchasePriceRaw}
-                placeholder="e.g. 5 500 000"
+                placeholder="např. 5 500 000"
                 onChange={(e) => {
                   const raw    = e.target.value.replace(/[^\d\s]/g, '')
                   setPurchasePriceRaw(raw)
@@ -258,7 +258,7 @@ export default function Step4Property({ data, onChange, onBack, onContinue }) {
                 type="text"
                 inputMode="numeric"
                 value={ownFundsRaw}
-                placeholder="e.g. 1 200 000"
+                placeholder="např. 1 200 000"
                 onChange={(e) => {
                   const raw    = e.target.value.replace(/[^\d\s]/g, '')
                   setOwnFundsRaw(raw)

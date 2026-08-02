@@ -101,8 +101,8 @@ const INITIAL_FORM = {
 
   // Step 4 — Property & LTV
   propertyMode:     'defined',    // 'defined' | 'discovering'
-  purchasePrice:    5_500_000,
-  ownFunds:         1_200_000,
+  purchasePrice:    0,
+  ownFunds:         0,
   propertyPurpose:  '',
   purchaseTimeline: '',
 

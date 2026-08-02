@@ -57,6 +57,16 @@ function scoreCfg(score) {
   return               { label: 'High Risk',           color: '#EF4444', badge: 'badge-risk' }
 }
 
+// ── Unified verdict (combines score + riskStatus into a single clear statement) ──
+
+function getUnifiedVerdict(score, riskStatus) {
+  if (riskStatus === 'cervena')
+    return { label: 'Barriers to Address', summary: 'There are issues to resolve before application.', color: '#EF4444', badge: 'badge-risk' }
+  if (riskStatus === 'oranzova')
+    return { label: 'Good Position — Room to Improve', summary: 'Your profile is bankable with targeted preparation.', color: '#F59E0B', badge: 'badge-warning' }
+  return { label: 'Strong Position to Apply', summary: 'Your profile meets standard underwriting criteria.', color: '#10B981', badge: 'badge-success' }
+}
+
 // ── Readiness factor builder ───────────────────────────
 
 function buildFactors(f, simNetIncome) {
@@ -1183,18 +1193,14 @@ function SummaryCard({ profile, formData }) {
 // ── Headline Verdict ───────────────────────────────────
 
 function HeadlineVerdict({ score, cfg, profile, formData }) {
-  const { eX, eXStress, eXBase, riskStatus, bottleneck, effectiveIncome,
+  const { eX, riskStatus, bottleneck, effectiveIncome,
     maxPropertyPrice, discoveryLTVPct } = profile
   const isDiscovering = formData.propertyMode === 'discovering'
-
-  const riskBand = {
-    zelena:   'Low Risk',
-    oranzova: 'Moderate Risk',
-    cervena:  'Higher Risk',
-  }[riskStatus] ?? 'Under Assessment'
+  const verdict = getUnifiedVerdict(score, riskStatus)
 
   const genericBottleneckLabel = {
     DSTI: 'income capacity',
+    DI:   'disposable income',
     DTI:  'debt load',
     AGE:  'loan term',
     LTV:  'equity position',
@@ -1217,24 +1223,24 @@ function HeadlineVerdict({ score, cfg, profile, formData }) {
       return 'As a self-employed applicant, your income recognition method determines which lender to approach first — and it may not be the most obvious one.'
     if (formData.entityType === 'sro')
       return 'Your income is assessed under ESSO methodology. How your company financials are structured directly determines the recognised base.'
-    return `Your profile qualifies for up to ${formatCZKShort(eX)} under Czech bank dual-test methodology (contract ${CONTRACT_RATE_PA}% / stress ${DUAL_STRESS_RATE_PA}%). The conservative dual-rate result is binding.`
+    return `Your profile qualifies for up to ${formatCZKShort(eX)} under Czech bank dual-test methodology. The conservative stress-test result is binding.`
   })()
 
   return (
     <div className="rounded-card bg-dark-900 border border-white/10 overflow-hidden">
-      <div className="h-0.5 w-full flex-shrink-0" style={{ background: cfg.color }} />
+      <div className="h-0.5 w-full flex-shrink-0" style={{ background: verdict.color }} />
       <div className="px-5 sm:px-10 py-8 sm:py-10">
         <div className="flex flex-col lg:flex-row items-start gap-6 lg:gap-10">
 
-          {/* Left: Gauge + verdict */}
+          {/* Left: Gauge + unified verdict */}
           <div className="flex items-center gap-4 sm:gap-6 flex-shrink-0">
-            <ScoreGauge score={score} color={cfg.color} />
+            <ScoreGauge score={score} color={verdict.color} />
             <div className="min-w-0">
-              <p className="text-[10px] font-bold tracking-widest uppercase text-slate-500 mb-1.5">Eligibility Score</p>
-              <p className="font-display text-xl sm:text-2xl font-black text-white leading-tight">{cfg.label}</p>
+              <p className="text-[10px] font-bold tracking-widest uppercase text-slate-500 mb-1.5">Mortgage Readiness</p>
+              <p className="font-display text-xl sm:text-2xl font-black text-white leading-tight">{verdict.label}</p>
               <div className="flex items-center gap-2 mt-2.5">
-                <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: cfg.color }} />
-                <span className="text-xs text-slate-400 font-medium">{riskBand}</span>
+                <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: verdict.color }} />
+                <span className="text-xs text-slate-400 font-medium">Score: {score}/100</span>
               </div>
             </div>
           </div>
@@ -1242,27 +1248,15 @@ function HeadlineVerdict({ score, cfg, profile, formData }) {
           {/* Divider */}
           <div className="hidden lg:block w-px self-stretch bg-white/10 flex-shrink-0" />
 
-          {/* Right: Loan figures + insight */}
+          {/* Right: Loan figure + insight */}
           <div className="flex-1 min-w-0 space-y-5">
-            <div className="grid grid-cols-2 gap-4 sm:gap-8">
-              <div>
-                <p className="text-[10px] font-bold tracking-widest uppercase text-slate-500 mb-1">
-                  Maximum Loan Estimate
-                </p>
-                <p className="font-display text-2xl sm:text-3xl font-black text-white tabular-nums leading-tight">
-                  {eX > 0 ? formatCZKShort(eX) : '—'}
-                </p>
-              </div>
-              {!isDiscovering && (eXBase > 0 && eXBase !== eX) ? (
-                <div>
-                  <p className="text-[10px] font-bold tracking-widest uppercase text-slate-500 mb-1">
-                    Base Rate · {CONTRACT_RATE_PA}%
-                  </p>
-                  <p className="font-display text-xl sm:text-2xl font-black text-slate-300 tabular-nums leading-tight">
-                    {formatCZKShort(eXBase)}
-                  </p>
-                </div>
-              ) : null}
+            <div>
+              <p className="text-[10px] font-bold tracking-widest uppercase text-slate-500 mb-1">
+                Maximum Loan Estimate
+              </p>
+              <p className="font-display text-2xl sm:text-3xl font-black text-white tabular-nums leading-tight">
+                {eX > 0 ? formatCZKShort(eX) : '—'}
+              </p>
             </div>
             <p className="text-sm text-slate-400 leading-relaxed max-w-xl">{insightSentence}</p>
           </div>
@@ -1607,24 +1601,18 @@ function RecommendedStrategy({ score, profile, formData }) {
 // ── Hero Verdict Post-Gate ────────────────────────────
 
 function HeroVerdictPost({ score, cfg, profile, formData }) {
-  const { eX, eXStress, eXBase, riskStatus, bottleneck, effectiveIncome,
+  const { eX, riskStatus, bottleneck, effectiveIncome,
     maxPropertyPrice, minOwnFunds, discoveryLTVPct } = profile
   const isDiscovering = formData.propertyMode === 'discovering'
+  const verdict = getUnifiedVerdict(score, riskStatus)
 
-  const riskBand = {
-    zelena:   'Low Risk',
-    oranzova: 'Moderate Risk',
-    cervena:  'Higher Risk',
-  }[riskStatus] ?? 'Under Assessment'
-
-  // Dynamic 2-3 sentence summary — no bank names; generic labels in discovery mode
   const summary = (() => {
     const s1 = isDiscovering
       ? eX > 0
         ? `Based on your income profile, your estimated maximum loan is ${formatCZKShort(eX)}. See the Budget Discovery section for your estimated property price range and minimum own funds required.`
         : 'Your profile has been assessed under Czech bank dual-test methodology.'
       : eX > 0
-        ? `Based on your profile, you qualify for an estimated maximum loan of ${formatCZKShort(eX)} under the dual-rate stress test (${CONTRACT_RATE_PA}% / ${DUAL_STRESS_RATE_PA}%). The lower of the two results is applied.`
+        ? `Based on your profile, you qualify for an estimated maximum loan of ${formatCZKShort(eX)} under the dual-rate stress test. The conservative result is applied.`
         : 'Your profile has been assessed under the Czech bank dual-test methodology.'
 
     const s2 = isDiscovering
@@ -1658,7 +1646,7 @@ function HeroVerdictPost({ score, cfg, profile, formData }) {
 
   return (
     <div className="rounded-2xl border border-border bg-card overflow-hidden">
-      <div className="h-0.5 w-full" style={{ background: cfg.color }} />
+      <div className="h-0.5 w-full" style={{ background: verdict.color }} />
       <div className="px-5 sm:px-8 py-6">
         <p className="text-[10px] font-bold tracking-widest uppercase text-ink-subtle mb-5">Your Assessment Result</p>
         <div className="flex flex-col sm:flex-row items-start gap-6 sm:gap-8">
@@ -1667,36 +1655,26 @@ function HeroVerdictPost({ score, cfg, profile, formData }) {
           <div className="flex items-center gap-4 flex-shrink-0">
             <p className="font-display text-[72px] font-black text-blue-900 leading-none tabular-nums w-36 text-center flex-shrink-0">{score}</p>
             <div className="min-w-0">
-              <p className="text-[10px] text-ink-subtle uppercase tracking-wide mb-0.5">Readiness Score</p>
-              <p className="font-display text-xl font-black text-ink leading-tight">{cfg.label}</p>
+              <p className="text-[10px] text-ink-subtle uppercase tracking-wide mb-0.5">Mortgage Readiness Score</p>
+              <p className="font-display text-xl font-black text-ink leading-tight">{verdict.label}</p>
               <div className="flex items-center gap-1.5 mt-1.5">
-                <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: cfg.color }} />
-                <span className="text-xs text-ink-muted">{riskBand}</span>
+                <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: verdict.color }} />
+                <span className="text-xs text-ink-muted">{verdict.summary}</span>
               </div>
             </div>
           </div>
 
           <div className="hidden sm:block w-px bg-border self-stretch flex-shrink-0" />
 
-          {/* Loan figures + summary */}
+          {/* Loan figure + summary */}
           <div className="flex-1 min-w-0">
-            <div className="grid grid-cols-2 gap-4 sm:gap-6 mb-4">
-              <div>
-                <p className="text-[10px] text-ink-subtle uppercase tracking-wide mb-1">
-                  Maximum Loan Estimate
-                </p>
-                <p className="font-display text-2xl font-black text-ink tabular-nums leading-tight">
-                  {eX > 0 ? formatCZKShort(eX) : '—'}
-                </p>
-              </div>
-              {!isDiscovering && (eXBase > 0 && eXBase !== eX) ? (
-                <div>
-                  <p className="text-[10px] text-ink-subtle uppercase tracking-wide mb-1">Base Rate · {CONTRACT_RATE_PA}%</p>
-                  <p className="font-display text-xl font-black text-ink-muted tabular-nums leading-tight">
-                    {formatCZKShort(eXBase)}
-                  </p>
-                </div>
-              ) : null}
+            <div className="mb-4">
+              <p className="text-[10px] text-ink-subtle uppercase tracking-wide mb-1">
+                Maximum Loan Estimate
+              </p>
+              <p className="font-display text-2xl font-black text-ink tabular-nums leading-tight">
+                {eX > 0 ? formatCZKShort(eX) : '—'}
+              </p>
             </div>
             <p className="text-sm text-ink-muted leading-relaxed">{summary}</p>
           </div>
@@ -1941,12 +1919,12 @@ export default function Step7Results({ formData, onBack, onRestart }) {
       <div className="sticky top-0 z-40 bg-dark-900/95 backdrop-blur border-b border-white/10">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 py-3 flex items-center gap-3 sm:gap-6 min-w-0">
 
-          {/* Mini gauge + score */}
+          {/* Mini gauge + unified verdict */}
           <div className="flex items-center gap-3 flex-shrink-0">
             <svg viewBox="0 0 44 44" className="w-9 h-9" aria-hidden="true">
               <circle cx="22" cy="22" r="16" fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth="3.5" />
               <circle cx="22" cy="22" r="16" fill="none"
-                stroke={cfg.color} strokeWidth="3.5"
+                stroke={getUnifiedVerdict(score, headerProfile.riskStatus).color} strokeWidth="3.5"
                 strokeDasharray={`${2 * Math.PI * 16 * (score / 100)} ${2 * Math.PI * 16 * (1 - score / 100)}`}
                 strokeLinecap="round"
                 transform="rotate(-90 22 22)"
@@ -1955,8 +1933,8 @@ export default function Step7Results({ formData, onBack, onRestart }) {
                 fontWeight="800" fontFamily="Manrope, Inter, sans-serif">{score}</text>
             </svg>
             <div>
-              <p className="text-[10px] text-slate-500 leading-tight">Score</p>
-              <p className="text-white text-[13px] font-semibold leading-tight">{cfg.label}</p>
+              <p className="text-[10px] text-slate-500 leading-tight">Readiness</p>
+              <p className="text-white text-[13px] font-semibold leading-tight">{getUnifiedVerdict(score, headerProfile.riskStatus).label}</p>
             </div>
           </div>
 
