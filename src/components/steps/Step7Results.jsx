@@ -13,6 +13,7 @@ import {
   getMaxLTV, getMaxDTI, calcMaxMaturity,
   BANK_NAMES, BANK_KEYS,
   CONTRACT_RATE_PA, DUAL_STRESS_RATE_PA,
+  LIVING_MIN_CZK, HOUSING_COSTS_CZK, RESERVE_KOEF, ZM_ADDITIONAL_ADULT_CZK,
 } from '../../utils/scoringEngine.js'
 import HowItWorks        from '../results/HowItWorks.jsx'
 import InlineLeadCapture from '../results/InlineLeadCapture.jsx'
@@ -448,10 +449,14 @@ function RiskMatrix({ formData, simNetIncome }) {
               <span className="font-semibold text-ink">Limiting factor:</span> {bottleneckDesc}
             </p>
           </div>
-          {incomeForCalc > 0 && eX > 0 && eXStress > 0 && (
+          {incomeForCalc > 0 && eX > 0 && (
             <div className="flex items-center gap-4 text-xs flex-shrink-0">
               <span className="text-ink-muted">
-                Stress test <span className="font-bold tabular-nums text-warning-text">{formatCZKShort(eXStress)}</span>
+                {bottleneck === 'DI'
+                  ? <>Binding: <span className="font-semibold text-warning-text">Disposable income (Test B)</span></>
+                  : bottleneck === 'DSTI'
+                  ? <>Binding: <span className="font-semibold text-ink">Debt service ratio (Test A)</span></>
+                  : null}
               </span>
             </div>
           )}
@@ -499,17 +504,17 @@ function ReadinessCard({ factor }) {
       {eX !== undefined && netIncome > 0 && eX > 0 && (
         <div className="mt-3 pt-3 border-t border-border space-y-1.5">
           <div className="flex justify-between text-xs gap-2">
-            <span className="text-ink-muted min-w-0">Base capacity @ {CONTRACT_RATE_PA}% / {maturity?.maxYears ?? 20} yr</span>
+            <span className="text-ink-muted min-w-0">Test A (DSTI) @ {CONTRACT_RATE_PA}% / {maturity?.maxYears ?? 20} yr</span>
             <span className="font-bold text-ink tabular-nums flex-shrink-0">{formatCZKShort(eXBase ?? eX)}</span>
           </div>
           <div className="flex justify-between text-xs gap-2">
-            <span className="text-ink-muted min-w-0">Stress capacity @ {DUAL_STRESS_RATE_PA}%</span>
-            <span className="font-semibold text-warning-text tabular-nums flex-shrink-0">{formatCZKShort(eXStress)}</span>
+            <span className="text-ink-muted min-w-0">Test B (DI) @ {DUAL_STRESS_RATE_PA}%</span>
+            <span className="font-semibold text-ink tabular-nums flex-shrink-0">{formatCZKShort(eXStress)}</span>
           </div>
-          <div className="flex justify-between text-xs">
-            <span className="text-ink-muted">Debt service ratio</span>
-            <span className={`font-semibold tabular-nums ${dstiAtEX > 45 ? 'text-risk-DEFAULT' : 'text-ink-muted'}`}>
-              {dstiAtEX.toFixed(1)}%
+          <div className="flex justify-between text-xs gap-2">
+            <span className="text-ink-muted">Binding test</span>
+            <span className="font-semibold text-ink-muted tabular-nums flex-shrink-0">
+              {bottleneck === 'DI' ? 'Test B (DI)' : bottleneck === 'DSTI' ? 'Test A (DSTI)' : bottleneck ?? '—'}
             </span>
           </div>
         </div>
@@ -1147,7 +1152,7 @@ function JourneyTimeline() {
 // ── Summary Card (always visible, pre-gate) ───────────
 
 function SummaryCard({ profile, formData }) {
-  const { riskStatus, eX, eXStress } = profile
+  const { riskStatus, eX, eXStress, bottleneck } = profile
 
   const riskMeta = {
     zelena:   { label: 'Low Risk',     text: 'text-success-text', bg: 'bg-success-light border-success-border' },
@@ -1175,8 +1180,14 @@ function SummaryCard({ profile, formData }) {
         <p className="font-display text-xl sm:text-2xl font-black text-ink tabular-nums leading-tight">
           {eX > 0 ? formatCZKShort(eX) : '—'}
         </p>
-        {eXStress > 0 && (
-          <p className="text-[11px] text-ink-subtle mt-1">Stress: {formatCZKShort(eXStress)}</p>
+        {eX > 0 && (
+          <p className="text-[11px] text-ink-subtle mt-1">
+            {bottleneck === 'DI'
+              ? 'Bound by disposable income (Test B)'
+              : bottleneck === 'DSTI'
+              ? 'Bound by debt service ratio (Test A)'
+              : `Bound by ${bottleneck ?? 'profile limits'}`}
+          </p>
         )}
       </div>
 
@@ -1278,6 +1289,7 @@ function BindingConstraintBars({ profile, isDiscovering = false }) {
   const {
     eX, effectiveIncome, dstiAtEX, ltvPct, maxLTVPct,
     winnerBank, bankResults, maturity, existingDebt, bottleneck,
+    householdExpenses,
   } = profile
 
   const netIncome = effectiveIncome || 0
@@ -1288,9 +1300,9 @@ function BindingConstraintBars({ profile, isDiscovering = false }) {
   const stressPayment = eX > 0 && maturity?.maxYears > 0
     ? monthlyPayment(eX, DUAL_STRESS_RATE_PA, maturity.maxYears)
     : 0
-  const stressDSTI    = netIncome > 0
-    ? Math.min(99, ((stressPayment + (existingDebt || 0)) / netIncome) * 100)
-    : 0
+
+  // Test B bar: stress payment vs disposable income (CZK, not %)
+  const disposableIncome = Math.max(0, netIncome - (householdExpenses || 0) - (existingDebt || 0))
 
   // PRAVIDLO_ANONYMITY: in discovery mode use generic labels — no DSTI/DTI/LTV terminology
   const bars = isDiscovering
@@ -1303,11 +1315,13 @@ function BindingConstraintBars({ profile, isDiscovering = false }) {
           isActive: bottleneck === 'DSTI',
         },
         {
-          label:    'Debt Load',
-          sub:      `obligation ratio at stress rate · same limit ${dstiLimit.toFixed(0)}%`,
-          value:    stressDSTI,
-          limit:    dstiLimit,
-          isActive: bottleneck === 'DSTI',
+          label:    'Available After Living Costs',
+          sub:      `stress payment vs. income available after essential costs`,
+          value:    disposableIncome > 0 ? (stressPayment / disposableIncome) * 100 : 0,
+          limit:    100,
+          isActive: bottleneck === 'DI',
+          displayValue: `${formatCZK(Math.round(stressPayment))}`,
+          displayLimit: `of ${formatCZK(Math.round(disposableIncome))}`,
         },
         {
           label:    'Loan Term',
@@ -1328,11 +1342,13 @@ function BindingConstraintBars({ profile, isDiscovering = false }) {
           isActive: bottleneck === 'DSTI' || bottleneck === 'DI',
         },
         {
-          label:    'Stress Test / DI',
-          sub:      `Test B at ${DUAL_STRESS_RATE_PA}% stress rate · income after living costs & obligations`,
-          value:    stressDSTI,
-          limit:    dstiLimit,
-          isActive: bottleneck === 'DSTI' || bottleneck === 'DI',
+          label:    'Disposable Income (DI)',
+          sub:      `Test B · stress payment vs. income available after living costs`,
+          value:    disposableIncome > 0 ? (stressPayment / disposableIncome) * 100 : 0,
+          limit:    100,
+          isActive: bottleneck === 'DI',
+          displayValue: `${formatCZK(Math.round(stressPayment))}`,
+          displayLimit: `of ${formatCZK(Math.round(disposableIncome))}`,
         },
         {
           label:    'LTV (Loan-to-Value)',
@@ -1388,6 +1404,131 @@ function BindingConstraintBars({ profile, isDiscovering = false }) {
           )
         })}
       </div>
+    </div>
+  )
+}
+
+// ── Capacity Breakdown (dual-test explanation) ────────
+
+function CapacityBreakdown({ profile, formData }) {
+  const {
+    effectiveIncome, livingCosts, reserve, householdExpenses, existingDebt,
+    eX, eXStress, eXBase, bottleneck, maturity, winnerBank, bankResults,
+  } = profile
+
+  const netIncome = effectiveIncome || 0
+  if (netIncome <= 0 || eX <= 0) return null
+
+  const isDiscovering = formData.propertyMode === 'discovering'
+  const [open, setOpen] = useState(true)
+
+  const winnerResult = bankResults?.[winnerBank]
+  const dstiLimit = winnerResult?.effectiveDSTI != null ? winnerResult.effectiveDSTI * 100 : 45
+  const maxForDSTI = winnerResult?.maxByDSTI ?? eXBase ?? eX
+  const maxForDI = winnerResult?.maxByDI ?? eXStress ?? 0
+
+  // Breakdown of DI deductions
+  const adults = (formData.numberOfApplicants ?? 1)
+  const zmTotal = LIVING_MIN_CZK + Math.max(0, adults - 1) * ZM_ADDITIONAL_ADULT_CZK
+  const housingCosts = HOUSING_COSTS_CZK
+  const safetyReserve = reserve || Math.round((zmTotal + housingCosts) * RESERVE_KOEF)
+  const obligations = existingDebt || 0
+  const disposable = Math.max(0, netIncome - zmTotal - housingCosts - safetyReserve - obligations)
+
+  const dstiShare = Math.round(netIncome * dstiLimit / 100)
+  const bindingResult = Math.min(maxForDSTI, maxForDI > 0 ? maxForDI : Infinity)
+
+  const Row = ({ label, value, isSub }) => (
+    <div className={`flex justify-between items-baseline gap-3 ${isSub ? 'pl-3' : ''}`}>
+      <span className="text-[13px] text-ink-muted min-w-0">{label}</span>
+      <span className="text-[13px] font-semibold text-ink tabular-nums flex-shrink-0 text-right">{value}</span>
+    </div>
+  )
+
+  return (
+    <div className="rounded-card border border-border bg-card overflow-hidden">
+      <button
+        type="button"
+        onClick={() => setOpen(v => !v)}
+        className="w-full flex items-center gap-3 px-4 sm:px-6 py-3 sm:py-4 hover:bg-surface transition-colors focus:outline-none"
+      >
+        <div className="w-8 h-8 rounded-lg bg-brand-50 border border-brand-100 flex items-center justify-center flex-shrink-0">
+          <BarChart2 size={15} className="text-brand-600" />
+        </div>
+        <div className="flex-1 text-left min-w-0">
+          <p className="text-[13px] sm:text-[14px] font-semibold text-ink leading-snug">How your capacity was calculated</p>
+          <p className="text-[11px] text-ink-subtle mt-0.5">Czech banks run two independent tests and apply the stricter result</p>
+        </div>
+        <ChevronDown size={16} className={`flex-shrink-0 text-ink-subtle transition-transform duration-200 ${open ? 'rotate-180' : ''}`} />
+      </button>
+
+      {open && (
+        <div className="px-4 sm:px-6 pb-5 sm:pb-6 border-t border-border space-y-6">
+
+          {/* Test A */}
+          <div className="pt-4 space-y-2">
+            <div className="flex items-baseline justify-between gap-2 mb-3">
+              <p className="text-xs font-bold text-ink uppercase tracking-wide">Test A — Debt Service Ratio</p>
+              <span className="text-[11px] text-ink-subtle">at {CONTRACT_RATE_PA}% contract rate</span>
+            </div>
+            <Row label="Recognised income" value={`${formatCZK(netIncome)}`} />
+            <Row label={`Maximum share for loan payments (${dstiLimit.toFixed(0)}%)`} value={`${formatCZK(dstiShare)}`} />
+            <div className="border-t border-border pt-2 mt-2">
+              <Row label="→ Maximum loan" value={`${formatCZK(Math.round(maxForDSTI))}`} />
+            </div>
+          </div>
+
+          {/* Test B */}
+          <div className="space-y-2">
+            <div className="flex items-baseline justify-between gap-2 mb-3">
+              <p className="text-xs font-bold text-ink uppercase tracking-wide">Test B — Disposable Income</p>
+              <span className="text-[11px] text-ink-subtle">at {DUAL_STRESS_RATE_PA}% stress rate</span>
+            </div>
+            <Row label="Recognised income" value={`${formatCZK(netIncome)}`} />
+            <Row label="− Minimum living costs" value={`− ${formatCZK(zmTotal)}`} isSub />
+            <Row label="− Housing costs" value={`− ${formatCZK(housingCosts)}`} isSub />
+            <Row label={`− Safety reserve (${(RESERVE_KOEF * 100).toFixed(0)}%)`} value={`− ${formatCZK(safetyReserve)}`} isSub />
+            <Row label="− Existing obligations" value={`− ${formatCZK(obligations)}`} isSub />
+            <div className="border-t border-dashed border-border pt-2 mt-2">
+              <Row label="= Disposable income" value={`${formatCZK(disposable)}`} />
+            </div>
+            <div className="border-t border-border pt-2 mt-2">
+              <Row label="→ Maximum loan" value={maxForDI > 0 ? `${formatCZK(Math.round(maxForDI))}` : '—'} />
+            </div>
+          </div>
+
+          {/* Result */}
+          <div className="rounded-xl bg-surface border border-border px-4 py-3">
+            <div className="flex justify-between items-baseline gap-3">
+              <span className="text-sm font-bold text-ink">Your result — the lower of the two</span>
+              <span className="font-display text-lg font-black text-ink tabular-nums">{formatCZK(Math.round(bindingResult))}</span>
+            </div>
+            {bottleneck === 'DI' && (
+              <p className="text-[11px] text-ink-muted mt-1">Binding test: Disposable income (Test B) — your income after living costs is the limiting factor</p>
+            )}
+            {bottleneck === 'DSTI' && (
+              <p className="text-[11px] text-ink-muted mt-1">Binding test: Debt service ratio (Test A) — disposable income is not restrictive at your income level</p>
+            )}
+          </div>
+
+          {/* Explanatory notes */}
+          <div className="space-y-3 pt-2">
+            <div className="text-[12px] text-ink-muted leading-relaxed">
+              <p className="font-semibold text-ink text-[11px] uppercase tracking-wide mb-1">What is disposable income?</p>
+              <p>Disposable income is what physically remains from your income after essential living costs, a safety reserve and existing obligations. It is the amount actually available to service a mortgage.</p>
+            </div>
+            <div className="text-[12px] text-ink-muted leading-relaxed">
+              <p className="font-semibold text-ink text-[11px] uppercase tracking-wide mb-1">Why two tests?</p>
+              <p>Test A caps the <em>share</em> of income going to debt. Test B checks the <em>absolute amount</em> left over. A ratio alone can approve a loan that leaves a lower-income applicant below the subsistence level, so banks apply both and take the stricter result.</p>
+            </div>
+            <div className="text-[12px] text-ink-muted leading-relaxed">
+              <p className="font-semibold text-ink text-[11px] uppercase tracking-wide mb-1">Why a higher rate in Test B?</p>
+              <p>Test B is applied at {DUAL_STRESS_RATE_PA}% — one percentage point above the contract rate — to verify the payment remains affordable if rates rise at refixation.</p>
+            </div>
+          </div>
+
+        </div>
+      )}
     </div>
   )
 }
@@ -2084,6 +2225,11 @@ export default function Step7Results({ formData, onBack, onRestart }) {
           <>
             {/* ── Binding Constraint Bars ─────────────── */}
             <BindingConstraintBars profile={headerProfile} isDiscovering={isDiscovering} />
+
+            {/* ── Capacity Breakdown (dual-test explanation) ── */}
+            {!isDiscovering && (
+              <CapacityBreakdown profile={headerProfile} formData={formData} />
+            )}
 
             {/* ── Discovery Budget Card (discovering mode only) ── */}
             {isDiscovering && (

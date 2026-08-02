@@ -6,7 +6,7 @@ import { czkShort, czk, pct, entityLabel, residenceLabel, scoreLabel } from './s
 // ── Executive Summary ───────────────────────────────────────────────────────
 
 export function buildExecutiveSummary(formData, profile, score) {
-  const { eX, eXStress, effectiveIncome, bottleneck, flags = [], redFlags = [] } = profile
+  const { eX, eXStress, eXBase, effectiveIncome, bottleneck, flags = [], redFlags = [] } = profile
   const { entityType, leadName, purchasePrice, ownFunds } = formData
   const name = (leadName ?? '').trim().split(' ')[0] || 'The applicant'
 
@@ -18,8 +18,8 @@ export function buildExecutiveSummary(formData, profile, score) {
   const tier = score >= 75 ? 'strong' : score >= 55 ? 'good' : score >= 35 ? 'review' : 'risk'
 
   const openers = {
-    strong: `${name}'s mortgage eligibility profile is strong. Recognised monthly income of ${czk(effectiveIncome)} generates a Czech-bank maximum loan capacity of approximately ${czkShort(eX)}, comfortably clearing the stress-test threshold at ${czkShort(eXStress)}. The application is eligible for assessment by all major covered lenders under standard underwriting pathways.`,
-    good:   `${name}'s profile presents a viable mortgage pathway with selected lenders. A recognised monthly income of ${czk(effectiveIncome)} supports a maximum loan of approximately ${czkShort(eX)}, with a stress-tested floor of ${czkShort(eXStress)}. ${bottleneck === 'DSTI' ? 'Debt service obligations are the primary binding variable.' : bottleneck === 'DTI' ? 'The total debt-to-income multiple is the primary constraint.' : 'Loan-to-Value structure requires careful calibration.'}`,
+    strong: `${name}'s mortgage eligibility profile is strong. Recognised monthly income of ${czk(effectiveIncome)} generates a Czech-bank maximum loan capacity of approximately ${czkShort(eX)} (the lower of Test A at ${czkShort(eXBase ?? eX)} and Test B at ${czkShort(eXStress)}). The application is eligible for assessment by all major covered lenders under standard underwriting pathways.`,
+    good:   `${name}'s profile presents a viable mortgage pathway with selected lenders. A recognised monthly income of ${czk(effectiveIncome)} supports a maximum loan of approximately ${czkShort(eX)}. ${bottleneck === 'DSTI' ? 'The debt service ratio (Test A) is the binding constraint.' : bottleneck === 'DI' ? 'Disposable income after living costs (Test B) is the binding constraint.' : bottleneck === 'DTI' ? 'The total debt-to-income multiple is the primary constraint.' : 'Loan-to-Value structure requires careful calibration.'}`,
     review: `${name}'s profile requires targeted optimisation before the strongest lender selection is available. The recognised income of ${czk(effectiveIncome)} yields a capacity of ${czkShort(eX)}, though ${bottleneck ?? 'structural factors'} currently act as the limiting constraint. Strategic adjustments outlined in this report can materially improve this position within 3–6 months.`,
     risk:   `${name}'s current profile faces significant structural barriers that prevent standard Czech mortgage processing. Recognised income of ${czk(effectiveIncome)} translates to a theoretical capacity of ${czkShort(eX)}, but active risk flags — detailed in this assessment — must be resolved before approaching lenders. This report provides a concrete remediation roadmap.`,
   }
@@ -43,7 +43,7 @@ export function buildExecutiveSummary(formData, profile, score) {
 
 export function buildExpertCommentary(formData, profile, score) {
   const {
-    eX, eXStress, dstiAtEX, varX, bottleneck, flags = [], redFlags = [],
+    eX, eXStress, eXBase, dstiAtEX, varX, bottleneck, flags = [], redFlags = [],
     effectiveIncome, existingDebt, maturity,
   } = profile
   const { entityType, purchasePrice, ownFunds, applicantAge, propertyPurpose, taxRegime, businessAgeMonths, contractType } = formData
@@ -113,13 +113,26 @@ export function buildExpertCommentary(formData, profile, score) {
     }
   }
 
-  // Stress test interpretation
+  // Dual-test interpretation
   if (eX > 0 && eXStress > 0) {
-    const stressPct = ((eX - eXStress) / eX * 100).toFixed(0)
-    paragraphs.push(
-      `The stress-tested loan capacity — computed at a 5.89% rate (contract rate plus 100 basis points) — is ${czkShort(eXStress)}, representing a ${stressPct}% reduction from the contractual-rate maximum. ` +
-      `Czech banks use the more conservative of the two test results (DSTI at contract rate vs. DI at stressed rate) as the binding limit, which is the methodology reflected in this assessment.`
-    )
+    const testAResult = eXBase ?? eX
+    const testBResult = eXStress
+    if (bottleneck === 'DI') {
+      paragraphs.push(
+        `Czech banks apply two independent tests: Test A (debt service ratio at 4.89%) yields ${czkShort(testAResult)}, while Test B (disposable income at 5.89% stress rate) yields ${czkShort(testBResult)}. ` +
+        `The lower figure — Test B — is binding. Your income after essential living costs and the safety reserve is the limiting factor at this income level.`
+      )
+    } else if (bottleneck === 'DSTI') {
+      paragraphs.push(
+        `Czech banks apply two independent tests: Test A (debt service ratio at 4.89%) yields ${czkShort(testAResult)}, while Test B (disposable income at 5.89% stress rate) yields ${czkShort(testBResult)}. ` +
+        `The lower figure — Test A — is binding. Disposable income is not restrictive at your income level; the debt service ratio ceiling is what caps your capacity.`
+      )
+    } else {
+      paragraphs.push(
+        `Czech banks apply two independent tests and take the stricter result: Test A (DSTI at 4.89%) yields ${czkShort(testAResult)}, Test B (disposable income at 5.89%) yields ${czkShort(testBResult)}. ` +
+        `However, the primary constraint on your profile is ${bottleneck ?? 'a structural limit'} rather than either income test.`
+      )
+    }
   }
 
   // Cross-bank variance
@@ -293,7 +306,7 @@ export function buildScenarios(formData, profile) {
 // ── Final summary bullets ────────────────────────────────────────────────────
 
 export function buildFinalSummary(formData, profile, score) {
-  const { eX, eXStress, effectiveIncome, bottleneck, redFlags = [] } = profile
+  const { eX, eXStress, eXBase, effectiveIncome, bottleneck, redFlags = [] } = profile
   const { entityType, purchasePrice, ownFunds } = formData
 
   const loanAmt = Math.max(0, (purchasePrice || 0) - (ownFunds || 0))
@@ -306,7 +319,7 @@ export function buildFinalSummary(formData, profile, score) {
   )
 
   bullets.push(
-    `Maximum assessed loan: ${czkShort(eX)} (E[X] at contract rate). Stress-tested floor: ${czkShort(eXStress)} at 5.89% p.a. The binding constraint is ${bottleneck ?? 'the DSTI ceiling'}.`
+    `Maximum assessed loan: ${czkShort(eX)} — the lower of Test A (${czkShort(eXBase ?? eX)} at contract rate) and Test B (${czkShort(eXStress)} at ${5.89}% stress rate). Binding constraint: ${bottleneck === 'DI' ? 'disposable income (Test B)' : bottleneck === 'DSTI' ? 'debt service ratio (Test A)' : bottleneck ?? 'profile limits'}.`
   )
 
   if (feasible) {
