@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import EntitySelect    from './EntitySelect.jsx'
 import ApplicantCount  from './ApplicantCount.jsx'
 import IcoVerify       from './IcoVerify.jsx'
@@ -20,6 +20,7 @@ export default function Step1EntityType({
   onSubStepChange,
 }) {
   const [subStep, setSubStep] = useState(0)
+  const announcerRef = useRef(null)
 
   const isEmployee = value === 'zamestnanec'
   const isOSVC     = value === 'osvc'
@@ -36,32 +37,38 @@ export default function Step1EntityType({
     if (onSubStepChange) onSubStepChange(subStep)
   }, [subStep, onSubStepChange])
 
+  const announce = (msg) => {
+    if (announcerRef.current) {
+      announcerRef.current.textContent = msg
+    }
+  }
+
   const goForward = () => {
     setSubStep((s) => s + 1)
-    window.scrollTo({ top: 0, behavior: 'smooth' })
+    const reducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+    window.scrollTo({ top: 0, behavior: reducedMotion ? 'instant' : 'smooth' })
+    announce('Next question')
   }
 
   const goBack = () => {
     setSubStep((s) => Math.max(0, s - 1))
-    window.scrollTo({ top: 0, behavior: 'smooth' })
+    const reducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+    window.scrollTo({ top: 0, behavior: reducedMotion ? 'instant' : 'smooth' })
+    announce('Previous question')
   }
 
-  // Sub-step 0: Entity type selection
+  let content = null
+
   if (subStep === 0) {
-    return (
+    content = (
       <EntitySelect
         value={value}
-        onChange={(v) => {
-          onChange(v)
-        }}
+        onChange={(v) => { onChange(v) }}
         onContinue={goForward}
       />
     )
-  }
-
-  // Sub-step 1: Applicant count
-  if (subStep === 1) {
-    return (
+  } else if (subStep === 1) {
+    content = (
       <ApplicantCount
         value={numberOfApplicants}
         onChange={onApplicantCountChange}
@@ -69,12 +76,9 @@ export default function Step1EntityType({
         onContinue={goForward}
       />
     )
-  }
-
-  // Sub-step 2: IČO verification (OSVC / s.r.o.) OR Employee details
-  if (subStep === 2) {
+  } else if (subStep === 2) {
     if (isEmployee) {
-      return (
+      content = (
         <EmployeeDetails
           data={employeeData ?? {}}
           onChange={onEmployeeChange}
@@ -82,27 +86,23 @@ export default function Step1EntityType({
           onContinue={onContinue}
         />
       )
+    } else {
+      content = (
+        <IcoVerify
+          entityType={value}
+          businessData={businessData}
+          onResult={(result) => {
+            onIcoResult(result)
+            if (result.entityType) onChange(result.entityType)
+          }}
+          onBack={goBack}
+          onContinue={goForward}
+        />
+      )
     }
-
-    // OSVC or s.r.o. -> IČO verification
-    return (
-      <IcoVerify
-        entityType={value}
-        businessData={businessData}
-        onResult={(result) => {
-          onIcoResult(result)
-          if (result.entityType) onChange(result.entityType)
-        }}
-        onBack={goBack}
-        onContinue={goForward}
-      />
-    )
-  }
-
-  // Sub-step 3: Income details (OSVC or s.r.o.)
-  if (subStep === 3) {
+  } else if (subStep === 3) {
     if (isOSVC) {
-      return (
+      content = (
         <BusinessIncome
           data={businessData ?? {}}
           onChange={onBusinessChange}
@@ -110,19 +110,22 @@ export default function Step1EntityType({
           onContinue={onContinue}
         />
       )
+    } else {
+      content = (
+        <SroIncome
+          data={businessData ?? {}}
+          onChange={onBusinessChange}
+          onBack={goBack}
+          onContinue={onContinue}
+        />
+      )
     }
-
-    // s.r.o.
-    return (
-      <SroIncome
-        data={businessData ?? {}}
-        onChange={onBusinessChange}
-        onBack={goBack}
-        onContinue={onContinue}
-      />
-    )
   }
 
-  // Fallback
-  return null
+  return (
+    <>
+      <span ref={announcerRef} className="sr-only" aria-live="assertive" aria-atomic="true" />
+      {content}
+    </>
+  )
 }

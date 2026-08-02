@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { AlertTriangle, CheckCircle, Home, Search } from 'lucide-react'
 import FunnelCard from '../funnel/FunnelCard.jsx'
 import ActionBar  from '../funnel/ActionBar.jsx'
@@ -86,9 +86,10 @@ export default function Step4Property({ data, onChange, onBack, onContinue }) {
     : 0
 
   const canContinue = isDiscovering ? true : parsedPurchasePrice > 0 && parsedOwnFunds >= 0 && !!propertyPurpose && !!purchaseTimeline
+  const advancingRef = useRef(false)
 
-  // Switch mode
   function switchMode(mode) {
+    if (advancingRef.current) return
     try {
       onChange('propertyMode', mode)
       if (mode === 'discovering') {
@@ -96,7 +97,11 @@ export default function Step4Property({ data, onChange, onBack, onContinue }) {
         onChange('ownFunds',      0)
         setPurchasePriceRaw('')
         setOwnFundsRaw('')
-        onContinue()
+        advancingRef.current = true
+        setTimeout(() => {
+          onContinue()
+          setTimeout(() => { advancingRef.current = false }, 300)
+        }, 280)
       } else {
         onChange('purchasePrice', 0)
         onChange('ownFunds',      0)
@@ -112,7 +117,7 @@ export default function Step4Property({ data, onChange, onBack, onContinue }) {
     <FunnelCard
       title="Do you have a specific property in mind?"
       subtitle="We can calculate your LTV or help you discover your budget range."
-      footer={<ActionBar canContinue={canContinue} onBack={onBack} onContinue={onContinue} />}
+      footer={<ActionBar canContinue={canContinue} onBack={onBack} onContinue={onContinue} continueLabel="Prepare my assessment" isLast />}
     >
 
       {/* Mode toggle */}

@@ -1,5 +1,5 @@
+import { useRef } from 'react'
 import FunnelCard from '../../funnel/FunnelCard.jsx'
-import ActionBar  from '../../funnel/ActionBar.jsx'
 
 const ENTITY_OPTIONS = [
   {
@@ -20,23 +20,22 @@ const ENTITY_OPTIONS = [
 ]
 
 export default function EntitySelect({ value, onChange, onBack, onContinue }) {
-  const canContinue = !!value
+  const advancingRef = useRef(false)
 
-  // Auto-advance after selection on mobile
   const handleSelect = (optValue) => {
+    if (advancingRef.current) return
     onChange(optValue)
+    advancingRef.current = true
     setTimeout(() => {
-      if (window.innerWidth < 640) {
-        onContinue()
-      }
-    }, 250)
+      onContinue()
+      setTimeout(() => { advancingRef.current = false }, 300)
+    }, 280)
   }
 
   return (
     <FunnelCard
       title="How do you receive most of your income?"
       subtitle="This determines how banks assess your application."
-      footer={<ActionBar isFirst={!onBack} canContinue={canContinue} onBack={onBack} onContinue={onContinue} />}
     >
       <div className="flex flex-col gap-3 sm:gap-4 sm:max-w-md sm:mx-auto" role="radiogroup" aria-label="Income type">
         {ENTITY_OPTIONS.map((opt) => {
@@ -48,6 +47,12 @@ export default function EntitySelect({ value, onChange, onBack, onContinue }) {
               role="radio"
               aria-checked={selected}
               onClick={() => handleSelect(opt.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault()
+                  handleSelect(opt.value)
+                }
+              }}
               className={[
                 'w-full flex items-center gap-3 sm:gap-4 rounded-xl border px-4 py-3 text-left',
                 'min-h-[56px] transition-all duration-150',
@@ -57,7 +62,6 @@ export default function EntitySelect({ value, onChange, onBack, onContinue }) {
                   : 'border-[#E2E8F0] bg-white active:border-[#0F172A]/40',
               ].join(' ')}
             >
-              {/* Radio indicator */}
               <span
                 className={[
                   'flex-shrink-0 w-5 h-5 rounded-full border-2 flex items-center justify-center',
@@ -72,7 +76,6 @@ export default function EntitySelect({ value, onChange, onBack, onContinue }) {
                 )}
               </span>
 
-              {/* Label text */}
               <div className="flex-1 min-w-0">
                 <p className="text-[14px] font-bold leading-tight text-[#0F172A]">
                   {opt.title}
@@ -86,7 +89,6 @@ export default function EntitySelect({ value, onChange, onBack, onContinue }) {
         })}
       </div>
 
-      {/* Advisor link */}
       <p className="text-center text-xs text-[#64748B] mt-4">
         Foreign, mixed or multiple income sources?{' '}
         <a

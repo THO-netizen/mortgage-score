@@ -1,15 +1,18 @@
+import { useRef } from 'react'
 import { Check } from 'lucide-react'
 import FunnelCard from '../../funnel/FunnelCard.jsx'
-import ActionBar  from '../../funnel/ActionBar.jsx'
 
 export default function ApplicantCount({ value, onChange, onBack, onContinue }) {
+  const advancingRef = useRef(false)
 
-  // Auto-advance on selection (mobile behavior)
   const handleSelect = (n) => {
+    if (advancingRef.current) return
     onChange(n)
+    advancingRef.current = true
     setTimeout(() => {
       onContinue()
-    }, 250)
+      setTimeout(() => { advancingRef.current = false }, 300)
+    }, 280)
   }
 
   return (
@@ -18,8 +21,7 @@ export default function ApplicantCount({ value, onChange, onBack, onContinue }) 
       subtitle="Joint applications combine incomes and may increase your borrowing capacity."
       hint={value > 1 ? 'Joint applications combine both incomes. Each applicant is verified individually.' : undefined}
     >
-      {/* Segmented control — full width, large touch targets */}
-      <div className="grid grid-cols-2 gap-3 max-w-sm">
+      <div className="grid grid-cols-2 gap-3 max-w-sm" role="radiogroup" aria-label="Application type">
         {[
           { n: 1, label: 'Solo', sublabel: 'Just me' },
           { n: 2, label: 'Joint', sublabel: 'With a partner' },
@@ -29,7 +31,15 @@ export default function ApplicantCount({ value, onChange, onBack, onContinue }) 
             <button
               key={n}
               type="button"
+              role="radio"
+              aria-checked={active}
               onClick={() => handleSelect(n)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault()
+                  handleSelect(n)
+                }
+              }}
               className={[
                 'relative rounded-xl border-2 px-3 py-3.5 sm:py-4 text-center transition-all duration-150',
                 'flex flex-col items-center justify-center gap-0.5',
@@ -57,10 +67,18 @@ export default function ApplicantCount({ value, onChange, onBack, onContinue }) 
         <span className="font-semibold text-ink">Note:</span> If you are married, Czech mortgage applications generally require both spouses as joint applicants.
       </p>
 
-      {/* Footer with ActionBar for non-auto-advance (desktop shows it) */}
-      <div className="mt-6">
-        <ActionBar canContinue={true} onBack={onBack} onContinue={onContinue} />
-      </div>
+      {/* Back button only — no Continue needed for auto-advance */}
+      {onBack && (
+        <div className="pt-6 border-t border-[#E2E8F0] mt-6">
+          <button
+            onClick={onBack}
+            className="flex items-center justify-center gap-1.5 min-h-[48px] text-sm font-medium text-ink-muted active:text-ink transition-colors mx-auto sm:mx-0"
+            type="button"
+          >
+            Back
+          </button>
+        </div>
+      )}
     </FunnelCard>
   )
 }

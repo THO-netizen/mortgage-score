@@ -68,7 +68,7 @@ export default function SroIncome({ data, onChange, onBack, onContinue }) {
       title="Tell us about your company income"
       subtitle="Enter ownership, financials, and income streams for ESSO methodology."
       hint="Czech banks assess company directors via ESSO — a stricter audit requiring financials and ownership verification."
-      footer={<ActionBar canContinue={canContinue} onBack={onBack} onContinue={onContinue} />}
+      footer={<ActionBar canContinue={canContinue} onBack={onBack} onContinue={onContinue} continueLabel="Confirm income" />}
     >
       <div className="space-y-6">
 

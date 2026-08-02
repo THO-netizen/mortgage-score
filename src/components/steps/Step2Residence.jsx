@@ -117,6 +117,7 @@ export default function Step2Residence({
           canContinue={canContinue}
           onBack={onBack}
           onContinue={onContinue}
+          continueLabel="Confirm residence"
         />
       }
     >

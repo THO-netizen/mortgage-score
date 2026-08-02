@@ -46,7 +46,7 @@ export default function HeroAnalysis({ onStart }) {
         </p>
 
         {/* Primary CTA */}
-        <div className="mb-6 sm:mb-8">
+        <div className="mb-8 sm:mb-12">
           <button
             onClick={onStart}
             type="button"
@@ -55,15 +55,6 @@ export default function HeroAnalysis({ onStart }) {
             Begin Private Assessment
           </button>
         </div>
-
-        {/* Trust line */}
-        <p className="text-[13px] sm:text-sm mb-10 sm:mb-14 tracking-wide" style={{ color: '#6B7A8D' }}>
-          4 minutes
-          <span className="mx-2" style={{ color: '#C9A96E', opacity: 0.5 }}>&middot;</span>
-          No documents
-          <span className="mx-2" style={{ color: '#C9A96E', opacity: 0.5 }}>&middot;</span>
-          Private
-        </p>
 
         {/* Andy Le — compact trust element */}
         <div className="mb-8 sm:mb-10">

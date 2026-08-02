@@ -63,7 +63,7 @@ export default function BusinessIncome({ data, onChange, onBack, onContinue }) {
     <FunnelCard
       title="How do you file your business income?"
       subtitle="Select your tax regime and enter your annual turnover."
-      footer={<ActionBar canContinue={canContinue} onBack={onBack} onContinue={onContinue} />}
+      footer={<ActionBar canContinue={canContinue} onBack={onBack} onContinue={onContinue} continueLabel="Confirm income" />}
     >
       <div className="space-y-5">
 

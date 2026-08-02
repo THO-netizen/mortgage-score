@@ -33,6 +33,7 @@ export default function Step3Liabilities({ data, onChange, onBack, onContinue })
           canContinue
           onBack={onBack}
           onContinue={onContinue}
+          continueLabel="Save obligations"
         />
       }
     >

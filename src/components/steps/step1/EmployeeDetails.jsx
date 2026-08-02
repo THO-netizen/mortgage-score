@@ -41,7 +41,7 @@ export default function EmployeeDetails({ data, onChange, onBack, onContinue }) 
     <FunnelCard
       title="Tell us about your employment"
       subtitle="Your contract type and base salary determine your core borrowing capacity."
-      footer={<ActionBar canContinue={canContinue} onBack={onBack} onContinue={onContinue} />}
+      footer={<ActionBar canContinue={canContinue} onBack={onBack} onContinue={onContinue} continueLabel="Confirm income" />}
     >
       <div className="space-y-5">
 

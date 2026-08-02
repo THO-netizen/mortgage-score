@@ -1,11 +1,5 @@
 import { ArrowLeft, ArrowRight, Loader2 } from 'lucide-react'
 
-/**
- * Step navigation bar — premium private banking aesthetic.
- * Mobile:  stacked (Continue full-width, Back as centered text below).
- * Desktop: horizontal (Back left, Continue right).
- * Touch targets: minimum 48px height.
- */
 export default function ActionBar({
   onBack,
   onContinue,
@@ -14,13 +8,17 @@ export default function ActionBar({
   isLast       = false,
   loading      = false,
   loadingLabel = 'Calculating...',
+  continueLabel,
+  backLabel    = 'Back',
 }) {
+  const mobileLabel  = continueLabel || (isLast ? 'See My Results' : 'Continue')
+  const desktopLabel = continueLabel || (isLast ? 'See My Results' : 'Continue Assessment')
+
   return (
     <div className="pt-6 border-t border-[#E2E8F0] safe-bottom">
 
       {/* Mobile layout: stacked */}
       <div className="flex flex-col gap-3 sm:hidden">
-        {/* Continue — full width */}
         <button
           onClick={onContinue}
           disabled={!canContinue || loading}
@@ -34,13 +32,12 @@ export default function ActionBar({
             </span>
           ) : (
             <>
-              {isLast ? 'See My Results' : 'Continue'}
+              {mobileLabel}
               <ArrowRight size={15} />
             </>
           )}
         </button>
 
-        {/* Back — text link style */}
         {!isFirst && (
           <button
             onClick={onBack}
@@ -48,7 +45,7 @@ export default function ActionBar({
             type="button"
           >
             <ArrowLeft size={14} />
-            Back
+            {backLabel}
           </button>
         )}
       </div>
@@ -62,7 +59,7 @@ export default function ActionBar({
             type="button"
           >
             <ArrowLeft size={15} />
-            Back
+            {backLabel}
           </button>
         ) : (
           <span />
@@ -81,7 +78,7 @@ export default function ActionBar({
             </span>
           ) : (
             <>
-              {isLast ? 'See My Results' : 'Continue Assessment'}
+              {desktopLabel}
               <ArrowRight size={15} />
             </>
           )}
