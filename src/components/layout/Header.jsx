@@ -1,10 +1,11 @@
 
 /**
  * Premium private banking header with thin bronze progress line.
- * Accepts `progress` (0-1 float) and `label` (e.g. "3 of 9").
+ * Accepts `progress` (0-1 float), `label` (e.g. "3 of 13"),
+ * `sectionName` (e.g. "Income profile"), and `estimatedMinutes` (number).
  * Shows progress only during the funnel (when progress > 0).
  */
-export default function Header({ progress = 0, label = '' }) {
+export default function Header({ progress = 0, label = '', sectionName = '', estimatedMinutes }) {
   const isFunnel    = progress > 0
   const progressPct = Math.round(progress * 100)
 
@@ -32,10 +33,14 @@ export default function Header({ progress = 0, label = '' }) {
           </span>
         </a>
 
-        {/* Progress label */}
-        {isFunnel && label && (
+        {/* Center info: section name, step count, time estimate */}
+        {isFunnel && (
           <span className="text-[11px] sm:text-xs text-ink-muted font-medium whitespace-nowrap tabular-nums">
-            {label}
+            {sectionName && <span>{sectionName}</span>}
+            {sectionName && label && <span className="mx-1.5 opacity-40">&middot;</span>}
+            {label && <span>{label}</span>}
+            {label && estimatedMinutes != null && <span className="mx-1.5 opacity-40">&middot;</span>}
+            {estimatedMinutes != null && <span>~{estimatedMinutes} min left</span>}
           </span>
         )}
 

@@ -219,7 +219,7 @@ function IcoLookup({ onResult, entityType }) {
               'flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all duration-150 whitespace-nowrap',
               'focus:outline-none focus-visible:ring-2 focus-visible:ring-bronze/40',
               canVerify
-                ? 'bg-brand-600 text-white hover:bg-brand-700 shadow-sm'
+                ? 'bg-ink text-white hover:bg-dark-800 shadow-sm'
                 : 'bg-surface text-ink-subtle border border-border cursor-not-allowed',
             ].join(' ')}
           >
@@ -544,14 +544,14 @@ function BusinessIncomeSection({ data, onChange }) {
               ].join(' ')}
             >
               {taxRegime === value && (
-                <span className="absolute top-2.5 right-2.5 w-4 h-4 rounded-full bg-brand-600 flex items-center justify-center">
+                <span className="absolute top-2.5 right-2.5 w-4 h-4 rounded-full bg-ink flex items-center justify-center">
                   <Check size={9} className="text-white" strokeWidth={3} />
                 </span>
               )}
-              <p className={`text-xs font-bold mb-0.5 ${taxRegime === value ? 'text-brand-700' : 'text-ink'}`}>
+              <p className={`text-xs font-bold mb-0.5 ${taxRegime === value ? 'text-ink' : 'text-ink'}`}>
                 {label}
               </p>
-              <p className={`text-[10px] font-semibold mb-1 ${taxRegime === value ? 'text-brand-600' : 'text-ink-muted'}`}>
+              <p className={`text-[10px] font-semibold mb-1 ${taxRegime === value ? 'text-bronze' : 'text-ink-muted'}`}>
                 {sublabel}
               </p>
               <p className="text-[10px] text-ink-subtle leading-relaxed">{desc}</p>
@@ -644,21 +644,21 @@ function BusinessIncomeSection({ data, onChange }) {
 
           {/* NACE-derived income estimate */}
           {Number(annualTurnover) >= 1 && turnoverIncomePct !== null && (
-            <div className="mt-3 rounded-xl bg-brand-50 border border-brand-100 p-4 animate-fade-up">
+            <div className="mt-3 rounded-xl bg-surface border border-border p-4 animate-fade-up">
               <div className="flex items-center justify-between mb-2">
-                <p className="text-[10px] font-bold text-brand-700 uppercase tracking-wide">
+                <p className="text-[10px] font-bold text-ink uppercase tracking-wide">
                   Estimated Recognised Income
                 </p>
                 <span className="badge-success text-[10px]">{turnoverIncomePct}% of turnover</span>
               </div>
               {naceSector && (
-                <p className="text-[11px] text-brand-600 mb-2">{naceSector}</p>
+                <p className="text-[11px] text-bronze mb-2">{naceSector}</p>
               )}
-              <p className="font-display text-2xl font-black text-brand-800 tabular-nums">
+              <p className="font-display text-2xl font-black text-ink tabular-nums">
                 {Math.round(Number(annualTurnover) * turnoverIncomePct / 100 / 12).toLocaleString('cs-CZ')}
-                <span className="text-sm font-semibold text-brand-600 ml-1.5">CZK / month</span>
+                <span className="text-sm font-semibold text-bronze ml-1.5">CZK / month</span>
               </p>
-              <p className="text-[10px] text-brand-500 mt-1">
+              <p className="text-[10px] text-bronze mt-1">
                 {Number(annualTurnover).toLocaleString('cs-CZ')} × {turnoverIncomePct}% ÷ 12 months
               </p>
             </div>
@@ -687,7 +687,7 @@ function Toggle({ on, onToggle, danger = false }) {
       onClick={onToggle}
       className={[
         'relative flex-shrink-0 w-9 h-5 rounded-full transition-colors duration-200',
-        on ? (danger ? 'bg-risk-DEFAULT' : 'bg-brand-600') : 'bg-border',
+        on ? (danger ? 'bg-risk-DEFAULT' : 'bg-ink') : 'bg-border',
       ].join(' ')}
     >
       <span className={[
@@ -790,7 +790,7 @@ function SroIncomeSection({ data, onChange }) {
       {/* ── ESSO banner ───────────────────────────────── */}
       <div>
         <div className="flex items-center gap-2 mb-3">
-          <Building2 size={14} className="text-brand-600 flex-shrink-0" />
+          <Building2 size={14} className="text-bronze flex-shrink-0" />
           <p className="font-display text-sm font-extrabold text-ink">Corporate Income Assessment</p>
         </div>
 
@@ -805,11 +805,11 @@ function SroIncomeSection({ data, onChange }) {
           </div>
         )}
 
-        <div className="rounded-xl bg-brand-50 border border-brand-100 p-4">
-          <p className="text-[11px] font-semibold text-brand-700 uppercase tracking-wide mb-1">
+        <div className="rounded-xl bg-surface border border-border p-4">
+          <p className="text-[11px] font-semibold text-ink uppercase tracking-wide mb-1">
             ESSO — Economically Self-related Subject Owner
           </p>
-          <p className="text-xs text-brand-700 leading-relaxed">
+          <p className="text-xs text-ink leading-relaxed">
             Czech banks assess Company Director income via ESSO methodology — a stricter audit path
             requiring corporate financial statements, ownership verification, and profitability evidence.
             Select your income streams and enter the required financial data below.
@@ -1055,14 +1055,14 @@ function SroIncomeSection({ data, onChange }) {
                 ].join(' ')}
               >
                 {active && (
-                  <span className="absolute top-2.5 right-2.5 w-4 h-4 rounded-full bg-brand-600 flex items-center justify-center">
+                  <span className="absolute top-2.5 right-2.5 w-4 h-4 rounded-full bg-ink flex items-center justify-center">
                     <Check size={9} className="text-white" strokeWidth={3} />
                   </span>
                 )}
-                <p className={`text-xs font-bold mb-0.5 ${active ? 'text-brand-700' : 'text-ink'}`}>{title}</p>
-                <p className={`text-[10px] font-semibold mb-1.5 ${active ? 'text-brand-600' : 'text-ink-muted'}`}>{subtitle}</p>
+                <p className={`text-xs font-bold mb-0.5 ${active ? 'text-ink' : 'text-ink'}`}>{title}</p>
+                <p className={`text-[10px] font-semibold mb-1.5 ${active ? 'text-bronze' : 'text-ink-muted'}`}>{subtitle}</p>
                 <p className="text-[10px] text-ink-subtle leading-relaxed mb-2">{desc}</p>
-                <span className={`inline-block text-[10px] font-semibold px-1.5 py-0.5 rounded ${active ? 'bg-brand-100 text-brand-700' : 'bg-surface text-ink-subtle'}`}>
+                <span className={`inline-block text-[10px] font-semibold px-1.5 py-0.5 rounded ${active ? 'bg-surface text-ink' : 'bg-surface text-ink-subtle'}`}>
                   {varNote}
                 </span>
               </button>
@@ -1081,8 +1081,8 @@ function SroIncomeSection({ data, onChange }) {
 
           {/* Stream A */}
           {hasA && (
-            <div className="rounded-xl border-2 border-brand-200 bg-brand-50/60 p-4 space-y-3">
-              <p className="text-xs font-bold text-brand-700">Stream A — Director Salary</p>
+            <div className="rounded-xl border-2 border-border bg-surface/60 p-4 space-y-3">
+              <p className="text-xs font-bold text-ink">Stream A — Director Salary</p>
               <div>
                 <label htmlFor="sroDirectorSalary" className="text-[11px] font-semibold text-ink-muted uppercase tracking-wide mb-1.5 block">
                   Net Monthly Director Salary (CZK)
@@ -1112,8 +1112,8 @@ function SroIncomeSection({ data, onChange }) {
 
           {/* Stream B */}
           {hasB && (
-            <div className="rounded-xl border-2 border-brand-200 bg-brand-50/60 p-4 space-y-3">
-              <p className="text-xs font-bold text-brand-700">Stream B — Profit Share / Dividends</p>
+            <div className="rounded-xl border-2 border-border bg-surface/60 p-4 space-y-3">
+              <p className="text-xs font-bold text-ink">Stream B — Profit Share / Dividends</p>
               <div>
                 <label htmlFor="dividendsPaidLast3Years" className="text-[11px] font-semibold text-ink-muted uppercase tracking-wide mb-1.5 block">
                   Total Dividends Paid — Last 3 Fiscal Years (CZK)
@@ -1134,7 +1134,7 @@ function SroIncomeSection({ data, onChange }) {
                 <p className="text-[11px] text-ink-subtle mt-1.5">Gross dividends distributed over 3 fiscal years. Used by UCB (÷36) and mBank (net 15% withholding, ÷36).</p>
               </div>
               {/* Per-bank methodology breakdown */}
-              <div className="rounded-lg bg-white border border-brand-100 px-3 py-2.5">
+              <div className="rounded-lg bg-white border border-border px-3 py-2.5">
                 <p className="text-[10px] font-semibold text-ink-muted uppercase tracking-wide mb-1.5">Per-bank Stream B methodology</p>
                 <div className="space-y-1">
                   <p className="text-[11px] text-ink-muted"><span className="font-semibold text-ink">ČSOB:</span> (After-tax result × ownership%) ÷ 12 × 0.85</p>
@@ -1148,8 +1148,8 @@ function SroIncomeSection({ data, onChange }) {
 
           {/* Stream C */}
           {hasC && (
-            <div className="rounded-xl border-2 border-brand-200 bg-brand-50/60 p-4 space-y-3">
-              <p className="text-xs font-bold text-brand-700">Stream C — Director Fees</p>
+            <div className="rounded-xl border-2 border-border bg-surface/60 p-4 space-y-3">
+              <p className="text-xs font-bold text-ink">Stream C — Director Fees</p>
               <div className={`flex items-center justify-between rounded-xl border px-4 py-3 ${directorContractExists ? 'bg-success-light border-success-border' : 'border-border bg-card'}`}>
                 <div>
                   <p className={`text-xs font-medium ${directorContractExists ? 'text-success-text' : 'text-ink'}`}>
@@ -1251,11 +1251,11 @@ function SroIncomeSection({ data, onChange }) {
                   ].join(' ')}
                 >
                   {taxRegime === v && (
-                    <span className="absolute top-2.5 right-2.5 w-4 h-4 rounded-full bg-brand-600 flex items-center justify-center">
+                    <span className="absolute top-2.5 right-2.5 w-4 h-4 rounded-full bg-ink flex items-center justify-center">
                       <Check size={9} className="text-white" strokeWidth={3} />
                     </span>
                   )}
-                  <p className={`text-xs font-bold mb-0.5 ${taxRegime === v ? 'text-brand-700' : 'text-ink'}`}>{label}</p>
+                  <p className={`text-xs font-bold mb-0.5 ${taxRegime === v ? 'text-ink' : 'text-ink'}`}>{label}</p>
                   <p className="text-[10px] text-ink-subtle">{sublabel}</p>
                 </button>
               ))}
@@ -1281,11 +1281,11 @@ function SroIncomeSection({ data, onChange }) {
                     ].join(' ')}
                   >
                     {expenseLumpSumPct === v && (
-                      <span className="absolute top-1.5 right-1.5 w-3.5 h-3.5 rounded-full bg-brand-600 flex items-center justify-center">
+                      <span className="absolute top-1.5 right-1.5 w-3.5 h-3.5 rounded-full bg-ink flex items-center justify-center">
                         <Check size={8} className="text-white" strokeWidth={3} />
                       </span>
                     )}
-                    <p className={`text-sm font-bold mb-0.5 ${expenseLumpSumPct === v ? 'text-brand-700' : 'text-ink'}`}>{label}</p>
+                    <p className={`text-sm font-bold mb-0.5 ${expenseLumpSumPct === v ? 'text-ink' : 'text-ink'}`}>{label}</p>
                     <p className="text-[9px] text-ink-subtle leading-tight">{desc}</p>
                   </button>
                 ))}
@@ -1333,11 +1333,11 @@ function EmployeeDetails({ data, onChange }) {
     <div className="mt-7 pt-7 border-t border-border space-y-5 animate-fade-up">
 
       {/* Methodology box */}
-      <div className="rounded-xl bg-brand-50 border border-brand-100 p-4">
-        <p className="text-[11px] font-semibold text-brand-700 uppercase tracking-wide mb-2">
+      <div className="rounded-xl bg-surface border border-border p-4">
+        <p className="text-[11px] font-semibold text-ink uppercase tracking-wide mb-2">
           How banks evaluate employees
         </p>
-        <p className="text-xs text-brand-700 leading-relaxed">
+        <p className="text-xs text-ink leading-relaxed">
           Current market-leading mortgage underwriting guidelines are applied to your net
           monthly take-home pay (after taxes and social deductions), contract type, tenure,
           and supplemental income components to compute your borrowing capacity across
@@ -1368,12 +1368,12 @@ function EmployeeDetails({ data, onChange }) {
 
       {/* Advisory — shown when any condition is active */}
       {anyAdvisory && (
-        <div className="rounded-xl bg-brand-50 border border-brand-100 px-4 py-3 animate-fade-up">
+        <div className="rounded-xl bg-surface border border-border px-4 py-3 animate-fade-up">
           <div className="flex items-start gap-2">
-            <AlertTriangle size={14} className="text-brand-600 flex-shrink-0 mt-0.5" />
+            <AlertTriangle size={14} className="text-bronze flex-shrink-0 mt-0.5" />
             <div>
-              <p className="text-xs font-semibold text-brand-700 mb-1">Advisory</p>
-              <p className="text-[11px] text-brand-700 leading-relaxed">
+              <p className="text-xs font-semibold text-ink mb-1">Advisory</p>
+              <p className="text-[11px] text-ink leading-relaxed">
                 Important: Some lenders may view these conditions as non-standard. We recommend
                 discussing these details during your free strategy call so we can assess your
                 specific situation and find the right banking partner.
@@ -1400,11 +1400,11 @@ function EmployeeDetails({ data, onChange }) {
               ].join(' ')}
             >
               {contractType === value && (
-                <span className="absolute top-2.5 right-2.5 w-4 h-4 rounded-full bg-brand-600 flex items-center justify-center">
+                <span className="absolute top-2.5 right-2.5 w-4 h-4 rounded-full bg-ink flex items-center justify-center">
                   <Check size={9} className="text-white" strokeWidth={3} />
                 </span>
               )}
-              <p className={`text-xs font-bold ${contractType === value ? 'text-brand-700' : 'text-ink'}`}>{label}</p>
+              <p className={`text-xs font-bold ${contractType === value ? 'text-ink' : 'text-ink'}`}>{label}</p>
             </button>
           ))}
         </div>
@@ -1425,12 +1425,12 @@ function EmployeeDetails({ data, onChange }) {
             className="input-field"
           />
           {isContractExpiringSoon && (
-            <div className="mt-3 rounded-xl bg-brand-50 border border-brand-100 px-4 py-3 animate-fade-up">
+            <div className="mt-3 rounded-xl bg-surface border border-border px-4 py-3 animate-fade-up">
               <div className="flex items-start gap-2">
-                <AlertTriangle size={14} className="text-brand-600 flex-shrink-0 mt-0.5" />
+                <AlertTriangle size={14} className="text-bronze flex-shrink-0 mt-0.5" />
                 <div>
-                  <p className="text-xs font-semibold text-brand-700 mb-1">Advisory — Contract Expiring Soon</p>
-                  <p className="text-[11px] text-brand-700 leading-relaxed">
+                  <p className="text-xs font-semibold text-ink mb-1">Advisory — Contract Expiring Soon</p>
+                  <p className="text-[11px] text-ink leading-relaxed">
                     Your fixed-term contract ends within 2 months. Some lenders may request
                     evidence of renewal or an offer of extension. We recommend discussing this
                     during your free strategy call so we can identify the right banking partner

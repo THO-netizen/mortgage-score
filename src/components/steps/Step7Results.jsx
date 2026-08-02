@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import {
   AlertTriangle, CheckCircle, TrendingUp, Home,
   Shield, DollarSign, FileText, BarChart2, Calendar,
@@ -1832,20 +1832,14 @@ function HeroVerdictPost({ score, cfg, profile, formData }) {
   )
 }
 
-// ── Soft Lock Gate ────────────────────────────────────
+// ── Save Assessment Card (optional lead capture, post-assessment) ──
 
 const GFORM_ENDPOINT = 'https://docs.google.com/forms/d/e/1FAIpQLSddO9mI3_GJL4W4TzS2atu4vbKAIiI2TUEVRN__GaQJeqeogA/formResponse'
 
-const GATE_SECTIONS = [
-  { title: 'Score breakdown',         sub: '10 eligibility factors evaluated' },
-  { title: 'Loan capacity estimate',  sub: 'Maximum borrowing range and scenario analysis' },
-  { title: 'How this was calculated', sub: 'Czech bank underwriting methodology' },
-  { title: 'Next steps',              sub: 'From pre-scoring to property handover' },
-]
-
-function SoftLockGate({ onUnlock, formData }) {
+function SaveAssessmentCard({ formData, onNameCaptured }) {
   const [form, setForm]             = useState({ name: '', email: '', phone: '' })
   const [submitting, setSubmitting] = useState(false)
+  const [submitted, setSubmitted]   = useState(false)
 
   const set = (k) => (e) => setForm((p) => ({ ...p, [k]: e.target.value }))
 
@@ -1863,161 +1857,104 @@ function SoftLockGate({ onUnlock, formData }) {
     gf.append('entry.1807846036', form.phone || '')
     fetch(GFORM_ENDPOINT, { method: 'POST', mode: 'no-cors', body: gf }).catch(() => {})
 
-    onUnlock(form.name.trim())
+    if (onNameCaptured) onNameCaptured(form.name.trim())
+    setSubmitted(true)
+    setSubmitting(false)
   }
 
-  const canSubmit = !submitting && form.name.trim() && form.email.trim()
+  const canSubmit = !submitting && !submitted && form.name.trim() && form.email.trim()
 
-  // Compute partial value preview for the user
-  const resolvedIncome = formData.netMonthlySalary > 0 ? formData.netMonthlySalary : formData.netIncome
-  let previewProfile = null
-  let previewScore = 0
-  try {
-    previewScore = computeScore(formData)
-    previewProfile = computeMortgageProfile({ ...formData, netIncome: resolvedIncome || 0 })
-  } catch (_) { /* graceful fallback */ }
-
-  const previewVerdict = getUnifiedVerdict(previewScore, previewProfile?.riskStatus ?? 'oranzova')
+  if (submitted) {
+    return (
+      <div className="rounded-2xl bg-dark-900 border border-white/10 px-4 sm:px-8 py-6 sm:py-8">
+        <div className="flex items-center gap-3 mb-3">
+          <CheckCircle size={18} className="text-success-DEFAULT flex-shrink-0" />
+          <p className="font-display text-lg font-black text-white">Assessment saved</p>
+        </div>
+        <p className="text-slate-400 text-[13px] sm:text-sm leading-relaxed max-w-lg">
+          A copy of your assessment will be sent to <span className="text-white font-medium">{form.email}</span>.
+          If you would like to discuss your strategy, book a call below.
+        </p>
+      </div>
+    )
+  }
 
   return (
-    <div>
-      {/* Partial value preview — show what they already have */}
-      {previewProfile && previewScore > 0 && (
-        <div className="rounded-t-2xl border border-b-0 border-border bg-card px-4 sm:px-6 py-5">
-          <p className="text-[10px] font-bold tracking-widest uppercase text-ink-subtle mb-3">Your Result Summary</p>
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
-            <div className="bg-surface rounded-xl p-3 border border-border">
-              <p className="text-[10px] text-ink-subtle uppercase tracking-wide">Score</p>
-              <p className="font-display text-lg font-black text-ink tabular-nums">{previewScore}/100</p>
-              <p className="text-[11px] font-medium mt-0.5" style={{ color: previewVerdict.color }}>{previewVerdict.label}</p>
-            </div>
-            {previewProfile.eX > 0 && (
-              <div className="bg-surface rounded-xl p-3 border border-border">
-                <p className="text-[10px] text-ink-subtle uppercase tracking-wide">Max Loan</p>
-                <p className="font-display text-lg font-black text-ink tabular-nums">{formatCZKShort(previewProfile.eX)}</p>
-                <p className="text-[11px] text-ink-muted mt-0.5">Conservative estimate</p>
-              </div>
-            )}
-            <div className="bg-surface rounded-xl p-3 border border-border col-span-2 sm:col-span-1">
-              <p className="text-[10px] text-ink-subtle uppercase tracking-wide">Key Constraint</p>
-              <p className="text-sm font-bold text-ink mt-0.5">
-                {{ DSTI: 'Income capacity', DI: 'Disposable income', DTI: 'Debt load', LTV: 'Down payment', AGE: 'Loan term' }[previewProfile.bottleneck] ?? 'Profile limits'}
-              </p>
-              <p className="text-[11px] text-ink-muted mt-0.5">Unlock for full breakdown</p>
-            </div>
-          </div>
-        </div>
-      )}
+    <div className="rounded-2xl bg-dark-900 border border-white/10 px-4 sm:px-8 py-6 sm:py-8">
+      <p className="text-[10px] font-bold tracking-widest uppercase text-bronze mb-2">
+        Save Your Assessment
+      </p>
+      <h3 className="font-display text-lg sm:text-xl font-black text-white mb-2 leading-tight">
+        Get a copy emailed to you
+      </h3>
+      <p className="text-slate-400 text-[13px] sm:text-sm leading-relaxed mb-5 max-w-lg">
+        Optionally save this assessment and discuss your strategy with Andy. No obligation.
+      </p>
 
-      {/* Blurred peek of locked sections */}
-      <div className={`border border-border overflow-hidden ${previewProfile && previewScore > 0 ? 'border-t-0' : 'rounded-t-2xl'}`}>
-        <div
-          className="pointer-events-none select-none bg-card px-4 sm:px-6 py-3 space-y-2"
-          style={{ filter: 'blur(3px)', opacity: 0.22 }}
-          aria-hidden="true"
+      <form onSubmit={handleSubmit} className="space-y-3.5 sm:space-y-4 max-w-sm">
+        <div>
+          <label htmlFor="save-name" className="text-[11px] font-semibold text-slate-400 uppercase tracking-wide mb-1.5 block">
+            Full Name <span className="text-risk-DEFAULT">*</span>
+          </label>
+          <input
+            id="save-name"
+            type="text"
+            required
+            autoComplete="name"
+            value={form.name}
+            onChange={set('name')}
+            placeholder="Your full name"
+            className="input-field"
+          />
+        </div>
+
+        <div>
+          <label htmlFor="save-email" className="text-[11px] font-semibold text-slate-400 uppercase tracking-wide mb-1.5 block">
+            Email Address <span className="text-risk-DEFAULT">*</span>
+          </label>
+          <input
+            id="save-email"
+            type="email"
+            required
+            autoComplete="email"
+            value={form.email}
+            onChange={set('email')}
+            placeholder="your@email.com"
+            className="input-field"
+          />
+        </div>
+
+        <div>
+          <label htmlFor="save-phone" className="text-[11px] font-semibold text-slate-400 uppercase tracking-wide mb-1.5 block">
+            Phone{' '}
+            <span className="text-slate-500 font-normal text-[11px]">(optional)</span>
+          </label>
+          <input
+            id="save-phone"
+            type="tel"
+            autoComplete="tel"
+            value={form.phone}
+            onChange={set('phone')}
+            placeholder="+420 …"
+            className="input-field"
+          />
+        </div>
+
+        <button
+          type="submit"
+          disabled={!canSubmit}
+          className="btn-cta w-full justify-center disabled:opacity-50 disabled:cursor-not-allowed mt-2"
         >
-          {GATE_SECTIONS.map(({ title, sub }) => (
-            <div key={title} className="flex items-center gap-3 py-1.5">
-              <div className="w-8 h-8 rounded-lg bg-surface border border-border flex-shrink-0" />
-              <div className="flex-1 min-w-0">
-                <p className="text-[13px] font-semibold text-ink">{title}</p>
-                <p className="text-[11px] text-ink-subtle">{sub}</p>
-              </div>
-              <ChevronDown size={14} className="text-ink-subtle flex-shrink-0" />
-            </div>
-          ))}
-        </div>
-        <div className="h-10 bg-gradient-to-b from-card to-surface" />
-      </div>
+          {submitting ? 'Sending…' : 'Send me this assessment'}
+        </button>
 
-      {/* Gate form card */}
-      <div className="rounded-b-2xl border border-t-0 border-border bg-card shadow-lg px-4 sm:px-8 py-6 sm:py-10">
-
-        <p className="text-[10px] font-bold tracking-widest uppercase text-bronze mb-2">
-          Full Assessment
+        <p className="text-[11px] text-slate-500 leading-relaxed pt-1">
+          No spam. No calls unless you book one.{' '}
+          <a href="https://www.mortgagescore.cz/privacy" target="_blank" rel="noopener noreferrer" className="underline underline-offset-2 hover:text-slate-400">
+            Privacy policy
+          </a>
         </p>
-        <h3 className="font-display text-lg sm:text-2xl font-black text-ink mb-2 leading-tight">
-          See your complete mortgage breakdown
-        </h3>
-        <p className="text-[13px] sm:text-sm text-ink-muted leading-relaxed mb-5 sm:mb-7 max-w-lg">
-          Enter your details to unlock the full report — constraint analysis, bank-by-bank
-          comparison, income recognition breakdown, and personalised strategy.
-        </p>
-
-        <form onSubmit={handleSubmit} className="space-y-3.5 sm:space-y-4 max-w-sm">
-
-          <div>
-            <label htmlFor="gate-name" className="section-label mb-1.5 block">
-              Full Name <span className="text-risk-DEFAULT">*</span>
-            </label>
-            <input
-              id="gate-name"
-              type="text"
-              required
-              autoComplete="name"
-              value={form.name}
-              onChange={set('name')}
-              placeholder="Your full name"
-              className="input-field"
-            />
-          </div>
-
-          <div>
-            <label htmlFor="gate-email" className="section-label mb-1.5 block">
-              Email Address <span className="text-risk-DEFAULT">*</span>
-            </label>
-            <input
-              id="gate-email"
-              type="email"
-              required
-              autoComplete="email"
-              value={form.email}
-              onChange={set('email')}
-              placeholder="your@email.com"
-              className="input-field"
-            />
-          </div>
-
-          <div>
-            <label htmlFor="gate-phone" className="section-label mb-1.5 block">
-              Phone{' '}
-              <span className="text-ink-subtle font-normal text-[11px]">(optional)</span>
-            </label>
-            <input
-              id="gate-phone"
-              type="tel"
-              autoComplete="tel"
-              value={form.phone}
-              onChange={set('phone')}
-              placeholder="+420 …"
-              className="input-field"
-            />
-          </div>
-
-          <button
-            type="submit"
-            disabled={!canSubmit}
-            className="btn-cta w-full justify-center disabled:opacity-50 disabled:cursor-not-allowed mt-2"
-          >
-            {submitting ? 'Sending…' : 'See my full assessment'}
-          </button>
-
-          {/* What happens next */}
-          <div className="pt-2 space-y-1.5">
-            <p className="text-[11px] text-ink-muted leading-relaxed">
-              <strong className="text-ink-subtle">What happens next:</strong> Your full assessment unlocks immediately
-              on this page. We'll also email you a copy you can reference later.
-            </p>
-            <p className="text-[11px] text-ink-subtle leading-relaxed">
-              No spam. No calls unless you book one.{' '}
-              <a href="https://www.mortgagescore.cz/privacy" target="_blank" rel="noopener noreferrer" className="underline underline-offset-2 hover:text-ink-muted">
-                Privacy policy
-              </a>
-            </p>
-          </div>
-
-        </form>
-      </div>
+      </form>
     </div>
   )
 }
@@ -2056,6 +1993,13 @@ function AccordionSection({ title, subtitle, icon: Icon, defaultOpen = false, ch
 
 // ── Main Results Dashboard ────────────────────────────
 
+const TABS = [
+  { id: 'overview',  label: 'Overview' },
+  { id: 'factors',   label: 'Factors' },
+  { id: 'scenarios', label: 'Scenarios' },
+  { id: 'plan',      label: 'Plan' },
+]
+
 export default function Step7Results({ formData, onBack, onRestart }) {
   let score, cfg, headerProfile, maxLoanForHeader, essoProfile, essoHardBlock, essoMedRisk
 
@@ -2068,9 +2012,17 @@ export default function Step7Results({ formData, onBack, onRestart }) {
     cfg   = scoreCfg(0)
   }
 
-  const [isUnlocked,    setIsUnlocked]    = useState(false)
-  const [unlockedName,  setUnlockedName]  = useState('')
   const [pdfLoading,    setPdfLoading]    = useState(false)
+  const [capturedName,  setCapturedName]  = useState('')
+  const [activeTab,     setActiveTab]     = useState('overview')
+
+  // Section refs for scroll-into-view
+  const overviewRef  = useRef(null)
+  const factorsRef   = useRef(null)
+  const scenariosRef = useRef(null)
+  const planRef      = useRef(null)
+
+  const refs = { overview: overviewRef, factors: factorsRef, scenarios: scenariosRef, plan: planRef }
 
   const isDiscovering = formData.propertyMode === 'discovering'
 
@@ -2108,6 +2060,9 @@ export default function Step7Results({ formData, onBack, onRestart }) {
     essoHardBlock = false
     essoMedRisk = false
   }
+
+  // Scenario simulator income state (for live re-computation)
+  const [simNetIncome, setSimNetIncome] = useState(incomeForHeader)
 
   return (
     <main className="animate-fade-up">
@@ -2162,11 +2117,25 @@ export default function Step7Results({ formData, onBack, onRestart }) {
         </div>
       </div>
 
+      {/* ── Sticky tab navigation ────────────────────── */}
+      <div className="sticky top-[57px] sm:top-[65px] z-30 bg-surface border-b border-border">
+        <div className="max-w-6xl mx-auto px-3 sm:px-6 py-2 flex gap-1">
+          {TABS.map(tab => (
+            <button
+              key={tab.id}
+              onClick={() => { setActiveTab(tab.id); refs[tab.id].current?.scrollIntoView({ behavior: 'smooth', block: 'start' }) }}
+              className={`flex-1 text-center py-2 px-2 rounded-lg text-[11px] sm:text-xs font-semibold transition-colors ${
+                activeTab === tab.id ? 'bg-dark-900 text-white' : 'text-ink-muted hover:text-ink'
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
       {/* ── Page content ─────────────────────────────── */}
       <div className="max-w-6xl mx-auto px-3 sm:px-6 py-6 sm:py-12 space-y-5 sm:space-y-6">
-
-        {/* ── Headline Verdict ─────────────────────────── */}
-        <HeadlineVerdict score={score} cfg={cfg} profile={headerProfile} formData={formData} />
 
         {/* ── ESSO callouts (s.r.o. only, always visible) ─ */}
         {essoHardBlock && (
@@ -2215,104 +2184,120 @@ export default function Step7Results({ formData, onBack, onRestart }) {
           </div>
         )}
 
-        {/* ── Soft lock gate OR full content ──────────────── */}
-        {!isUnlocked ? (
-          <SoftLockGate
-            onUnlock={(name) => { setIsUnlocked(true); setUnlockedName(name || '') }}
-            formData={formData}
-          />
-        ) : (
-          <>
-            {/* ── Binding Constraint Bars ─────────────── */}
-            <BindingConstraintBars profile={headerProfile} isDiscovering={isDiscovering} />
+        {/* ═══════════════════════════════════════════════════
+            SECTION: Overview
+        ═══════════════════════════════════════════════════ */}
+        <div ref={overviewRef} className="scroll-mt-[120px]">
+          <HeadlineVerdict score={score} cfg={cfg} profile={headerProfile} formData={formData} />
+        </div>
 
-            {/* ── Capacity Breakdown (dual-test explanation) ── */}
-            {!isDiscovering && (
-              <CapacityBreakdown profile={headerProfile} formData={formData} />
-            )}
+        <ProfileBreakdownGrid formData={formData} profile={headerProfile} />
 
-            {/* ── Discovery Budget Card (discovering mode only) ── */}
-            {isDiscovering && (
-              <DiscoveryBudgetCard profile={headerProfile} formData={formData} />
-            )}
+        <SummaryCard profile={headerProfile} formData={formData} />
 
-            {/* ── Profile Breakdown Grid ──────────────── */}
-            <ProfileBreakdownGrid formData={formData} profile={headerProfile} />
+        {/* ═══════════════════════════════════════════════════
+            SECTION: Factors
+        ═══════════════════════════════════════════════════ */}
+        <div ref={factorsRef} className="scroll-mt-[120px]">
+          <BindingConstraintBars profile={headerProfile} isDiscovering={isDiscovering} />
+        </div>
 
-            {/* ── Income Recognition ──────────────────── */}
-            <AccordionSection
-              title={formData.entityType === 'zamestnanec' ? 'Employment Profile' : 'Income Recognition'}
-              subtitle={
-                formData.entityType === 'zamestnanec'
-                  ? 'Contract type, stability assessment, and recognised income'
-                  : 'Assessment method, recognised monthly income, and verification status'
-              }
-              icon={formData.entityType === 'zamestnanec' ? Briefcase : Building2}
-              defaultOpen
-            >
-              <ApplicantProfilePanel formData={formData} profile={headerProfile} />
-            </AccordionSection>
-
-            {/* ── Hero Verdict (post-gate summary) ────────── */}
-            <HeroVerdictPost score={score} cfg={cfg} profile={headerProfile} formData={formData} />
-
-            {/* ── Recommended Strategy ────────────────── */}
-            <RecommendedStrategy score={score} profile={headerProfile} formData={formData} />
-
-            {/* ── Strategy call + PDF — combined CTA ───── */}
-            <div className="rounded-2xl bg-dark-900 border border-white/10 px-4 sm:px-10 py-6 sm:py-8">
-              <p className="text-[10px] font-bold tracking-widest uppercase text-bronze mb-2 sm:mb-3">
-                Next Steps
-              </p>
-              <h3 className="font-display text-lg sm:text-2xl font-black text-white mb-2 sm:mb-3 leading-tight break-words">
-                Turn your assessment into an approved mortgage
-              </h3>
-              <p className="text-slate-400 text-[13px] sm:text-sm leading-relaxed mb-5 sm:mb-7 max-w-lg break-words">
-                Book a 30-minute strategy call to discuss these results and get matched with the right lender.
-                Or download your personalised Mortgage Intelligence Report as PDF.
-              </p>
-              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4">
-                <a
-                  href="https://calendly.com/andy-lkadvisor/30min"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="btn-cta justify-center text-center"
-                >
-                  <Calendar size={15} className="flex-shrink-0" />
-                  <span>Book strategy call</span>
-                </a>
-                <button
-                  type="button"
-                  disabled={pdfLoading}
-                  onClick={async () => {
-                    setPdfLoading(true)
-                    try {
-                      const resolvedIncome = (formData.netMonthlySalary > 0 ? formData.netMonthlySalary : formData.netIncome) || 0
-                      const blob = await generateMortgagePdf({ ...formData, netIncome: resolvedIncome }, unlockedName)
-                      const safeName = (unlockedName || 'applicant').toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '') || 'applicant'
-                      const url  = URL.createObjectURL(blob)
-                      const link = document.createElement('a')
-                      link.href = url
-                      link.download = `mortgage-assessment-${safeName}.pdf`
-                      document.body.appendChild(link)
-                      link.click()
-                      document.body.removeChild(link)
-                      URL.revokeObjectURL(url)
-                    } catch (err) {
-                      console.error('[MortgageScore] PDF error:', err)
-                    } finally {
-                      setPdfLoading(false)
-                    }
-                  }}
-                  className="inline-flex items-center justify-center gap-2 rounded-xl bg-white/10 hover:bg-white/15 text-white text-[13px] sm:text-sm font-semibold px-5 sm:px-6 min-h-[48px] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  <FileText size={15} className="flex-shrink-0" />
-                  <span>{pdfLoading ? 'Generating…' : 'Download Report (PDF)'}</span>
-                </button>
-              </div>
-            </div>
-          </>
+        {!isDiscovering && (
+          <CapacityBreakdown profile={headerProfile} formData={formData} />
         )}
+
+        {isDiscovering && (
+          <DiscoveryBudgetCard profile={headerProfile} formData={formData} />
+        )}
+
+        <AccordionSection
+          title={formData.entityType === 'zamestnanec' ? 'Employment Profile' : 'Income Recognition'}
+          subtitle={
+            formData.entityType === 'zamestnanec'
+              ? 'Contract type, stability assessment, and recognised income'
+              : 'Assessment method, recognised monthly income, and verification status'
+          }
+          icon={formData.entityType === 'zamestnanec' ? Briefcase : Building2}
+          defaultOpen
+        >
+          <ApplicantProfilePanel formData={formData} profile={headerProfile} />
+        </AccordionSection>
+
+        {/* ═══════════════════════════════════════════════════
+            SECTION: Scenarios
+        ═══════════════════════════════════════════════════ */}
+        <div ref={scenariosRef} className="scroll-mt-[120px]">
+          <ScenarioSimulator formData={formData} onIncomeChange={setSimNetIncome} />
+        </div>
+
+        {isDiscovering && (
+          <DiscoveryBudgetCard profile={headerProfile} formData={formData} />
+        )}
+
+        {/* ═══════════════════════════════════════════════════
+            SECTION: Action Plan
+        ═══════════════════════════════════════════════════ */}
+        <div ref={planRef} className="scroll-mt-[120px]">
+          <RecommendedStrategy score={score} profile={headerProfile} formData={formData} />
+        </div>
+
+        <JourneyTimeline />
+
+        {/* ── Strategy call + PDF — combined CTA ───── */}
+        <div className="rounded-2xl bg-dark-900 border border-white/10 px-4 sm:px-10 py-6 sm:py-8">
+          <p className="text-[10px] font-bold tracking-widest uppercase text-bronze mb-2 sm:mb-3">
+            Next Steps
+          </p>
+          <h3 className="font-display text-lg sm:text-2xl font-black text-white mb-2 sm:mb-3 leading-tight break-words">
+            Turn your assessment into an approved mortgage
+          </h3>
+          <p className="text-slate-400 text-[13px] sm:text-sm leading-relaxed mb-5 sm:mb-7 max-w-lg break-words">
+            Book a 30-minute strategy call to discuss these results and get matched with the right lender.
+            Or download your personalised Mortgage Intelligence Report as PDF.
+          </p>
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4">
+            <a
+              href="https://calendly.com/andy-lkadvisor/30min"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="btn-cta justify-center text-center"
+            >
+              <Calendar size={15} className="flex-shrink-0" />
+              <span>Book strategy call</span>
+            </a>
+            <button
+              type="button"
+              disabled={pdfLoading}
+              onClick={async () => {
+                setPdfLoading(true)
+                try {
+                  const resolvedIncome = (formData.netMonthlySalary > 0 ? formData.netMonthlySalary : formData.netIncome) || 0
+                  const blob = await generateMortgagePdf({ ...formData, netIncome: resolvedIncome }, capturedName)
+                  const safeName = (capturedName || 'applicant').toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '') || 'applicant'
+                  const url  = URL.createObjectURL(blob)
+                  const link = document.createElement('a')
+                  link.href = url
+                  link.download = `mortgage-assessment-${safeName}.pdf`
+                  document.body.appendChild(link)
+                  link.click()
+                  document.body.removeChild(link)
+                  URL.revokeObjectURL(url)
+                } catch (err) {
+                  console.error('[MortgageScore] PDF error:', err)
+                } finally {
+                  setPdfLoading(false)
+                }
+              }}
+              className="inline-flex items-center justify-center gap-2 rounded-xl bg-white/10 hover:bg-white/15 text-white text-[13px] sm:text-sm font-semibold px-5 sm:px-6 min-h-[48px] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <FileText size={15} className="flex-shrink-0" />
+              <span>{pdfLoading ? 'Generating…' : 'Download Report (PDF)'}</span>
+            </button>
+          </div>
+        </div>
+
+        {/* ── Optional lead capture — Save Assessment ───── */}
+        <SaveAssessmentCard formData={formData} onNameCaptured={setCapturedName} />
 
         {/* ── Regulatory footer ─────────────────────────── */}
         <div className="flex items-start gap-2 pt-2 pb-8">

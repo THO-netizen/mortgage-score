@@ -36,7 +36,7 @@ function AccordionItem({ q, a, isOpen, onToggle }) {
         onClick={onToggle}
         className="w-full flex items-start justify-between gap-4 py-4 text-left focus:outline-none group"
       >
-        <span className="text-[13px] font-semibold text-ink group-hover:text-brand-700 transition-colors leading-snug">
+        <span className="text-[13px] font-semibold text-ink group-hover:text-ink transition-colors leading-snug">
           {q}
         </span>
         <ChevronDown
@@ -63,8 +63,8 @@ export default function HowItWorks() {
     <div className="rounded-2xl border border-border bg-card shadow-card p-6 mt-8">
 
       <div className="flex items-center gap-3 mb-5">
-        <div className="w-8 h-8 rounded-lg bg-brand-50 border border-brand-100 flex items-center justify-center flex-shrink-0">
-          <Info size={15} className="text-brand-600" />
+        <div className="w-8 h-8 rounded-lg bg-surface border border-border flex items-center justify-center flex-shrink-0">
+          <Info size={15} className="text-bronze" />
         </div>
         <div>
           <h3 className="font-display text-[15px] font-bold text-ink">

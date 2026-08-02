@@ -203,9 +203,9 @@ export default function IcoVerify({ entityType, onResult, businessData, onBack, 
               disabled={!canVerify}
               className={[
                 'flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all duration-150 whitespace-nowrap min-h-[48px] sm:min-h-0',
-                'focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-600/40',
+                'focus:outline-none focus-visible:ring-2 focus-visible:ring-bronze/40',
                 canVerify
-                  ? 'bg-brand-600 text-white hover:bg-brand-700 active:bg-brand-800 shadow-sm'
+                  ? 'bg-ink text-white hover:bg-dark-800 active:bg-dark-700 shadow-sm'
                   : 'bg-surface text-ink-subtle border border-border cursor-not-allowed',
               ].join(' ')}
             >

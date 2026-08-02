@@ -262,11 +262,9 @@ export default function App() {
 
       {/* Header — only during data-collection steps */}
       {isFunnel && (() => {
-        // Compute progress as 0-1 float based on total screens
-        // Step 1 has 3-4 sub-screens depending on path; steps 2-4 are 1 screen each
         const isBusinessPath = formData.entityType === 'osvc' || formData.entityType === 'sro'
-        const step1Total = isBusinessPath ? 4 : 3  // entity + applicant + (ico + income) or (employee)
-        const totalScreens = step1Total + 3  // + step2 + step3 + step4
+        const step1Total = isBusinessPath ? 4 : 3
+        const totalScreens = step1Total + 3
         let completed = 0
         if (currentStep === 1) {
           completed = step1SubStep
@@ -275,7 +273,11 @@ export default function App() {
         }
         const progress = Math.min(1, completed / totalScreens)
         const label = `${completed + 1} of ${totalScreens}`
-        return <Header progress={progress} label={label} />
+        const sectionNames = { 1: 'Income profile', 2: 'Residence', 3: 'Existing debt', 4: 'Property' }
+        const sectionName = sectionNames[currentStep] || ''
+        const remaining = totalScreens - completed
+        const estimatedMinutes = Math.max(1, Math.ceil(remaining * 0.4))
+        return <Header progress={progress} label={label} sectionName={sectionName} estimatedMinutes={estimatedMinutes} />
       })()}
 
       {/* ── Landing ──────────────────────────────────── */}

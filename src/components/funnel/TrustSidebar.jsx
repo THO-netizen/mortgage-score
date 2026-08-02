@@ -10,7 +10,7 @@ export default function TrustSidebar() {
 
         {/* Header */}
         <div className="flex items-center gap-2 mb-5">
-          <Lightbulb size={13} className="text-brand-500 flex-shrink-0" />
+          <Lightbulb size={13} className="text-bronze flex-shrink-0" />
           <p className="section-label">Mortgage &amp; Financial Assessment</p>
         </div>
 
@@ -21,11 +21,11 @@ export default function TrustSidebar() {
           rel="noopener noreferrer"
           className="flex items-center gap-3 mb-4 cursor-pointer group"
         >
-          <div className="w-10 h-10 rounded-full bg-brand-600 flex items-center justify-center flex-shrink-0 shadow-cta transition-opacity duration-150 group-hover:opacity-80">
+          <div className="w-10 h-10 rounded-full bg-ink flex items-center justify-center flex-shrink-0 shadow-cta transition-opacity duration-150 group-hover:opacity-80">
             <span className="font-display text-sm font-extrabold text-white tracking-tight">AL</span>
           </div>
           <div>
-            <p className="font-display text-sm font-extrabold text-ink leading-tight group-hover:text-brand-600 transition-colors duration-150">Andy Le</p>
+            <p className="font-display text-sm font-extrabold text-ink leading-tight group-hover:text-bronze transition-colors duration-150">Andy Le</p>
             <p className="text-[11px] text-ink-muted leading-snug mt-0.5">
               Mortgage &amp; Property Financing Specialist
             </p>
@@ -33,7 +33,7 @@ export default function TrustSidebar() {
         </a>
 
         {/* Tagline */}
-        <p className="text-xs font-semibold text-brand-600 italic mb-4 leading-snug">
+        <p className="text-xs font-semibold text-bronze italic mb-4 leading-snug">
           "Understand your mortgage readiness before speaking to the bank."
         </p>
 

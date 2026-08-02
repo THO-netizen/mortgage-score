@@ -113,15 +113,15 @@ export default function Step6LeadCapture({ data, formData, onChange, onBack, onC
     >
 
       {/* ── What you'll receive ───────────────────────── */}
-      <div className="rounded-xl bg-brand-50 border border-brand-100 p-4 mb-6">
-        <p className="text-xs font-semibold text-brand-700 mb-2.5">
+      <div className="rounded-xl bg-surface border border-border p-4 mb-6">
+        <p className="text-xs font-semibold text-ink mb-2.5">
           What you'll receive:
         </p>
         <ul className="space-y-2">
           {BENEFITS.map((b) => (
             <li key={b} className="flex items-start gap-2">
-              <ChevronRight size={12} className="text-brand-500 flex-shrink-0 mt-0.5" />
-              <span className="text-xs text-brand-700 leading-relaxed">{b}</span>
+              <ChevronRight size={12} className="text-bronze flex-shrink-0 mt-0.5" />
+              <span className="text-xs text-ink leading-relaxed">{b}</span>
             </li>
           ))}
         </ul>
@@ -140,7 +140,7 @@ export default function Step6LeadCapture({ data, formData, onChange, onBack, onC
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2">
             {SRO_DOCS.map((doc) => (
               <div key={doc} className="flex items-center gap-1.5">
-                <span className="w-1 h-1 rounded-full bg-brand-400 flex-shrink-0" />
+                <span className="w-1 h-1 rounded-full bg-bronze flex-shrink-0" />
                 <p className="text-[11px] text-ink leading-tight">{doc}</p>
               </div>
             ))}
@@ -202,8 +202,8 @@ export default function Step6LeadCapture({ data, formData, onChange, onBack, onC
               'w-5 h-5 rounded-[5px] border-2 flex items-center justify-center',
               'transition-all duration-150',
               gdprConsent
-                ? 'bg-brand-600 border-brand-600'
-                : 'bg-card border-border group-hover:border-brand-400',
+                ? 'bg-ink border-ink'
+                : 'bg-card border-border group-hover:border-border-strong',
               submitting ? 'opacity-50' : '',
             ].join(' ')}
           >
@@ -224,7 +224,7 @@ export default function Step6LeadCapture({ data, formData, onChange, onBack, onC
           I agree to receive my mortgage eligibility report and related guidance by email.
           My data will be processed in accordance with Czech GDPR regulations and will
           never be shared with banks or third parties without my explicit consent.{' '}
-          <span className="text-brand-600 font-medium">Required *</span>
+          <span className="text-bronze font-medium">Required *</span>
         </span>
       </label>
 

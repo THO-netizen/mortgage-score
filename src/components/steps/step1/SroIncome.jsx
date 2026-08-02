@@ -287,17 +287,17 @@ export default function SroIncome({ data, onChange, onBack, onContinue }) {
                   onClick={() => toggleStream(s)}
                   className={[
                     'relative text-left rounded-xl border-2 px-3.5 py-3 transition-all duration-150',
-                    'focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-600/40',
-                    active ? 'border-brand-600 bg-brand-50' : 'border-border bg-card hover:border-border-strong active:border-brand-300',
+                    'focus:outline-none focus-visible:ring-2 focus-visible:ring-bronze/40',
+                    active ? 'border-ink bg-surface' : 'border-border bg-card hover:border-border-strong active:border-ink/30',
                   ].join(' ')}
                 >
                   {active && (
-                    <span className="absolute top-2 right-2 w-3.5 h-3.5 rounded-full bg-brand-600 flex items-center justify-center">
+                    <span className="absolute top-2 right-2 w-3.5 h-3.5 rounded-full bg-ink flex items-center justify-center">
                       <Check size={8} className="text-white" strokeWidth={3} />
                     </span>
                   )}
-                  <p className={`text-xs font-bold mb-0.5 ${active ? 'text-brand-700' : 'text-ink'}`}>{title}</p>
-                  <p className={`text-[10px] font-semibold mb-1 ${active ? 'text-brand-600' : 'text-ink-muted'}`}>{subtitle}</p>
+                  <p className={`text-xs font-bold mb-0.5 ${active ? 'text-ink' : 'text-ink'}`}>{title}</p>
+                  <p className={`text-[10px] font-semibold mb-1 ${active ? 'text-bronze' : 'text-ink-muted'}`}>{subtitle}</p>
                   <p className="text-[10px] text-ink-subtle leading-relaxed">{desc}</p>
                 </button>
               )
@@ -311,8 +311,8 @@ export default function SroIncome({ data, onChange, onBack, onContinue }) {
             <p className="section-label">5. Income Details</p>
 
             {hasA && (
-              <div className="rounded-xl border-2 border-brand-200 bg-brand-50/60 p-4 space-y-3">
-                <p className="text-xs font-bold text-brand-700">Stream A — Director Salary</p>
+              <div className="rounded-xl border-2 border-border bg-surface/60 p-4 space-y-3">
+                <p className="text-xs font-bold text-ink">Stream A — Director Salary</p>
                 <div>
                   <label htmlFor="sroDirectorSalary" className="text-[11px] font-semibold text-ink-muted uppercase tracking-wide mb-1.5 block">
                     Net Monthly Salary (CZK)
@@ -341,8 +341,8 @@ export default function SroIncome({ data, onChange, onBack, onContinue }) {
             )}
 
             {hasB && (
-              <div className="rounded-xl border-2 border-brand-200 bg-brand-50/60 p-4 space-y-3">
-                <p className="text-xs font-bold text-brand-700">Stream B — Dividends</p>
+              <div className="rounded-xl border-2 border-border bg-surface/60 p-4 space-y-3">
+                <p className="text-xs font-bold text-ink">Stream B — Dividends</p>
                 <div>
                   <label htmlFor="dividendsPaidLast3Years" className="text-[11px] font-semibold text-ink-muted uppercase tracking-wide mb-1.5 block">
                     Total Dividends — Last 3 Years (CZK)
@@ -368,8 +368,8 @@ export default function SroIncome({ data, onChange, onBack, onContinue }) {
             )}
 
             {hasC && (
-              <div className="rounded-xl border-2 border-brand-200 bg-brand-50/60 p-4 space-y-3">
-                <p className="text-xs font-bold text-brand-700">Stream C — Director Fees</p>
+              <div className="rounded-xl border-2 border-border bg-surface/60 p-4 space-y-3">
+                <p className="text-xs font-bold text-ink">Stream C — Director Fees</p>
                 <div className={`flex items-center justify-between rounded-xl border px-4 py-3 ${directorContractExists ? 'bg-success-light border-success-border' : 'border-border bg-card'}`}>
                   <p className={`text-xs font-medium ${directorContractExists ? 'text-success-text' : 'text-ink'}`}>
                     Signed Director Agreement exists
@@ -468,16 +468,16 @@ export default function SroIncome({ data, onChange, onBack, onContinue }) {
                     onClick={() => onChange('taxRegime', v)}
                     className={[
                       'relative text-left rounded-xl border-2 px-3.5 py-3 transition-all duration-150',
-                      'focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-600/40',
-                      taxRegime === v ? 'border-brand-600 bg-brand-50' : 'border-border bg-card hover:border-border-strong active:border-brand-300',
+                      'focus:outline-none focus-visible:ring-2 focus-visible:ring-bronze/40',
+                      taxRegime === v ? 'border-ink bg-surface' : 'border-border bg-card hover:border-border-strong active:border-ink/30',
                     ].join(' ')}
                   >
                     {taxRegime === v && (
-                      <span className="absolute top-2 right-2 w-3.5 h-3.5 rounded-full bg-brand-600 flex items-center justify-center">
+                      <span className="absolute top-2 right-2 w-3.5 h-3.5 rounded-full bg-ink flex items-center justify-center">
                         <Check size={8} className="text-white" strokeWidth={3} />
                       </span>
                     )}
-                    <p className={`text-xs font-bold ${taxRegime === v ? 'text-brand-700' : 'text-ink'}`}>{label}</p>
+                    <p className={`text-xs font-bold ${taxRegime === v ? 'text-ink' : 'text-ink'}`}>{label}</p>
                   </button>
                 ))}
               </div>
@@ -497,16 +497,16 @@ export default function SroIncome({ data, onChange, onBack, onContinue }) {
                       onClick={() => onChange('expenseLumpSumPct', v)}
                       className={[
                         'relative text-left rounded-xl border-2 px-3 py-3 transition-all duration-150',
-                        'focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-600/40',
-                        expenseLumpSumPct === v ? 'border-brand-600 bg-brand-50' : 'border-border bg-card hover:border-border-strong active:border-brand-300',
+                        'focus:outline-none focus-visible:ring-2 focus-visible:ring-bronze/40',
+                        expenseLumpSumPct === v ? 'border-ink bg-surface' : 'border-border bg-card hover:border-border-strong active:border-ink/30',
                       ].join(' ')}
                     >
                       {expenseLumpSumPct === v && (
-                        <span className="absolute top-1.5 right-1.5 w-3.5 h-3.5 rounded-full bg-brand-600 flex items-center justify-center">
+                        <span className="absolute top-1.5 right-1.5 w-3.5 h-3.5 rounded-full bg-ink flex items-center justify-center">
                           <Check size={8} className="text-white" strokeWidth={3} />
                         </span>
                       )}
-                      <p className={`text-sm font-bold mb-0.5 ${expenseLumpSumPct === v ? 'text-brand-700' : 'text-ink'}`}>{label}</p>
+                      <p className={`text-sm font-bold mb-0.5 ${expenseLumpSumPct === v ? 'text-ink' : 'text-ink'}`}>{label}</p>
                       <p className="text-[9px] text-ink-subtle leading-tight">{desc}</p>
                     </button>
                   ))}

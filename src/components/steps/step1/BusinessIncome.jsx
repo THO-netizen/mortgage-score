@@ -134,18 +134,18 @@ export default function BusinessIncome({ data, onChange, onBack, onContinue }) {
                 onClick={() => handleRegimeChange(value)}
                 className={[
                   'relative text-left rounded-xl border-2 px-3.5 py-3 transition-all duration-150',
-                  'focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-600/40',
+                  'focus:outline-none focus-visible:ring-2 focus-visible:ring-bronze/40',
                   taxRegime === value
-                    ? 'border-brand-600 bg-brand-50'
-                    : 'border-border bg-card hover:border-border-strong active:border-brand-300',
+                    ? 'border-ink bg-surface'
+                    : 'border-border bg-card hover:border-border-strong active:border-ink/30',
                 ].join(' ')}
               >
                 {taxRegime === value && (
-                  <span className="absolute top-2 right-2 w-3.5 h-3.5 rounded-full bg-brand-600 flex items-center justify-center">
+                  <span className="absolute top-2 right-2 w-3.5 h-3.5 rounded-full bg-ink flex items-center justify-center">
                     <Check size={8} className="text-white" strokeWidth={3} />
                   </span>
                 )}
-                <p className={`text-xs font-bold mb-0.5 ${taxRegime === value ? 'text-brand-700' : 'text-ink'}`}>
+                <p className={`text-xs font-bold mb-0.5 ${taxRegime === value ? 'text-ink' : 'text-ink'}`}>
                   {label}
                 </p>
                 <p className="text-[10px] text-ink-subtle leading-relaxed">{desc}</p>
@@ -227,21 +227,21 @@ export default function BusinessIncome({ data, onChange, onBack, onContinue }) {
             )}
 
             {Number(annualTurnover) >= 1 && turnoverIncomePct !== null && (
-              <div className="mt-3 rounded-xl bg-brand-50 border border-brand-100 p-4 animate-fade-up">
+              <div className="mt-3 rounded-xl bg-surface border border-border p-4 animate-fade-up">
                 <div className="flex items-center justify-between mb-2">
-                  <p className="text-[10px] font-bold text-brand-700 uppercase tracking-wide">
+                  <p className="text-[10px] font-bold text-ink uppercase tracking-wide">
                     Estimated Recognised Income
                   </p>
                   <span className="badge-success text-[10px]">{turnoverIncomePct}% of turnover</span>
                 </div>
                 {naceSector && (
-                  <p className="text-[11px] text-brand-600 mb-2">{naceSector}</p>
+                  <p className="text-[11px] text-bronze mb-2">{naceSector}</p>
                 )}
-                <p className="font-display text-xl sm:text-2xl font-black text-brand-800 tabular-nums">
+                <p className="font-display text-xl sm:text-2xl font-black text-ink tabular-nums">
                   {Math.round(Number(annualTurnover) * turnoverIncomePct / 100 / 12).toLocaleString('cs-CZ')}
-                  <span className="text-sm font-semibold text-brand-600 ml-1.5">CZK / month</span>
+                  <span className="text-sm font-semibold text-bronze ml-1.5">CZK / month</span>
                 </p>
-                <p className="text-[10px] text-brand-500 mt-1">
+                <p className="text-[10px] text-bronze mt-1">
                   {Number(annualTurnover).toLocaleString('cs-CZ')} x {turnoverIncomePct}% / 12
                 </p>
               </div>

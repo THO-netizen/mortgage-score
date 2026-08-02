@@ -69,16 +69,16 @@ export default function Step5BankStatement({ formData, onChange, onBack, onConti
     >
 
       {/* Privacy-first booking card */}
-      <div className="rounded-2xl border-2 border-brand-100 overflow-hidden bg-gradient-to-br from-brand-50/70 to-white">
+      <div className="rounded-2xl border-2 border-border overflow-hidden bg-gradient-to-br from-surface to-white">
 
         {/* Top accent bar */}
-        <div className="h-[3px] bg-gradient-to-r from-brand-500 to-brand-700" />
+        <div className="h-[3px] bg-gradient-to-r from-ink to-dark-700" />
 
         <div className="p-6">
 
           {/* Icon + headline */}
           <div className="flex items-start gap-4 mb-6">
-            <div className="w-11 h-11 rounded-xl bg-brand-600 flex items-center justify-center flex-shrink-0 shadow-cta">
+            <div className="w-11 h-11 rounded-xl bg-ink flex items-center justify-center flex-shrink-0 shadow-cta">
               <Lock size={20} className="text-white" />
             </div>
             <div>
@@ -99,9 +99,9 @@ export default function Step5BankStatement({ formData, onChange, onBack, onConti
             onClick={handleBook}
             className={[
               'flex items-center justify-center gap-2.5 w-full rounded-input mb-4',
-              'bg-brand-600 text-white font-display font-bold text-[15px]',
+              'bg-ink text-white font-display font-bold text-[15px]',
               'transition-all duration-200 select-none',
-              'hover:bg-brand-700 hover:-translate-y-px hover:shadow-cta-hover',
+              'hover:bg-dark-800 hover:-translate-y-px hover:shadow-cta-hover',
               'active:translate-y-0 active:shadow-none',
             ].join(' ')}
             style={{ height: '56px' }}
@@ -113,7 +113,7 @@ export default function Step5BankStatement({ formData, onChange, onBack, onConti
           {/* Advisor + meta row */}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <div className="w-6 h-6 rounded-full bg-brand-600 flex items-center justify-center flex-shrink-0">
+              <div className="w-6 h-6 rounded-full bg-ink flex items-center justify-center flex-shrink-0">
                 <span className="font-display text-[9px] font-extrabold text-white tracking-tight">AL</span>
               </div>
               <span className="text-xs text-ink-muted font-medium">Andy Le · Mortgage Specialist</span>
@@ -122,7 +122,7 @@ export default function Step5BankStatement({ formData, onChange, onBack, onConti
           </div>
 
           {/* Privacy guarantee */}
-          <div className="flex items-center gap-2 mt-4 pt-4 border-t border-brand-100/80">
+          <div className="flex items-center gap-2 mt-4 pt-4 border-t border-border/80">
             <Shield size={12} className="text-success-DEFAULT flex-shrink-0" />
             <p className="text-[10px] text-ink-subtle leading-relaxed">
               <span className="font-semibold text-ink-muted">100% privacy guaranteed — </span>

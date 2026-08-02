@@ -7,8 +7,19 @@ export default function LandingFooter({ onStart }) { // eslint-disable-line no-u
 
         {/* Privacy note */}
         <p className="text-[13px] sm:text-sm leading-relaxed" style={{ color: '#6B7A8D' }}>
-          Your data is processed locally and never shared without your consent.
+          Your assessment is calculated in your browser. Contact details are only shared if you choose to submit them.
         </p>
+
+        {/* Privacy links */}
+        <div className="flex items-center justify-center gap-4">
+          <a href="https://www.mortgagescore.cz/privacy" target="_blank" rel="noopener noreferrer" className="text-[11px] underline underline-offset-2" style={{ color: '#6B7A8D' }}>
+            Privacy policy
+          </a>
+          <span className="text-[10px]" style={{ color: '#475569' }}>&middot;</span>
+          <a href="mailto:info@mortgagescore.cz" className="text-[11px] underline underline-offset-2" style={{ color: '#6B7A8D' }}>
+            Contact
+          </a>
+        </div>
 
         {/* Calendly link */}
         <a

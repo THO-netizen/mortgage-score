@@ -54,10 +54,10 @@ function ResidenceOption({ option, selected, onSelect }) {
       onClick={onSelect}
       className={[
         'w-full flex items-center gap-3 sm:gap-4 rounded-xl border px-4 sm:px-5 py-3.5 sm:py-4 text-left',
-        'transition-all duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-600/40',
+        'transition-all duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-bronze/40',
         selected
-          ? 'border-brand-600 bg-brand-50'
-          : 'border-border bg-card hover:border-border-strong active:border-brand-300',
+          ? 'border-ink bg-surface'
+          : 'border-border bg-card hover:border-border-strong active:border-ink/30',
       ].join(' ')}
     >
       {/* Custom radio indicator */}
@@ -65,11 +65,11 @@ function ResidenceOption({ option, selected, onSelect }) {
         className={[
           'w-5 h-5 rounded-full border-2 flex-shrink-0 flex items-center justify-center',
           'transition-colors duration-150',
-          selected ? 'border-brand-600' : 'border-border-strong',
+          selected ? 'border-ink' : 'border-border-strong',
         ].join(' ')}
       >
         {selected && (
-          <span className="w-2.5 h-2.5 rounded-full bg-brand-600 block" />
+          <span className="w-2.5 h-2.5 rounded-full bg-ink block" />
         )}
       </span>
 
@@ -78,7 +78,7 @@ function ResidenceOption({ option, selected, onSelect }) {
         <span
           className={[
             'block text-sm font-semibold leading-snug',
-            selected ? 'text-brand-700' : 'text-ink',
+            selected ? 'text-ink' : 'text-ink',
           ].join(' ')}
         >
           {label}
@@ -184,9 +184,9 @@ export default function Step2Residence({
       </div>
 
       {/* Context callout */}
-      <div className="flex items-start gap-3 rounded-xl bg-brand-50 border border-brand-100 p-3.5 sm:p-4">
-        <Info size={15} className="text-brand-600 flex-shrink-0 mt-0.5" />
-        <p className="text-xs text-brand-700 leading-relaxed">
+      <div className="flex items-start gap-3 rounded-xl bg-surface border border-border p-3.5 sm:p-4">
+        <Info size={15} className="text-bronze flex-shrink-0 mt-0.5" />
+        <p className="text-xs text-ink-muted leading-relaxed">
           <span className="font-semibold">Why this matters: </span>
           EU citizens and permanent residents access all 6 major Czech banks. Non-EU long-term permit holders are eligible at ~60% of lenders.
         </p>

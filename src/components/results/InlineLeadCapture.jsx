@@ -101,8 +101,8 @@ export default function InlineLeadCapture({ formData }) {
         className="w-full flex items-center justify-between gap-4 px-6 py-5 hover:bg-surface transition-colors focus:outline-none group"
       >
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-lg bg-brand-50 border border-brand-100 flex items-center justify-center flex-shrink-0">
-            <Download size={16} className="text-brand-600" />
+          <div className="w-9 h-9 rounded-lg bg-surface border border-border flex items-center justify-center flex-shrink-0">
+            <Download size={16} className="text-bronze" />
           </div>
           <div className="text-left">
             <p className="text-[14px] font-semibold text-ink">Email my assessment</p>
@@ -157,7 +157,7 @@ export default function InlineLeadCapture({ formData }) {
               <div className={[
                 'w-5 h-5 rounded-[5px] border-2 flex items-center justify-center',
                 'transition-all duration-150',
-                gdpr ? 'bg-brand-600 border-brand-600' : 'bg-card border-border group-hover:border-brand-400',
+                gdpr ? 'bg-ink border-ink' : 'bg-card border-border group-hover:border-border-strong',
                 submitting ? 'opacity-50' : '',
               ].join(' ')}>
                 {gdpr && (
@@ -171,7 +171,7 @@ export default function InlineLeadCapture({ formData }) {
             <span className="text-[11px] text-ink-muted leading-relaxed">
               I agree to receive my assessment by email. Data processed under Czech GDPR
               regulations and not shared with third parties without consent.{' '}
-              <span className="text-brand-600 font-medium">Required *</span>
+              <span className="text-ink font-medium">Required *</span>
             </span>
           </label>
 

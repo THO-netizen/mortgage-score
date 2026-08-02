@@ -67,10 +67,10 @@ export default function EmployeeDetails({ data, onChange, onBack, onContinue }) 
         </div>
 
         {anyAdvisory && (
-          <div className="rounded-xl bg-brand-50 border border-brand-100 px-4 py-3 animate-fade-up">
+          <div className="rounded-xl bg-surface border border-border px-4 py-3 animate-fade-up">
             <div className="flex items-start gap-2">
-              <AlertTriangle size={14} className="text-brand-600 flex-shrink-0 mt-0.5" />
-              <p className="text-xs text-brand-700 leading-relaxed">
+              <AlertTriangle size={14} className="text-bronze flex-shrink-0 mt-0.5" />
+              <p className="text-xs text-ink leading-relaxed">
                 Some lenders may view these conditions as non-standard. We recommend discussing during your free strategy call.
               </p>
             </div>
@@ -88,18 +88,18 @@ export default function EmployeeDetails({ data, onChange, onBack, onContinue }) 
                 onClick={() => onChange('contractType', value)}
                 className={[
                   'relative text-left rounded-xl border-2 px-3.5 py-3 transition-all duration-150',
-                  'focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-600/40',
+                  'focus:outline-none focus-visible:ring-2 focus-visible:ring-bronze/40',
                   contractType === value
-                    ? 'border-brand-600 bg-brand-50'
-                    : 'border-border bg-card hover:border-border-strong active:border-brand-300',
+                    ? 'border-ink bg-surface'
+                    : 'border-border bg-card hover:border-border-strong active:border-ink/30',
                 ].join(' ')}
               >
                 {contractType === value && (
-                  <span className="absolute top-2 right-2 w-3.5 h-3.5 rounded-full bg-brand-600 flex items-center justify-center">
+                  <span className="absolute top-2 right-2 w-3.5 h-3.5 rounded-full bg-ink flex items-center justify-center">
                     <Check size={8} className="text-white" strokeWidth={3} />
                   </span>
                 )}
-                <p className={`text-xs font-bold leading-tight ${contractType === value ? 'text-brand-700' : 'text-ink'}`}>{label}</p>
+                <p className={`text-xs font-bold leading-tight ${contractType === value ? 'text-ink' : 'text-ink'}`}>{label}</p>
               </button>
             ))}
           </div>
@@ -120,10 +120,10 @@ export default function EmployeeDetails({ data, onChange, onBack, onContinue }) 
               className="input-field"
             />
             {isContractExpiringSoon && (
-              <div className="mt-3 rounded-xl bg-brand-50 border border-brand-100 px-4 py-3 animate-fade-up">
+              <div className="mt-3 rounded-xl bg-surface border border-border px-4 py-3 animate-fade-up">
                 <div className="flex items-start gap-2">
-                  <AlertTriangle size={14} className="text-brand-600 flex-shrink-0 mt-0.5" />
-                  <p className="text-xs text-brand-700 leading-relaxed">
+                  <AlertTriangle size={14} className="text-bronze flex-shrink-0 mt-0.5" />
+                  <p className="text-xs text-ink leading-relaxed">
                     Contract expires within 2 months. Some lenders may request evidence of renewal.
                   </p>
                 </div>
@@ -165,7 +165,7 @@ export default function EmployeeDetails({ data, onChange, onBack, onContinue }) 
           <button
             type="button"
             onClick={() => setShowExtras(!showExtras)}
-            className="flex items-center gap-2 text-xs font-semibold text-brand-600 py-2"
+            className="flex items-center gap-2 text-xs font-semibold text-bronze py-2"
           >
             <ChevronDown
               size={14}

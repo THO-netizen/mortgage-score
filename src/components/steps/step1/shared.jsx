@@ -8,8 +8,8 @@ export function Toggle({ on, onToggle, danger = false }) {
       aria-pressed={on}
       className={[
         'relative flex-shrink-0 w-10 h-6 rounded-full transition-colors duration-200',
-        'focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-600/40',
-        on ? (danger ? 'bg-risk-DEFAULT' : 'bg-brand-600') : 'bg-border',
+        'focus:outline-none focus-visible:ring-2 focus-visible:ring-bronze/40',
+        on ? (danger ? 'bg-risk-DEFAULT' : 'bg-ink') : 'bg-border',
       ].join(' ')}
     >
       <span className={[
@@ -67,27 +67,27 @@ export function EntityCard({ option, selected, onSelect }) {
       onClick={onSelect}
       className={[
         'relative w-full text-left rounded-2xl border-2 p-5 transition-all duration-200 flex flex-col',
-        'focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-600/40',
+        'focus:outline-none focus-visible:ring-2 focus-visible:ring-bronze/40',
         selected
-          ? 'border-brand-600 bg-brand-50 shadow-card-md'
+          ? 'border-ink bg-surface shadow-card-md'
           : 'border-border bg-card hover:border-border-strong hover:shadow-card-md',
       ].join(' ')}
     >
       {selected && (
-        <span className="absolute top-4 right-4 w-5 h-5 rounded-full bg-brand-600 flex items-center justify-center">
+        <span className="absolute top-4 right-4 w-5 h-5 rounded-full bg-ink flex items-center justify-center">
           <Check size={11} className="text-white" strokeWidth={3} />
         </span>
       )}
-      <div className={`w-11 h-11 rounded-xl flex items-center justify-center mb-4 ${selected ? 'bg-brand-100' : 'bg-surface'}`}>
-        <opt.Icon size={20} className={selected ? 'text-brand-600' : 'text-ink-muted'} />
+      <div className={`w-11 h-11 rounded-xl flex items-center justify-center mb-4 ${selected ? 'bg-surface border border-border' : 'bg-surface'}`}>
+        <opt.Icon size={20} className={selected ? 'text-ink' : 'text-ink-muted'} />
       </div>
-      <h3 className={`font-display text-lg font-extrabold leading-tight mb-0.5 ${selected ? 'text-brand-700' : 'text-ink'}`}>
+      <h3 className={`font-display text-lg font-extrabold leading-tight mb-0.5 ${selected ? 'text-ink' : 'text-ink'}`}>
         {opt.title}
       </h3>
-      <p className={`text-xs mb-2 ${selected ? 'text-brand-600' : 'text-ink-muted'}`}>{opt.subtitle}</p>
+      <p className={`text-xs mb-2 ${selected ? 'text-ink-muted' : 'text-ink-muted'}`}>{opt.subtitle}</p>
       <p className="text-xs text-ink-muted leading-relaxed flex-1">{opt.desc}</p>
       {opt.note && (
-        <div className={`pt-3 border-t mt-4 text-[11px] font-medium ${selected ? 'border-brand-200 text-brand-600' : 'border-border text-ink-subtle'}`}>
+        <div className={`pt-3 border-t mt-4 text-[11px] font-medium ${selected ? 'border-border text-ink-muted' : 'border-border text-ink-subtle'}`}>
           {opt.note}
         </div>
       )}

@@ -123,11 +123,11 @@ export default function Step4Property({ data, onChange, onBack, onContinue }) {
           className={[
             'flex flex-col items-center gap-1.5 sm:gap-2 rounded-xl border-2 p-3.5 sm:p-4 text-center transition-all duration-200',
             !isDiscovering
-              ? 'border-brand-500 bg-brand-50 text-brand-700'
-              : 'border-border bg-card text-ink-muted hover:border-brand-300 active:border-brand-300',
+              ? 'border-ink bg-surface text-ink'
+              : 'border-border bg-card text-ink-muted hover:border-border-strong active:border-ink/30',
           ].join(' ')}
         >
-          <Home size={20} className={!isDiscovering ? 'text-brand-600' : 'text-ink-subtle'} />
+          <Home size={20} className={!isDiscovering ? 'text-ink' : 'text-ink-subtle'} />
           <div>
             <p className="text-xs font-bold leading-tight">I have a property</p>
             <p className="text-[10px] mt-0.5 leading-snug opacity-75">Enter price &amp; funds</p>
@@ -140,11 +140,11 @@ export default function Step4Property({ data, onChange, onBack, onContinue }) {
           className={[
             'flex flex-col items-center gap-1.5 sm:gap-2 rounded-xl border-2 p-3.5 sm:p-4 text-center transition-all duration-200',
             isDiscovering
-              ? 'border-brand-500 bg-brand-50 text-brand-700'
-              : 'border-border bg-card text-ink-muted hover:border-brand-300 active:border-brand-300',
+              ? 'border-ink bg-surface text-ink'
+              : 'border-border bg-card text-ink-muted hover:border-border-strong active:border-ink/30',
           ].join(' ')}
         >
-          <Search size={20} className={isDiscovering ? 'text-brand-600' : 'text-ink-subtle'} />
+          <Search size={20} className={isDiscovering ? 'text-ink' : 'text-ink-subtle'} />
           <div>
             <p className="text-xs font-bold leading-tight">I&apos;m exploring</p>
             <p className="text-[10px] mt-0.5 leading-snug opacity-75">Show my budget</p>
@@ -156,9 +156,9 @@ export default function Step4Property({ data, onChange, onBack, onContinue }) {
       {isDiscovering && (
         <div className="space-y-5">
 
-          <div className="rounded-xl border border-brand-200 bg-brand-50/60 p-3.5 sm:p-4">
-            <p className="text-xs font-semibold text-brand-700 mb-1">Budget Discovery Mode</p>
-            <p className="text-[11px] text-brand-600 leading-relaxed">
+          <div className="rounded-xl border border-border bg-surface p-3.5 sm:p-4">
+            <p className="text-xs font-semibold text-ink mb-1">Budget Discovery Mode</p>
+            <p className="text-[11px] text-ink-muted leading-relaxed">
               We&apos;ll calculate your maximum borrowing capacity and the property price range you can target.
             </p>
           </div>
